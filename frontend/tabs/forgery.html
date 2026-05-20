@@ -23,6 +23,17 @@
     <div class="tab-header-text">
         <h2><i class="fas fa-search-plus" style="color:var(--primary)"></i> Document Forgery Detection</h2>
         <p>Classical forensic analysis to detect tampering, splicing, and manipulation in clinical documents.</p>
+        <div style="margin-top: 10px;">
+            <a href="forgensic-samples/forgery_image.jpeg" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px; margin-right: 15px;">
+                <i class="fas fa-file-download"></i> Sample image 1
+            </a>
+            <a href="forgensic-samples/no_foregery_image.png" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px; margin-right: 15px;">
+                <i class="fas fa-file-download"></i> Sample image 2
+            </a>
+            <a href="forgensic-samples/sample_document.pdf" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px;">
+                <i class="fas fa-file-download"></i> Sample PDF
+            </a>
+        </div>
     </div>
 </div>
 
@@ -31,6 +42,7 @@
     <p style="margin:0 0 6px; font-size:14px; color:#0f766e;"><strong><i class="fas fa-user-shield"></i> Privacy:</strong> Non-persistent service. Data is processed in real-time and purged automatically. No data is stored.</p>
     <p style="margin:0; font-size:14px; color:#0f766e;"><strong><i class="fas fa-file"></i> Limit:</strong> Maximum file size <strong>25 MB</strong>. Supported: PDF, JPG, PNG, BMP, TIFF, WebP.</p>
 </div>
+
 
 <!-- Upload Section -->
 <div class="controls" id="fg-controls">
@@ -60,70 +72,69 @@
 </div>
 
 <!-- Tampered Flag -->
-<div id="fgTamperedFlag" style="display:none; padding:14px 20px; border-radius:10px; margin-bottom:20px; font-weight:600; font-size:0.95rem;">
+<div id="fgTamperedFlag" class="fg-tampered-flag fg-tampered-neutral">
+    <i class="fas fa-hourglass-half"></i> Tampered: <strong>—</strong> Awaiting analysis.
 </div>
 
 <!-- Results Grid -->
-<div id="fgResultsGrid" style="display:none; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+<div id="fgResultsGrid" class="fg-results-grid">
 
     <!-- Findings Panel (dark) -->
-    <div style="background:#0f172a; border-radius:10px; overflow:hidden;">
-        <div style="padding:14px 18px; border-bottom:1px solid #1e293b;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="color:#e2e8f0; font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
-                    <i class="fas fa-list"></i> Findings
-                </span>
-                <div style="display:flex; gap:6px;">
-                    <button onclick="window.FG_copyFindings()" style="background:#334155; color:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer;" title="Copy findings"><i class="fas fa-copy"></i> Copy</button>
-                    <button onclick="window.FG_downloadFindings()" style="background:#334155; color:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer;" title="Download findings"><i class="fas fa-download"></i> Download</button>
-                    <button id="fgToggleFindings" onclick="window.FG_toggleFindings()" style="background:#334155; color:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer; display:none;">View all</button>
+    <div class="fg-panel fg-panel-findings">
+        <div class="fg-panel-header fg-panel-header-dark">
+            <div class="fg-panel-title-row">
+                <span class="fg-panel-title fg-panel-title-dark"><i class="fas fa-list"></i> Findings</span>
+                <div class="fg-panel-actions">
+                    <button class="fg-action-btn fg-action-btn-dark" onclick="window.FG_copyFindings()" title="Copy findings"><i class="fas fa-copy"></i> Copy</button>
+                    <button class="fg-action-btn fg-action-btn-dark" onclick="window.FG_downloadFindings()" title="Download findings"><i class="fas fa-download"></i> Download</button>
+                    <button id="fgToggleFindings" class="fg-action-btn fg-action-btn-dark" onclick="window.FG_toggleFindings()" style="display:none;">View all</button>
                 </div>
             </div>
-            <div id="fgFindingsMeta" style="color:#64748b; font-size:0.78rem;">No document processed yet.</div>
+            <div id="fgFindingsMeta" class="fg-panel-meta">No document processed yet.</div>
         </div>
-        <div id="fgFindingsList" style="padding:16px; color:#94a3b8; font-size:0.85rem; max-height:500px; overflow-y:auto;">
+        <div id="fgFindingsList" class="fg-findings-list">
             Upload a file and click "Analyze Document" to see forensic findings.
         </div>
     </div>
 
     <!-- Preview Panel (light) -->
-    <div style="background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden;">
-        <div style="padding:14px 18px; border-bottom:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <span style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dark);">
-                    <i class="fas fa-file-image"></i> Rendered Document
-                </span>
+    <div class="fg-panel fg-panel-preview">
+        <div class="fg-panel-header">
+            <div class="fg-panel-title-row">
+                <span class="fg-panel-title"><i class="fas fa-file-image"></i> Annotated Document</span>
             </div>
-            <div style="color:var(--text-light); font-size:0.78rem; margin-bottom:8px;">Overlays appear after processing completes.</div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button id="fgTogglePreview" onclick="window.FG_togglePreview()" style="background:var(--primary); color:#fff; border:none; padding:5px 12px; border-radius:5px; font-size:0.78rem; cursor:pointer;">Show rendered document</button>
-                <button id="fgShowAllOverlays" onclick="window.FG_showAllOverlays()" style="background:#e2e8f0; color:var(--text-dark); border:none; padding:5px 12px; border-radius:5px; font-size:0.78rem; cursor:pointer;" disabled>Show all overlays</button>
+            <div class="fg-panel-subtitle">Overlays appear after processing completes.</div>
+            <div class="fg-panel-actions">
+                <button id="fgTogglePreview" class="fg-action-btn fg-action-btn-primary" onclick="window.FG_togglePreview()">Hide annotated document</button>
+                <button id="fgShowAllOverlays" class="fg-action-btn fg-action-btn-ghost" onclick="window.FG_showAllOverlays()" disabled>Show all overlays</button>
             </div>
         </div>
-        <div id="fgPreviewViewer" style="display:none; position:relative;">
-            <div id="fgPreviewArea" style="padding:16px; min-height:300px; display:flex; align-items:center; justify-content:center; position:relative;">
-                <div id="fgPreviewEmpty" style="color:var(--text-light); font-size:0.85rem;">No rendered preview yet.</div>
-                <img id="fgPreviewImage" style="max-width:100%; display:none; border-radius:6px;" alt="Rendered document"/>
-                <div id="fgPreviewOverlay" style="position:absolute; top:0; left:0; pointer-events:none;"></div>
+        <div id="fgPreviewViewer" class="fg-preview-viewer">
+            <div id="fgPreviewArea" class="fg-preview-area">
+                <div id="fgPreviewEmpty" class="fg-preview-empty">No annotated preview yet.</div>
+                <img id="fgPreviewImage" class="fg-preview-image" alt="Annotated document"/>
+                <div id="fgPreviewOverlay" class="fg-preview-overlay"></div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Crop Modal -->
-<div class="modal" id="fgCropModal" style="display:none;">
-    <div class="modal-content" style="max-width:700px; height:auto; max-height:80vh;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-            <div>
-                <h3 style="margin:0 0 4px;">Highlighted Region</h3>
-                <div id="fgCropMeta" style="font-size:0.85rem; color:var(--text-light);"></div>
+<div class="modal fg-crop-modal" id="fgCropModal" style="display:none;">
+    <div class="modal-content fg-crop-content">
+        <div class="fg-crop-header">
+            <div class="fg-crop-title">
+                <h3>Highlighted Region</h3>
+                <div id="fgCropMeta" class="fg-crop-meta"></div>
             </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button id="fgShowInDoc" onclick="window.FG_showInDocument()" style="background:var(--primary); color:#fff; border:none; padding:5px 12px; border-radius:5px; font-size:0.78rem; cursor:pointer;" disabled>Show in document</button>
-                <span class="close-modal" onclick="window.FG_closeCropModal()" style="cursor:pointer; font-size:1.5rem; line-height:1;">&times;</span>
+            <div class="fg-crop-actions">
+                <button id="fgShowInDoc" class="fg-action-btn fg-action-btn-primary" onclick="window.FG_showInDocument()" disabled>Show in document</button>
+                <button class="close-modal fg-close-btn" onclick="window.FG_closeCropModal()" aria-label="Close">&times;</button>
             </div>
         </div>
-        <img id="fgCropImage" style="max-width:100%; border-radius:6px;" alt="Cropped region"/>
+        <div class="fg-crop-body">
+            <img id="fgCropImage" class="fg-crop-image" alt="Cropped region"/>
+        </div>
     </div>
 </div>
 
@@ -144,11 +155,6 @@
             <strong>Forgensic</strong> is our document forgery detection system developed for the <strong>AB PMJAY Auto-Adjudication Hackathon</strong>. It uses classical computer vision and forensic analysis to detect tampering, splicing, and manipulation in clinical documents with explainable bounding-box overlays.
             <br><strong>Presentation:</strong> <a href="https://docs.google.com/presentation/d/1RorlmFI3fwyqu_T52CDQVMQCzT-SDbrfa1f7ykD2O58/edit?usp=sharing" target="_blank" style="color: #14868C; text-decoration: none; font-weight: bold;">Click to view the Forgensic presentation</a>
         </p>
-    </div>
-    <div class="tab-header-logos">
-        <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
-        <img src="assets/MoE_Logo.svg" alt="Ministry of Education Logo" class="logo">
-        <img src="assets/IISc_Logo.png" alt="IISc Logo" class="logo">
     </div>
 </div>
 
@@ -227,7 +233,7 @@
 <div class="tab-header">
     <div class="tab-header-text">
         <h2><i class="fas fa-code" style="color:var(--primary)"></i> Forgery Detection API</h2>
-        <p>Submit documents, poll status, and retrieve forensic analysis results. Built with Python + FastAPI + OpenCV.</p>
+        <p>Submit documents, poll status, and retrieve forensic analysis results. Built with Python, FastAPI, OpenCV, and PyMuPDF (OCR optional).</p>
     </div>
 </div>
 
@@ -267,7 +273,7 @@
             <tr><td><span class="api-method post">POST</span></td><td><code>/jobs</code></td><td>Upload a document and create a processing job</td></tr>
             <tr><td><span class="api-method get">GET</span></td><td><code>/jobs/{job_id}</code></td><td>Poll job status and progress (0.0 to 1.0)</td></tr>
             <tr><td><span class="api-method get">GET</span></td><td><code>/jobs/{job_id}/results</code></td><td>Fetch complete forgery analysis results</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/jobs/{job_id}/files/{file_name}</code></td><td>Rendered page preview image (cached in memory)</td></tr>
+            <tr><td><span class="api-method get">GET</span></td><td><code>/jobs/{job_id}/files/{file_name}</code></td><td>Fetch cached annotated preview or page image for this job</td></tr>
             <tr><td><span class="api-method get">GET</span></td><td><code>/health</code></td><td>Service health check</td></tr>
         </tbody>
     </table>
@@ -304,7 +310,7 @@
     </div>
     <div class="api-section-box">
         <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">3. Fetch results</h4>
-        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Returns full forgery findings with per-page categories and regions.</p>
+        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Returns full findings with per-page categories, regions, and preview URLs.</p>
         <div class="api-code-block">
             <pre style="margin:0; white-space:pre-wrap;">curl "http://localhost:8004/jobs/JOB_ID/results"</pre>
             <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
@@ -312,10 +318,10 @@
     </div>
     <div class="api-section-box">
         <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">4. Preview image</h4>
-        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Fetch rendered page with bounding boxes.</p>
+        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Fetch annotated page preview using the URL from results.</p>
         <div class="api-code-block">
             <pre style="margin:0; white-space:pre-wrap;">curl -L \
-  "http://localhost:8004/jobs/JOB_ID/files/page_001.png" \
+  "http://localhost:8004/jobs/JOB_ID/files/preview_document_page_1.jpg" \
   -o preview.png</pre>
             <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
         </div>
@@ -331,9 +337,12 @@
 BASE = "http://localhost:8004"
 
 with open("document.pdf", "rb") as f:
-    r = requests.post(f"{BASE}/jobs",
+    r = requests.post(
+        f"{BASE}/jobs",
         files={"file": f},
-        data={"ocr_enabled": "true"}, timeout=60)
+        data={"ocr_enabled": "true"},
+        timeout=60,
+    )
 job_id = r.json()["job_id"]
 
 for _ in range(30):
@@ -342,8 +351,15 @@ for _ in range(30):
         break
     time.sleep(2)
 
-results = requests.get(f"{BASE}/jobs/{job_id}/results", timeout=30)
-print(results.json())</pre>
+results = requests.get(f"{BASE}/jobs/{job_id}/results", timeout=30).json()
+print(results)
+
+# Example: download the first preview image
+first_page = results["pages"][0]
+preview_url = first_page.get("preview_url") or first_page.get("image_url")
+if preview_url:
+    img = requests.get(f"{BASE}{preview_url}")
+    open("preview.jpg", "wb").write(img.content)</pre>
         <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
     </div>
 </div>
@@ -351,36 +367,45 @@ print(results.json())</pre>
 <!-- Response Example -->
 <h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-reply"></i> Response Example</h3>
 <div class="api-section-box">
-    <div class="api-code-block">
-        <pre style="margin:0; white-space:pre-wrap;">{
-  "job_id": "abc123",
-  "file_name": "report.pdf",
-  "category_summary": { "C1": 2, "C3": 1 },
-  "findings_summary": {
-    "summary_text": "Page 1: Added content ...",
-    "findings": [{
-      "page": 1,
-      "category_id": "C3",
-      "category_label": "Added content",
-      "summary": "Page 1: Possible stamp alteration",
-      "box": {"x":120,"y":80,"w":200,"h":60}
+        <div class="api-code-block">
+                <pre style="margin:0; white-space:pre-wrap;">{
+    "job_id": "abc123",
+    "status": "complete",
+    "file_name": "report.pdf",
+    "pipeline_version": "ps3-cv-1.0.0",
+    "category_summary": { "C1": 2, "C3": 1 },
+    "findings_summary": {
+        "summary_text": "Page 1: Added content near \"SIGNATURE\" appears altered.",
+        "findings": [{
+            "page": 1,
+            "category_id": "C3",
+            "category_label": "Added content",
+            "summary": "Page 1: Added content near \"SIGNATURE\" appears altered.",
+            "box": {"x":120,"y":80,"w":200,"h":60}
+        }],
+        "findings_all": ["..."]
+    },
+    "pages": [{
+        "page_id": "report_page_1.jpg",
+        "page_number": 1,
+        "file_name": "report_page_1.jpg",
+        "image_url": "/jobs/abc123/files/report_page_1.jpg",
+        "preview_url": "/jobs/abc123/files/preview_report_page_1.jpg",
+        "image_width": 1654,
+        "image_height": 2339,
+        "categories": ["C3"],
+        "regions": [{"x":120,"y":80,"w":200,"h":60,"category_id":"C3"}],
+        "notes": {}
     }]
-  },
-  "pages": [{
-    "page_number": 1,
-    "image_url": "/jobs/abc123/files/page_001.png",
-    "categories": ["C3"],
-    "regions": [...]
-  }]
 }</pre>
-    </div>
+        </div>
 </div>
 
 <!-- Privacy -->
 <div class="api-section-box">
     <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);"><i class="fas fa-shield-alt" style="color:var(--primary)"></i> Privacy &amp; Data Handling</h4>
     <p style="font-size:0.86rem; color:#334155; line-height:1.6; margin:0;">
-        Uploaded files are deleted immediately after processing. Rendered preview images are cached in-memory and cleared on server restart. No document data is written to disk or stored in any database.
+        Uploads are written to a temporary job folder while processing and then cleaned up. Annotated preview files are cached in memory for the job and cleared on server restart. Jobs are also purged after the TTL window configured on the server.
     </p>
 </div>
 
@@ -407,14 +432,16 @@ print(results.json())</pre>
 
 <div class="api-section-box">
     <h3 style="margin:0 0 12px; color:var(--primary);">Detection Pipeline</h3>
-    <p style="font-size:0.88rem; color:#334155; margin-bottom:12px;">The analysis runs multiple forensic checks on each page:</p>
+    <p style="font-size:0.88rem; color:#334155; margin-bottom:12px;">The analysis runs classical CV checks on each page and outputs categories plus localized regions:</p>
     <ul style="padding-left:18px; font-size:0.88rem; color:#334155; line-height:1.8;">
-        <li><strong>Error Level Analysis (ELA):</strong> Detects JPEG re-compression artifacts that indicate edited regions</li>
-        <li><strong>Noise Analysis:</strong> Identifies inconsistent noise patterns across the document</li>
-        <li><strong>Copy-Move Detection:</strong> Finds duplicated regions within the same page</li>
-        <li><strong>Splicing Detection:</strong> Detects content pasted from external sources</li>
-        <li><strong>Metadata Analysis:</strong> Examines file metadata for tampering indicators</li>
-        <li><strong>Edge Detection:</strong> Highlights unnatural boundaries around edited areas</li>
+        <li><strong>Copy-paste detection:</strong> duplicate region matching to find moved content</li>
+        <li><strong>Overwrite detection:</strong> edge density and stroke inconsistencies within text lines</li>
+        <li><strong>Added content detection:</strong> stamp and signature heuristics with color + shape cues</li>
+        <li><strong>Erasure detection:</strong> low-noise gaps and unnatural smoothness in text lines</li>
+        <li><strong>Document merge detection:</strong> noise fingerprint shifts across bands</li>
+        <li><strong>Watermark removal detection:</strong> residual frequency and background artifacts</li>
+        <li><strong>Irregular spacing:</strong> spacing anomalies in lines and token gaps</li>
+        <li><strong>AI-generated indicators:</strong> category-level flags when detected</li>
     </ul>
 </div>
 
@@ -425,11 +452,16 @@ print(results.json())</pre>
             <tr><th>Category</th><th>Label</th><th>Description</th></tr>
         </thead>
         <tbody>
-            <tr><td><code>C1</code></td><td>Compression artifacts</td><td>JPEG re-compression detected in specific regions</td></tr>
-            <tr><td><code>C2</code></td><td>Noise inconsistency</td><td>Noise patterns differ from surrounding areas</td></tr>
-            <tr><td><code>C3</code></td><td>Added content</td><td>Content appears to be pasted or spliced in</td></tr>
-            <tr><td><code>C4</code></td><td>Removed content</td><td>Areas where original content appears erased</td></tr>
-            <tr><td><code>C5</code></td><td>Copy-move</td><td>Duplicated regions detected within the document</td></tr>
+            <tr><td><code>C1</code></td><td>Copy-paste</td><td>Duplicate regions within the same document</td></tr>
+            <tr><td><code>C2</code></td><td>Overwriting</td><td>Edits over existing text or ink</td></tr>
+            <tr><td><code>C3</code></td><td>Added content</td><td>Stamps, signatures, or pasted content</td></tr>
+            <tr><td><code>C4</code></td><td>Erasure</td><td>Removed text or image regions</td></tr>
+            <tr><td><code>C5</code></td><td>Document merge</td><td>Header/body from different sources</td></tr>
+            <tr><td><code>C6</code></td><td>Watermark removal</td><td>Ghost artifacts from watermark edits</td></tr>
+            <tr><td><code>C7</code></td><td>Irregular spacing</td><td>Spacing inconsistencies in lines or tokens</td></tr>
+            <tr><td><code>C8</code></td><td>AI-generated</td><td>Entire document appears AI-generated</td></tr>
+            <tr><td><code>C9</code></td><td>AI-edited</td><td>Partial AI edits detected</td></tr>
+            <tr><td><code>C10</code></td><td>No discrepancy</td><td>No editing or anomalies found</td></tr>
         </tbody>
     </table>
 </div>

@@ -1033,6 +1033,237 @@ h1, h2, h3, h4, h5, h6, strong, b, .bold, .tablinks, .validate-btn, .process-btn
     margin-top: 2px;
 }
 
+/* ── Forgery Results Layout ─────────────────────────────────────────────── */
+.fg-results-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    margin-top: 20px;
+    align-items: stretch;
+}
+.fg-panel {
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: clamp(420px, 60vh, 640px);
+}
+.fg-panel-findings { background: #0f172a; }
+.fg-panel-preview { background: #fff; border: 1px solid var(--border); }
+
+.fg-panel-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.fg-panel-header-dark { border-bottom: 1px solid #1e293b; }
+.fg-panel-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.fg-panel-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dark);
+}
+.fg-panel-title-dark { color: #e2e8f0; }
+.fg-panel-meta { color: #64748b; font-size: 0.78rem; }
+.fg-panel-subtitle { color: var(--text-light); font-size: 0.78rem; }
+.fg-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.fg-action-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.fg-action-btn-primary { background: var(--primary); color: #fff; }
+.fg-action-btn-primary:hover { background: var(--primary-hover); }
+.fg-action-btn-ghost { background: #e2e8f0; color: var(--text-dark); }
+.fg-action-btn-ghost:disabled { opacity: 0.6; cursor: not-allowed; }
+.fg-action-btn-dark { background: #334155; color: #e2e8f0; }
+.fg-action-btn-dark:hover { background: #475569; }
+
+.fg-findings-list {
+    padding: 16px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    overflow-y: auto;
+    height: clamp(260px, 48vh, 520px);
+}
+.fg-finding-row {
+    padding: 10px 0;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+.fg-view-area-btn {
+    background: #1f2937;
+    color: #e2e8f0;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.fg-view-area-btn:hover { background: #334155; }
+
+.fg-preview-viewer { position: relative; }
+.fg-preview-area {
+    padding: 16px;
+    height: clamp(260px, 48vh, 520px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: #f8fafc;
+}
+.fg-preview-empty { color: var(--text-light); font-size: 0.85rem; text-align: center; }
+.fg-preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    display: none;
+    border-radius: 6px;
+    object-fit: contain;
+}
+.fg-preview-overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+.fg-tampered-flag {
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+}
+.fg-tampered-neutral {
+    background: #f1f5f9;
+    color: #475569;
+    border-left: 4px solid #94a3b8;
+}
+.fg-tampered-yes {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-left: 4px solid #ef4444;
+}
+.fg-tampered-no {
+    background: #f0fdf4;
+    color: #15803d;
+    border-left: 4px solid #22c55e;
+}
+
+
+.fg-crop-content {
+    max-width: 760px;
+    height: auto;
+    max-height: 85vh;
+    padding: 0;
+    overflow: hidden;
+    background: #eef2f6;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+.fg-crop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    background: linear-gradient(135deg, rgba(20, 134, 140, 0.08), rgba(15, 23, 42, 0.02));
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+.fg-crop-title h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    color: var(--text-dark);
+}
+.fg-crop-meta {
+    font-size: 0.82rem;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 4px 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.fg-crop-actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+.fg-crop-body {
+    padding: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 320px;
+    background: transparent;
+    overflow: auto;
+}
+.fg-crop-image {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.fg-crop-actions #fgShowInDoc {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+}
+.fg-crop-modal .close-modal { position: static; }
+.fg-close-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: none;
+    background: #fff;
+    color: #334155;
+    font-size: 1.8rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.fg-close-btn:hover { background: #e2e8f0; color: var(--error-red); }
+
+@media (max-width: 980px) {
+    .fg-results-grid { grid-template-columns: 1fr; }
+    .fg-panel { min-height: unset; }
+    .fg-findings-list,
+    .fg-preview-area { height: clamp(220px, 40vh, 420px); }
+}
+@media (max-width: 640px) {
+    .fg-action-btn { padding: 6px 10px; font-size: 0.76rem; }
+    .fg-view-area-btn { padding: 6px 10px; }
+    .fg-crop-header { flex-direction: column; align-items: flex-start; }
+    .fg-crop-actions { width: 100%; justify-content: space-between; }
+    .fg-crop-body { padding: 16px; min-height: 240px; }
+}
+
 /* ── API page styling (shared across service sub-tabs) ───────────────────── */
 .api-section-box {
     background: #fff;

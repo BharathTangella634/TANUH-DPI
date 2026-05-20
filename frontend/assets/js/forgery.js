@@ -20,7 +20,7 @@
     let fgFindingsFileName = "";
     let fgBusy = false;
     let fgShowAllFindings = false;
-    let fgPreviewVisible = false;
+    let fgPreviewVisible = true;
     let fgFocusedFinding = null;
     let fgSelectedFinding = null;
     let fgPendingPage = null;
@@ -61,21 +61,29 @@
         if (g) g.style.display = show ? "grid" : "none";
     }
 
+    function setTamperedNeutral(message) {
+        var el = $("fgTamperedFlag");
+        if (!el) return;
+        el.classList.remove("fg-tampered-yes", "fg-tampered-no");
+        el.classList.add("fg-tampered-neutral");
+        el.innerHTML = '<i class="fas fa-hourglass-half"></i> Tampered: <strong>—</strong> ' + message;
+    }
+
     function setTampered(summary) {
         var el = $("fgTamperedFlag");
         if (!el) return;
+        if (!summary) {
+            setTamperedNeutral("Awaiting analysis.");
+            return;
+        }
         var keys = Object.keys(summary || {}).filter(function (k) { return summary[k]; });
         var clean = keys.length === 0 || (keys.length === 1 && keys[0] === "C10");
-        el.style.display = "block";
+        el.classList.remove("fg-tampered-neutral", "fg-tampered-yes", "fg-tampered-no");
         if (clean) {
-            el.style.background = "#f0fdf4";
-            el.style.color = "#15803d";
-            el.style.borderLeft = "4px solid #22c55e";
+            el.classList.add("fg-tampered-no");
             el.innerHTML = '<i class="fas fa-check-circle"></i> Tampered: <strong>No</strong> — Document appears clean.';
         } else {
-            el.style.background = "#fef2f2";
-            el.style.color = "#b91c1c";
-            el.style.borderLeft = "4px solid #ef4444";
+            el.classList.add("fg-tampered-yes");
             el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tampered: <strong>Yes</strong> — Suspicious regions detected.';
         }
     }
@@ -131,7 +139,7 @@
 
         items.forEach(function (item) {
             var row = document.createElement("div");
-            row.style.cssText = "padding:8px 0; border-bottom:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; gap:8px;";
+            row.className = "fg-finding-row";
 
             var txt = document.createElement("span");
             txt.textContent = item.summary || "Finding";
@@ -140,7 +148,7 @@
             if (item.box) {
                 var btn = document.createElement("button");
                 btn.textContent = "View area";
-                btn.style.cssText = "background:#334155; color:#e2e8f0; border:none; padding:3px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer; white-space:nowrap;";
+                btn.className = "fg-view-area-btn";
                 btn.onclick = function () {
                     fgSelectedFinding = { page: item.page, categoryId: item.category_id, box: item.box };
                     updateShowInDocBtn();
@@ -332,9 +340,12 @@
         if (pages.length) {
             fgPendingPage = pages[0];
             var toggleBtn = $("fgTogglePreview");
-            if (toggleBtn) toggleBtn.textContent = "Show rendered document";
+            if (toggleBtn) toggleBtn.textContent = fgPreviewVisible ? "Hide annotated document" : "Show annotated document";
             var overlayBtn = $("fgShowAllOverlays");
             if (overlayBtn) overlayBtn.disabled = true;
+            if (fgPreviewVisible && fgPendingPage) {
+                renderPreview(fgPendingPage);
+            }
         }
     }
 
@@ -372,11 +383,16 @@
 
         setBusy(true);
         fgResults = null;
-        showGrid(false);
-        var flag = $("fgTamperedFlag");
-        if (flag) flag.style.display = "none";
+        showGrid(true);
+        setTamperedNeutral("Analyzing document...");
         setInference(null);
         setProgress("Uploading…", 2);
+        var findings = $("fgFindingsList");
+        if (findings) findings.textContent = "Processing...";
+        var empty = $("fgPreviewEmpty");
+        if (empty) empty.textContent = "Annotated preview will appear here.";
+        var img = $("fgPreviewImage");
+        if (img) img.style.display = "none";
 
         var form = new FormData();
         form.append("file", fgFile);
@@ -433,7 +449,7 @@
         if (!viewer) return;
         fgPreviewVisible = !fgPreviewVisible;
         viewer.style.display = fgPreviewVisible ? "block" : "none";
-        if (btn) btn.textContent = fgPreviewVisible ? "Hide rendered document" : "Show rendered document";
+        if (btn) btn.textContent = fgPreviewVisible ? "Hide annotated document" : "Show annotated document";
         if (fgPreviewVisible && fgPendingPage) {
             renderPreview(fgPendingPage);
         }
