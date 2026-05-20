@@ -249,6 +249,10 @@ access_token.txt
 # (keep docker-compose.yml and Dockerfiles tracked)
 docker-compose.override.yml
 
+# ── Runtime databases ─────────────────────────────────────────────────────────
+*.db
+*.sqlite
+
 # ── Uploaded / processed files (runtime data, not source) ────────────────────
 pdf_uploads/
 fhir_results/

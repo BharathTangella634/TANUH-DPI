@@ -19,6 +19,8 @@ import uuid
 
 # Ensure the app root is on the path so sibling imports work inside the worker
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add pdf2abdm/ so bare `from utils.xxx` imports resolve (matches main.py behaviour)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from common.celery_app import celery_app
 

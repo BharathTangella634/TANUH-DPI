@@ -36,6 +36,7 @@
                 <button class="tablinks" id="navInsurance" onclick="openTab(event, 'PDF2NHCX')"><i class="fas fa-shield-alt"></i> Insurance Policy</button>
                 <button class="tablinks" id="navPrivacyFilter" onclick="openTab(event, 'PrivacyFilter')"><i class="fas fa-user-shield"></i> Privacy Filter</button>
                 <button class="tablinks" id="navForgery" onclick="openTab(event, 'ForgeryDetection')"><i class="fas fa-search-plus"></i> Forgery Detection</button>
+                <button class="tablinks" id="navAboutUs" onclick="openTab(event, 'AboutUs')"><i class="fas fa-info-circle"></i> About Us</button>
                 <button class="tablinks" id="navDashboard" onclick="openTab(event, 'Dashboard')"><i class="fas fa-chart-bar"></i> Dashboard</button>
             </nav>
         </div>
@@ -49,6 +50,7 @@
         <div id="PDF2NHCX" class="tabcontent" style="display: none;"></div>
         <div id="PrivacyFilter" class="tabcontent" style="display: none;"></div>
         <div id="ForgeryDetection" class="tabcontent" style="display: none;"></div>
+        <div id="AboutUs" class="tabcontent" style="display: none;"></div>
         <div id="Dashboard" class="tabcontent" style="display: none;"></div>
     </main>
 
@@ -82,6 +84,12 @@
                 <i class="fas fa-user-shield"></i>
                 <span id="footerDocsRedacted">0</span>
                 <span class="footer-stat-label">Docs Redacted</span>
+            </div>
+            <div class="footer-stat-divider"></div>
+            <div class="footer-stat">
+                <i class="fas fa-search-plus"></i>
+                <span id="footerForgery">0</span>
+                <span class="footer-stat-label">Forgery Analyzed</span>
             </div>
         </div>
         <div class="footer-links">

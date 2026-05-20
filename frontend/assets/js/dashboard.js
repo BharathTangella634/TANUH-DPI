@@ -45,6 +45,20 @@
             : `${window.location.origin}/session-logger/logs/pf-stats`;
     }
 
+    function getVisitStatsUrl() {
+        const isLocal = window.location.hostname === 'localhost';
+        return isLocal
+            ? 'http://localhost:8002/logs/visit/stats'
+            : `${window.location.origin}/session-logger/logs/visit/stats`;
+    }
+
+    function getForgeryStatsUrl() {
+        const isLocal = window.location.hostname === 'localhost';
+        return isLocal
+            ? 'http://localhost:8004/stats'
+            : `${window.location.origin}/forgensic/stats`;
+    }
+
     function getVisitUrl() {
         const isLocal = window.location.hostname === 'localhost';
         return isLocal
@@ -143,14 +157,15 @@
 
     // ── Main render ──────────────────────────────────────────────────────────
     async function renderDashboard() {
-        let clinical = 0, insurance = 0, uniqueVisitors = 0, token_holders = 0;
+        let clinical = 0, insurance = 0;
         let states = [], districts = [];
-        let docsRedacted = 0, pfPageVisits = 0, pfUniqueVisitors = 0;
+        let docsRedacted = 0, pageVisits = 0, forgeryDocs = 0;
 
-        // Fetch both sources in parallel with independent timeouts
-        const [statsRes, pfStatsRes] = await Promise.allSettled([
+        const [statsRes, pfStatsRes, visitRes, forgeryRes] = await Promise.allSettled([
             fetch(getStatsUrl(), { signal: AbortSignal.timeout(8000) }),
             fetchPfStats(),
+            fetch(getVisitStatsUrl(), { signal: AbortSignal.timeout(6000) }),
+            fetch(getForgeryStatsUrl(), { signal: AbortSignal.timeout(6000) }),
         ]);
 
         if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
@@ -158,42 +173,48 @@
                 const stats    = await statsRes.value.json();
                 clinical       = stats.clinical_documents  || 0;
                 insurance      = stats.insurance_policies  || 0;
-                uniqueVisitors = stats.unique_visitors      || 0;
-                token_holders  = stats.token_holders        || 0;
                 states         = stats.states               || [];
                 districts      = stats.districts            || [];
             } catch(e) {
                 console.warn('[dashboard] Session Logger parse error', e);
             }
-        } else {
-            console.warn('[dashboard] Session Logger unreachable:', statsRes.reason || statsRes.value?.status);
         }
 
         if (pfStatsRes.status === 'fulfilled' && pfStatsRes.value) {
-            const pf         = pfStatsRes.value;
-            docsRedacted     = pf.docs_redacted   || 0;
-            pfPageVisits     = pf.page_visits      || 0;
-            pfUniqueVisitors = pf.unique_visitors  || 0;
-        } else {
-            console.warn('[dashboard] Privacy Filter stats unavailable — showing session-logger data only');
+            docsRedacted = pfStatsRes.value.docs_redacted || 0;
         }
 
-        const totalDocs = clinical + insurance + docsRedacted;
+        if (visitRes.status === 'fulfilled' && visitRes.value.ok) {
+            try {
+                const v = await visitRes.value.json();
+                pageVisits = v.nhcx_page_visits || 0;
+            } catch(e) {}
+        }
+
+        if (forgeryRes.status === 'fulfilled' && forgeryRes.value.ok) {
+            try {
+                const f = await forgeryRes.value.json();
+                forgeryDocs = f.docs_analyzed || 0;
+            } catch(e) {}
+        }
+
+        const totalDocs = clinical + insurance + docsRedacted + forgeryDocs;
 
         // Cards
-        animate('statPageVisitors',    pfPageVisits);       // PF page visits (live)
+        animate('statPageVisitors',    pageVisits);
         animate('statAppUsers',        totalDocs);
-        animate('statRegisteredUsers', token_holders);
         animate('statClinical',        clinical);
         animate('statInsurance',       insurance);
         animate('statDocsRedacted',    docsRedacted);
+        animate('statForgery',         forgeryDocs);
 
         // Footer
-        setCount('footerPageVisitors', pfPageVisits);
+        setCount('footerPageVisitors', pageVisits);
         setCount('footerAppUsers',     totalDocs);
         setCount('footerClinical',     clinical);
         setCount('footerInsurance',    insurance);
         setCount('footerDocsRedacted', docsRedacted);
+        setCount('footerForgery',      forgeryDocs);
 
         // Geo coverage
         const sCount = document.getElementById('stateCount');
