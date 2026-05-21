@@ -66,6 +66,7 @@
             else if (fileName === 'pdf2nhcx') fileName = 'insurance';
             else if (fileName === 'privacyfilter') fileName = 'privacyfilter';
             else if (fileName === 'forgerydetection') fileName = 'forgery';
+            else if (fileName === 'aboutus') fileName = 'about';
 
             const response = await fetch(`tabs/${fileName}.html`);
             if (response.ok) {

@@ -43,6 +43,7 @@ _executor = ThreadPoolExecutor(max_workers=JOB_EXECUTOR_WORKERS)
 _JOB_STATE: Dict[str, Dict[str, Any]] = {}
 _JOB_RESULTS: Dict[str, Dict[str, Any]] = {}
 _JOB_FILE_BYTES: Dict[str, Dict[str, Dict[str, Any]]] = {}
+_TOTAL_ANALYZED: int = 0
 
 
 def _now_iso() -> str:
@@ -274,6 +275,8 @@ def _process_job(job_id: str, file_path: Path, preset: str, ocr_enabled: bool) -
             avg_inference_seconds,
         )
         _JOB_RESULTS[job_id] = payload
+        global _TOTAL_ANALYZED
+        _TOTAL_ANALYZED += 1
 
         summary_payload = {
             "job_id": job_id,
@@ -314,6 +317,12 @@ def _process_job(job_id: str, file_path: Path, preset: str, ocr_enabled: bool) -
 async def health() -> Dict[str, Any]:
     _cleanup_jobs()
     return {"ok": True, "time": _now_iso()}
+
+
+@app.get("/stats")
+async def stats() -> Dict[str, Any]:
+    active = sum(1 for s in _JOB_STATE.values() if s.get("status") in ("queued", "processing"))
+    return {"docs_analyzed": _TOTAL_ANALYZED, "active_jobs": active}
 
 
 @app.post("/jobs", response_model=JobCreateResponse)

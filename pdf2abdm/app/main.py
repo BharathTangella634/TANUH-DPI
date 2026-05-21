@@ -458,7 +458,7 @@ async def submit_abdm(
     # Write PDF to shared volume so the Celery worker (separate container) can read it.
     # /tmp is local to this container; /app/pdf_uploads is mounted in both containers.
     import uuid as _uuid
-    shared_tmp_dir = "/app/pdf_uploads/tmp"
+    shared_tmp_dir = os.environ.get("PDF_UPLOAD_DIR", "/app/pdf_uploads/tmp")
     os.makedirs(shared_tmp_dir, exist_ok=True)
     tmp_path = os.path.join(shared_tmp_dir, f"{_uuid.uuid4().hex}_{filename}")
     with open(tmp_path, "wb") as tmp:
