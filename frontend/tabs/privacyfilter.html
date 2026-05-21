@@ -213,12 +213,12 @@
 <div class="api-section-box">
     <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">curl</h4>
     <div class="api-code-block">
-        <pre style="margin:0; white-space:pre-wrap;">TOKEN=$(curl -s -X POST https://privacy-filter.tanuh.org/api/demo-token \
+        <pre style="margin:0; white-space:pre-wrap;">TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/privacy-filter/api/demo-token \
   -H "Content-Type: application/json" \
   -d '{"name":"Your Name","email":"you@example.com"}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-curl -X POST https://privacy-filter.tanuh.org/api/redact \
+curl -X POST https://dpi-dev.tanuh.ai/privacy-filter/api/redact \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@/path/to/document.pdf"</pre>
         <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
@@ -231,14 +231,14 @@ curl -X POST https://privacy-filter.tanuh.org/api/redact \
         <pre style="margin:0; white-space:pre-wrap;">import requests
 
 resp = requests.post(
-    "https://privacy-filter.tanuh.org/api/demo-token",
+    "https://dpi-dev.tanuh.ai/privacy-filter/api/demo-token",
     json={"name": "Your Name", "email": "you@example.com"},
 )
 token = resp.json()["access_token"]
 
 with open("document.pdf", "rb") as f:
     r = requests.post(
-        "https://privacy-filter.tanuh.org/api/redact",
+        "https://dpi-dev.tanuh.ai/privacy-filter/api/redact",
         headers={"Authorization": f"Bearer {token}"},
         files={"file": ("document.pdf", f, "application/pdf")},
         timeout=600,

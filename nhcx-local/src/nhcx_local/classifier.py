@@ -101,7 +101,7 @@ def classify_document_text(text: str, llm=None) -> str:
     # Ambiguous -- ask the local LLM
     if llm is None:
         from nhcx_local.llm import get_llm
-        llm = get_llm(temperature=0.1, max_tokens=10)
+        llm = get_llm(temperature=0.3, max_tokens=10)
 
     try:
         response = llm.invoke([HumanMessage(

@@ -41,7 +41,7 @@ curl -X POST https://nhcxhackathon.tanuh.ai/privacy-filter/api/token \
   -d '{"name": "Your Name", "email": "you@example.com"}'
 
 # Forgery token
-curl -X POST https://dpi.tanuh.ai/forgensic/api/token \
+curl -X POST https://dpi-dev.tanuh.ai/forgensic/api/token \
   -H "Content-Type: application/json" \
   -d '{"name": "Your Name", "email": "you@example.com"}'
 ```
@@ -244,11 +244,11 @@ Three detection layers run on every request:
 ### `POST /forgensic/jobs` — Create Job
 
 ```bash
-TOKEN=$(curl -s -X POST https://dpi.tanuh.ai/forgensic/api/token \
+TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/forgensic/api/token \
   -H "Content-Type: application/json" \
   -d '{"name":"Test","email":"test@example.com"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-curl -X POST https://dpi.tanuh.ai/forgensic/jobs \
+curl -X POST https://dpi-dev.tanuh.ai/forgensic/jobs \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@document.pdf" \
   -F "ocr_enabled=true"

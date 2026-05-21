@@ -334,7 +334,7 @@
         <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">1. Request a token</h4>
         <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Returns an <code>access_token</code> valid for 24 hours.</p>
         <div class="api-code-block">
-            <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi.tanuh.ai/forgensic/api/token" \
+            <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/api/token" \
   -H "Content-Type: application/json" \
   -d '{"name": "Your Name", "email": "you@example.com"}'</pre>
             <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
@@ -344,7 +344,7 @@
         <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">2. Upload a document</h4>
         <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Send as <code>multipart/form-data</code>. Returns a <code>job_id</code>.</p>
         <div class="api-code-block">
-            <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi.tanuh.ai/forgensic/jobs" \
+            <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/jobs" \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@/path/to/document.pdf" \
   -F "ocr_enabled=true"</pre>
@@ -356,7 +356,7 @@
         <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Poll until <code>status</code> is <code>"complete"</code> or <code>"error"</code>.</p>
         <div class="api-code-block">
             <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
-  "https://dpi.tanuh.ai/forgensic/jobs/JOB_ID"
+  "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID"
 
 # Response:
 {
@@ -372,10 +372,10 @@
         <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Results include preview URLs; fetch them with the same token.</p>
         <div class="api-code-block">
             <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
-  "https://dpi.tanuh.ai/forgensic/jobs/JOB_ID/results"
+  "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID/results"
 
 curl -L -H "Authorization: Bearer $TOKEN" \
-  "https://dpi.tanuh.ai/forgensic/jobs/JOB_ID/files/preview_document_page_1.jpg" \
+  "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID/files/preview_document_page_1.jpg" \
   -o preview.png</pre>
             <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
         </div>
@@ -388,7 +388,7 @@ curl -L -H "Authorization: Bearer $TOKEN" \
     <div class="api-code-block">
         <pre style="margin:0; white-space:pre-wrap;">import time, requests
 
-BASE = "https://dpi.tanuh.ai/forgensic"
+BASE = "https://dpi-dev.tanuh.ai/forgensic"
 
 token = requests.post(
     f"{BASE}/api/token",
