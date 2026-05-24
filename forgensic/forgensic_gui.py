@@ -681,10 +681,19 @@ class ForgensicApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Forgensic – Document Integrity Analyser")
+        self.title("Forgensic – Document Forgery Detection")
         self.geometry("1440x920")
         self.minsize(1200, 780)
         self.configure(fg_color=BG)
+
+        try:
+            from PIL import ImageTk, Image
+            icon_img = ImageTk.PhotoImage(Image.open(get_asset_path("tanuh.png")))
+            self.iconphoto(False, icon_img)
+            if sys.platform.startswith("win"):
+                self.iconbitmap(get_asset_path("tanuh.ico"))
+        except Exception:
+            pass
 
         self.file_path              = None
         self.output_dir             = Path.home() / "Forgensic_Outputs"
@@ -742,8 +751,8 @@ class ForgensicApp(ctk.CTk):
 
         ctk.CTkButton(
             right, text="ℹ  About",
-            font=ctk.CTkFont(size=12),
-            fg_color="transparent", text_color=TEXT_MUTED,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color="transparent", text_color="black",
             hover_color=BG, border_color=BORDER, border_width=1,
             width=80, height=30,
             command=self._open_about
@@ -762,13 +771,13 @@ class ForgensicApp(ctk.CTk):
         ft.grid(row=2, column=0, sticky="ew")
         ft.grid_propagate(False)
         ctk.CTkLabel(
-            ft, text="© 2026 Tanuh AI. All rights reserved. Should be © 2026 TANUH. All rights reserved.",
-            font=ctk.CTkFont(size=11), text_color=TEXT_MUTED
-        ).pack(side="left", padx=24, pady=4)
+            ft, text="© 2026 TANUH AI. All rights reserved. Should be © 2026 TANUH. All rights reserved.",
+            font=ctk.CTkFont(size=11, weight="bold"), text_color=TEXT_MUTED
+        ).place(relx=0.5, rely=0.5, anchor="center")
         ctk.CTkLabel(
             ft, text="Offline · No data transmitted",
             font=ctk.CTkFont(size=11), text_color=STEP_IDLE
-        ).pack(side="right", padx=24, pady=4)
+        ).pack(side="right", padx=24, pady=8)
 
     # ── CONTENT ───────────────────────────────────────────────────────────────
     def _build_content(self):
@@ -1327,7 +1336,7 @@ if __name__ == "__main__":
     
     # If arguments are passed, run in CLI mode
     if len(sys.argv) > 1:
-        parser = argparse.ArgumentParser(description="Forgensic - Offline Document Integrity Analyser")
+        parser = argparse.ArgumentParser(description="Forgensic - Offline Document Forgery Detection")
         parser.add_argument("--input", "-i", required=True, help="Path to input document")
         parser.add_argument("--output", "-o", default=None, help="Output folder to save results")
         args = parser.parse_args()
