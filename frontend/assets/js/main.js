@@ -4,32 +4,31 @@
 (function() {
     "use strict";
 
-    // ── AI Status Badge ─────────────────────────────────────────────────────────
-    async function checkAiStatus() {
-        const badge  = document.getElementById('aiBadge');
-        const textEl = document.getElementById('aiBadgeText');
+    // ── Per-Service AI Status Badges ────────────────────────────────────────────
+    async function checkServiceHealth(badgeId, textId, url, onLabel, offLabel) {
+        const badge = document.getElementById(badgeId);
+        const textEl = document.getElementById(textId);
         if (!badge || !textEl) return;
-
-        const isLocal = window.location.hostname === 'localhost';
-        const base1 = isLocal ? 'http://localhost:8000' : `${window.location.origin}/pdf2abdm`;
-        const base2 = isLocal ? 'http://localhost:8001' : `${window.location.origin}/pdf2nhcx`;
-
         try {
-            const [r1, r2] = await Promise.all([
-                fetch(`${base1}/health`, { method: 'GET', signal: AbortSignal.timeout(12000) }),
-                fetch(`${base2}/health`, { method: 'GET', signal: AbortSignal.timeout(12000) })
-            ]);
-
-            if (r1.ok && r2.ok) {
+            const r = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(12000) });
+            if (r.ok) {
                 badge.classList.remove('ai-badge-off');
-                textEl.textContent = 'AI ON';
-            } else {
-                throw new Error('Down');
-            }
+                textEl.textContent = onLabel;
+            } else { throw new Error('Down'); }
         } catch (err) {
             badge.classList.add('ai-badge-off');
-            textEl.textContent = 'AI OFF';
+            textEl.textContent = offLabel;
         }
+    }
+
+    function checkAllServiceBadges() {
+        const isLocal = window.location.hostname === 'localhost';
+        const abdm = isLocal ? 'http://localhost:8000' : `${window.location.origin}/pdf2abdm`;
+        const nhcx = isLocal ? 'http://localhost:8001' : `${window.location.origin}/pdf2nhcx`;
+        const pf   = isLocal ? 'http://localhost:8003' : `${window.location.origin}/privacy-filter`;
+        checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, 'AI ON', 'AI OFF');
+        checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, 'AI ON', 'AI OFF');
+        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'CPU Ready', 'Offline');
     }
 
     // ── Tab Management ──────────────────────────────────────────────────────────
@@ -54,8 +53,8 @@
             if ((tabName === 'PDF2FHIR' || tabName === 'PDF2NHCX' || tabName === 'ForgeryDetection') && window.initApiAccess) {
                 window.initApiAccess();
             }
+            checkAllServiceBadges();
 
-            // Hide the AI status badge on the Forgery Detection tab — Forgensic uses no AI.
             const aiBadgeBar = document.querySelector('.header-ai-bar');
             if (aiBadgeBar) {
                 aiBadgeBar.style.display = (tabName === 'ForgeryDetection') ? 'none' : '';
@@ -154,16 +153,28 @@
         });
     };
 
+    // ── Guide Sidebar Navigation (show/hide sections) ────────────────────────
+    window.guideNav = function(containerId, sectionId, link) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.querySelectorAll('.guide-section').forEach(s => s.classList.remove('active'));
+        const section = document.getElementById(sectionId);
+        if (section) section.classList.add('active');
+        container.querySelectorAll('.guide-sidebar a').forEach(a => a.classList.remove('active'));
+        if (link) link.classList.add('active');
+        const content = container.querySelector('.guide-content');
+        if (content) content.scrollTop = 0;
+    };
+
     // Expose Tab functions
     window.openTab = openTab;
 
     // Init
     document.addEventListener('DOMContentLoaded', () => {
-        checkAiStatus();
-        setInterval(checkAiStatus, 30000);
         openTab(null, 'PDF2FHIR');
         document.getElementById('navClinical')?.classList.add('active');
         if (window.initDashboard) window.initDashboard();
+        setInterval(checkAllServiceBadges, 30000);
     });
 
 })();
