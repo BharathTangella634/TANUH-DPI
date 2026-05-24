@@ -142,7 +142,7 @@ TEAM_MEMBERS = [
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def get_asset_path(filename):
     try:
-        base = sys._MEIPASS
+        base = os.path.join(sys._MEIPASS, "frontend", "assets")
     except Exception:
         base = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

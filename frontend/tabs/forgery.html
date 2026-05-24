@@ -6,6 +6,9 @@
     <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-api',this)">
         <i class="fas fa-code"></i> API Access
     </button>
+    <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-runlocally',this)">
+        <i class="fas fa-download"></i> Run Locally
+    </button>
     <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-docs',this)">
         <i class="fas fa-book"></i> User Guide
     </button>
@@ -211,6 +214,82 @@
 </div>
 
 </div><!-- /fg-sub-team -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SUB: Run Locally (Forgery Detection) -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="fg-sub-runlocally" class="sub-content" style="display:none">
+
+<div class="tab-header">
+    <div class="tab-header-text">
+        <h2><i class="fas fa-download" style="color:var(--primary)"></i> Run Locally (Offline Mode)</h2>
+        <p>Download a single executable for your OS. No Python, no pip, no cloud APIs. All data stays on your machine.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;">
+    <a href="" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+        <i class="fab fa-linux" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
+        <h3 style="margin:0 0 6px 0; color:#0f172a;">Linux x86_64</h3>
+        <p style="margin:0; color:#64748b; font-size:14px;">Binary</p>
+    </a>
+    <a href="" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+        <i class="fab fa-linux" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
+        <h3 style="margin:0 0 6px 0; color:#0f172a;">Linux ARM64</h3>
+        <p style="margin:0; color:#64748b; font-size:14px;">Binary</p>
+    </a>
+    <a href="" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+        <i class="fab fa-windows" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
+        <h3 style="margin:0 0 6px 0; color:#0f172a;">Windows</h3>
+        <p style="margin:0; color:#64748b; font-size:14px;">Portable EXE</p>
+    </a>
+    <a href="" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+        <i class="fab fa-apple" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
+        <h3 style="margin:0 0 6px 0; color:#0f172a;">macOS</h3>
+        <p style="margin:0; color:#64748b; font-size:14px;">Binary</p>
+    </a>
+    </a>
+</div>
+
+<div style="background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); padding:25px; margin:20px 0;">
+    <h3 style="margin-bottom:20px;">Setup Steps (All Platforms)</h3>
+
+    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+        <h4 style="margin:0 0 8px 0; color:#0f766e;">1. Download Executable</h4>
+        <p style="margin:0; color:#0f766e; font-size:14px;">
+            Download the standalone binary for your OS from the links above.
+        </p>
+    </div>
+
+    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+        <h4 style="margin:0 0 8px 0; color:#0f766e;">2. Unzip &amp; Make Executable</h4>
+        <p style="margin:0; color:#0f766e; font-size:14px;">
+            Extract the ZIP file. On Linux/Mac run: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">chmod +x ForgensicApp*</code>
+        </p>
+    </div>
+
+    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+        <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Run GUI</h4>
+        <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
+            Simply double-click the executable to launch the beautiful offline Graphical User Interface.
+        </p>
+    </div>
+
+    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+        <h4 style="margin:0 0 8px 0; color:#0f766e;">4. Run CLI (Optional)</h4>
+        <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
+            Or run via terminal: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./ForgensicApp -i document.pdf -o ./output</code>
+        </p>
+    </div>
+
+    <div style="padding:12px 15px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0;">
+        <p style="margin:0; color:#92400e; font-size:14px;">
+            <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. Zero cloud API calls.
+        </p>
+    </div>
+</div>
+
+</div><!-- /fg-sub-runlocally -->
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <!-- SUB: API Access (Forgery Detection) -->
@@ -480,6 +559,7 @@ if preview_url:
         <a onclick="guideNav('fg-guide-container','fgg-formats',this)"><i class="fas fa-file-alt"></i> Supported Formats</a>
         <a onclick="guideNav('fg-guide-container','fgg-privacy',this)"><i class="fas fa-shield-alt"></i> Privacy &amp; Data</a>
         <div class="guide-sidebar-title">Integrate</div>
+        <a onclick="guideNav('fg-guide-container','fgg-runlocally',this)"><i class="fas fa-download"></i> Run Locally</a>
         <a onclick="guideNav('fg-guide-container','fgg-api',this)"><i class="fas fa-code"></i> API Reference</a>
         <a onclick="guideNav('fg-guide-container','fgg-config',this)"><i class="fas fa-cog"></i> Configuration</a>
         <a onclick="guideNav('fg-guide-container','fgg-source',this)"><i class="fab fa-github"></i> Source Code</a>
@@ -622,6 +702,54 @@ if preview_url:
                 <li><strong>No persistence</strong> &mdash; no document content is written to disk or database</li>
                 <li><strong>Job TTL</strong> &mdash; jobs automatically purged after configurable TTL window</li>
             </ul>
+        </div>
+
+        <!-- Run Locally -->
+        <div id="fgg-runlocally" class="guide-section">
+            <h2>Run Locally (Offline Mode)</h2>
+            <p>Download a single executable file for your operating system. No Python, no pip, no cloud APIs needed. All processing happens entirely on your machine with full patient data confidentiality.</p>
+
+            <div class="guide-callout guide-callout-info">
+                <strong>Zero Setup</strong>
+                Unlike the LLM models, Forgensic runs purely on CPU and requires zero installation. Simply download and double-click to start!
+            </div>
+
+            <h3>Download</h3>
+            <div class="guide-card-grid">
+                <a href="" download class="guide-card" style="text-decoration:none;text-align:center;">
+                    <div class="card-icon"><i class="fab fa-linux"></i></div>
+                    <h4>Linux x86_64</h4>
+                    <p>Binary</p>
+                </a>
+                <a href="" download class="guide-card" style="text-decoration:none;text-align:center;">
+                    <div class="card-icon"><i class="fab fa-linux"></i></div>
+                    <h4>Linux ARM64</h4>
+                    <p>Binary</p>
+                </a>
+                <a href="" download class="guide-card" style="text-decoration:none;text-align:center;">
+                    <div class="card-icon"><i class="fab fa-windows"></i></div>
+                    <h4>Windows</h4>
+                    <p>Portable EXE</p>
+                </a>
+                <a href="" download class="guide-card" style="text-decoration:none;text-align:center;">
+                    <div class="card-icon"><i class="fab fa-apple"></i></div>
+                    <h4>macOS</h4>
+                    <p>Binary</p>
+                </a>
+            </div>
+
+            <h3>Setup Steps</h3>
+            <div class="guide-pipeline">
+                <div class="guide-pipeline-step"><h4>1. Download Executable</h4><p>Download the standalone binary for your OS from the links above.</p></div>
+                <div class="guide-pipeline-step"><h4>2. Unzip &amp; Make Executable</h4><p>Extract the ZIP file. On Linux/Mac: <code>chmod +x ForgensicApp*</code></p></div>
+                <div class="guide-pipeline-step"><h4>3. Run GUI</h4><p>Double-click the executable to launch the beautiful offline Graphical User Interface.</p></div>
+                <div class="guide-pipeline-step"><h4>4. Run CLI (Optional)</h4><p>Or use terminal: <code>./ForgensicApp -i document.pdf -o ./output</code></p></div>
+            </div>
+
+            <div class="guide-callout guide-callout-success">
+                <strong>Source code is not exposed</strong>
+                The executable bundles everything into a compressed binary. Users cannot see or modify the pipeline source code.
+            </div>
         </div>
 
         <!-- API Reference -->
