@@ -1,148 +1,117 @@
 name: Deploy to VM
 
-# ─── Trigger ────────────────────────────────────────────────────────────────
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
-# ─── Concurrency guard ──────────────────────────────────────────────────────
-# Prevents two deployments from running in parallel on the same VM.
 concurrency:
   group: deploy-production
-  cancel-in-progress: false   # queue, don't cancel — let the first finish
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: SSH Deploy → 35.200.133.45
+    name: Deploy → Production VM
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      # ── 1. Write SSH private key from GitHub Secret ───────────────────────
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+      - name: Pull latest code on VM
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          command_timeout: 5m
+          script: |
+            set -e
+            cd ~/TANUH-DPI
+            git fetch origin main
+            git reset --hard origin/main
+            echo "Code updated to: $(git rev-parse --short HEAD)"
 
-      # ── 2. Pull latest code on the VM ────────────────────────────────────
-      - name: Pull latest code
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'ENDSSH'
-              set -e
-              echo "📥 Pulling latest code..."
-              cd /app/NHCX_HACKATHON
-              git fetch origin main
-              git reset --hard origin/main
-              echo "✅ Code updated to commit: $(git rev-parse --short HEAD)"
-          ENDSSH
-
-      # ── 3. Write credential files from GitHub Secrets ─────────────────────
-      # Secrets are never in git (.gitignore). We write them directly to the
-      # compose working directory so Docker bind-mounts get a FILE, not a dir.
-      # SSL PEM files are stored as base64-encoded secrets to preserve newlines.
-      - name: Write credential files to VM
+      - name: Write .env from secrets
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          envs: ABDM_KEY,NHCX_KEY,FORGENSIC_KEY,DB_USER,DB_PASS
+          script: |
+            cd ~/TANUH-DPI
+            cat > .env << EOF
+            ABDM_AUTH_ENABLED=false
+            NHCX_AUTH_ENABLED=false
+            ABDM_SECRET_KEY=${ABDM_KEY}
+            NHCX_SECRET_KEY=${NHCX_KEY}
+            ABDM_TOKEN_EXPIRY_DAYS=1
+            NHCX_TOKEN_EXPIRY_DAYS=1
+            FORGENSIC_SECRET_KEY=${FORGENSIC_KEY}
+            FORGENSIC_AUTH_ENABLED=false
+            FORGENSIC_TOKEN_EXPIRY_DAYS=1
+            MYSQL_USER=${DB_USER}
+            MYSQL_PASSWORD=${DB_PASS}
+            EOF
+            chmod 600 .env
+            echo ".env written"
         env:
-          GCP_SA_JSON: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
-          GCS_SA_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
-          SERVER_CA_B64: ${{ secrets.MYSQL_SERVER_CA_B64 }}
-          CLIENT_CERT_B64: ${{ secrets.MYSQL_CLIENT_CERT_B64 }}
-          CLIENT_KEY_B64: ${{ secrets.MYSQL_CLIENT_KEY_B64 }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=30 \
-            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-            "TARGET=/app/NHCX_HACKATHON
+          ABDM_KEY: ${{ secrets.ABDM_SECRET_KEY }}
+          NHCX_KEY: ${{ secrets.NHCX_SECRET_KEY }}
+          FORGENSIC_KEY: ${{ secrets.FORGENSIC_SECRET_KEY }}
+          DB_USER: ${{ secrets.MYSQL_USER }}
+          DB_PASS: ${{ secrets.MYSQL_PASSWORD }}
 
-            # ── Remove all stale directory placeholders ──────────────────────
-            for f in gcp-service-account.json gcs-service-account.json \
-                     server-ca.pem client-cert.pem client-key.pem; do
-              [ -d \"\$TARGET/\$f\" ] && sudo rm -rf \"\$TARGET/\$f\" && echo \"Removed stale dir: \$f\" || true
-            done
+      - name: Write GCP service account from secret
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          envs: GCP_SA_B64
+          script: |
+            cd ~/TANUH-DPI
+            echo "${GCP_SA_B64}" | base64 -d > gcp-service-account.json
+            chmod 600 gcp-service-account.json
+            echo "gcp-service-account.json written"
+        env:
+          GCP_SA_B64: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON_B64 }}
 
-            # ── Write GCP/GCS JSON credentials ──────────────────────────────
-            echo '$GCP_SA_JSON' | sudo tee \$TARGET/gcp-service-account.json > /dev/null
-            echo '$GCS_SA_JSON' | sudo tee \$TARGET/gcs-service-account.json > /dev/null
-            sudo chmod 600 \$TARGET/gcp-service-account.json \$TARGET/gcs-service-account.json
-
-            # ── Write Cloud SQL SSL PEM files (stored as base64 secrets) ────
-            echo '$SERVER_CA_B64'   | base64 -d | sudo tee \$TARGET/server-ca.pem  > /dev/null
-            echo '$CLIENT_CERT_B64' | base64 -d | sudo tee \$TARGET/client-cert.pem > /dev/null
-            echo '$CLIENT_KEY_B64'  | base64 -d | sudo tee \$TARGET/client-key.pem  > /dev/null
-            sudo chmod 600 \$TARGET/client-key.pem \$TARGET/client-cert.pem
-
-            echo '✅ All credential files written:'
-            sudo file \$TARGET/gcp-service-account.json \$TARGET/gcs-service-account.json \
-                      \$TARGET/server-ca.pem \$TARGET/client-cert.pem \$TARGET/client-key.pem" \
-            GCP_SA_JSON="$GCP_SA_JSON" GCS_SA_JSON="$GCS_SA_JSON" \
-            SERVER_CA_B64="$SERVER_CA_B64" CLIENT_CERT_B64="$CLIENT_CERT_B64" CLIENT_KEY_B64="$CLIENT_KEY_B64"
-
-      # ── 4. Rebuild & restart Docker services ─────────────────────────────
       - name: Rebuild & restart containers
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=60 \
-            -o ServerAliveCountMax=20 \
-            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'ENDSSH'
-              set -e
-              cd /app/NHCX_HACKATHON
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ~/TANUH-DPI
+            docker compose build --parallel
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            echo "Deployment complete!"
+            docker compose ps
 
-              echo "🐳 Rebuilding changed services..."
-              docker compose build --parallel
-
-              echo "🚀 Restarting containers..."
-              docker compose up -d --remove-orphans
-
-              echo "🧹 Pruning unused Docker images..."
-              docker image prune -f
-
-              echo "✅ Deployment complete!"
-              docker compose ps
-          ENDSSH
-
-      # ── 5. Smoke-test health endpoints ───────────────────────────────────
-      - name: Smoke test health endpoints
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'ENDSSH'
-              echo "🩺 Waiting for containers to be ready..."
-              sleep 10
-
-              check() {
-                local name="$1" url="$2"
-                if curl -sf --max-time 10 "$url" > /dev/null; then
-                  echo "  ✅ $name is healthy"
-                else
-                  echo "  ❌ $name health check FAILED at $url"
-                  exit 1
-                fi
-              }
-
-              check "ABDM API"       "http://localhost:8000/health"
-              check "NHCX API"       "http://localhost:8001/health"
-              check "Frontend"       "http://localhost:8080"
-              check "Session Logger" "http://localhost:8002/health"
-          ENDSSH
-
-      # ── 6. Always remove the private key from the runner ─────────────────
-      - name: Clean up SSH key
-        if: always()
-        run: rm -f ~/.ssh/deploy_key
-
-      # ── 7. Report failure ─────────────────────────────────────────────────
-      - name: Report failure
-        if: failure()
-        run: |
-          echo "::error::Deployment to ${{ secrets.VM_HOST }} FAILED — see logs above."
-          echo "Commit : ${{ github.sha }}"
-          echo "Author : ${{ github.actor }}"
+      - name: Health check
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            sleep 10
+            PASS=true
+            for svc in "ABDM API|http://localhost:8000/health" \
+                       "NHCX API|http://localhost:8001/health" \
+                       "Frontend|http://localhost:8080" \
+                       "Session Logger|http://localhost:8002/health" \
+                       "Privacy Filter|http://localhost:8003/api/health" \
+                       "Forgensic|http://localhost:8004/health"; do
+              NAME="${svc%%|*}"
+              URL="${svc##*|}"
+              if curl -sf --max-time 10 "$URL" > /dev/null; then
+                echo "  $NAME healthy"
+              else
+                echo "  $NAME FAILED at $URL"
+                PASS=false
+              fi
+            done
+            $PASS || exit 1

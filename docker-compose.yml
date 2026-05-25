@@ -120,6 +120,19 @@ services:
       - pdf2abdm
       - pdf2nhcx
 
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
+    container_name: cloud-sql-proxy
+    command:
+      - "bcd-prototypes:asia-south1:tanuh-bcd-questionnaire-dev"
+      - "--address=0.0.0.0"
+      - "--port=3306"
+    volumes:
+      - ./gcp-service-account.json:/app/gcp-service-account.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-service-account.json
+    restart: unless-stopped
+
   session-logger:
     build:
       context: .
@@ -132,12 +145,15 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - MYSQL_USER=${MYSQL_USER:-}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
+      - MYSQL_HOST=cloud-sql-proxy
+      - MYSQL_DB=dpi_session_logger
       - SQLITE_DATA_DIR=/app/data
     volumes:
-      - ./server-ca.pem:/app/server-ca.pem:ro
-      - ./client-cert.pem:/app/client-cert.pem:ro
-      - ./client-key.pem:/app/client-key.pem:ro
       - ./session_logger_data:/app/data
+    depends_on:
+      - cloud-sql-proxy
 
   privacy-filter:
     build:

@@ -1,0 +1,170 @@
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HERO SECTION -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="home-hero">
+    <div class="home-hero-content">
+        <h1 class="home-hero-title">Digital Public Infrastructure</h1>
+        <p class="home-hero-subtitle">AI-powered tools for healthcare document processing, privacy protection, and document integrity — built by TANUH AI Centre of Excellence at IISc Bangalore.</p>
+        <div class="home-hero-actions">
+            <button class="home-btn-primary" onclick="openTab(null,'PDF2FHIR'); document.getElementById('navClinical').classList.add('active');">
+                <i class="fas fa-rocket"></i> Get Started
+            </button>
+            <button class="home-btn-secondary" onclick="openTab(null,'Dashboard'); document.getElementById('navDashboard').classList.add('active');">
+                <i class="fas fa-chart-bar"></i> View Dashboard
+            </button>
+        </div>
+    </div>
+    <div class="home-hero-visual">
+        <div class="home-hero-icon-grid">
+            <div class="home-float-icon" style="--delay:0s"><i class="fas fa-file-medical"></i></div>
+            <div class="home-float-icon" style="--delay:0.3s"><i class="fas fa-shield-alt"></i></div>
+            <div class="home-float-icon" style="--delay:0.6s"><i class="fas fa-user-shield"></i></div>
+            <div class="home-float-icon" style="--delay:0.9s"><i class="fas fa-search-plus"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SERVICES GRID -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="home-section">
+    <h2 class="home-section-title">Our Services</h2>
+    <p class="home-section-desc">Four specialized AI tools that work together to create a secure, end-to-end healthcare document processing ecosystem.</p>
+
+    <div class="home-services-grid">
+        <div class="home-service-card" onclick="openTab(null,'PDF2FHIR'); document.getElementById('navClinical').classList.add('active');">
+            <div class="home-service-icon" style="--accent:#0ea5e9"><i class="fas fa-file-medical"></i></div>
+            <h3>Clinical Document</h3>
+            <p>Convert clinical PDFs into structured FHIR R4 bundles using LLM-powered extraction. Supports discharge summaries, lab reports, and prescriptions.</p>
+            <div class="home-service-tags">
+                <span>PDF → FHIR R4</span>
+                <span>ABDM Compatible</span>
+                <span>LLM Powered</span>
+            </div>
+            <span class="home-service-link">Open Tool <i class="fas fa-arrow-right"></i></span>
+        </div>
+
+        <div class="home-service-card" onclick="openTab(null,'PDF2NHCX'); document.getElementById('navInsurance').classList.add('active');">
+            <div class="home-service-icon" style="--accent:#8b5cf6"><i class="fas fa-shield-alt"></i></div>
+            <h3>Insurance Policy</h3>
+            <p>Extract and structure insurance policy documents into NHCX-compliant FHIR bundles for seamless claims processing and interoperability.</p>
+            <div class="home-service-tags">
+                <span>PDF → NHCX</span>
+                <span>Claims Ready</span>
+                <span>LLM Powered</span>
+            </div>
+            <span class="home-service-link">Open Tool <i class="fas fa-arrow-right"></i></span>
+        </div>
+
+        <div class="home-service-card" onclick="openTab(null,'PrivacyFilter'); document.getElementById('navPrivacyFilter').classList.add('active');">
+            <div class="home-service-icon" style="--accent:#f59e0b"><i class="fas fa-user-shield"></i></div>
+            <h3>Privacy Filter</h3>
+            <p>Detect and redact PII across PDFs, images, DICOM, and text using a three-layer AI pipeline — ML model, NER, and regex rules.</p>
+            <div class="home-service-tags">
+                <span>PII Detection</span>
+                <span>Multi-format</span>
+                <span>3-Layer AI</span>
+            </div>
+            <span class="home-service-link">Open Tool <i class="fas fa-arrow-right"></i></span>
+        </div>
+
+        <div class="home-service-card" onclick="openTab(null,'ForgeryDetection'); document.getElementById('navForgery').classList.add('active');">
+            <div class="home-service-icon" style="--accent:#ef4444"><i class="fas fa-search-plus"></i></div>
+            <h3>Forgery Detection</h3>
+            <p>Analyze documents for tampering, splicing, and manipulation using classical forensic techniques — ELA, noise analysis, and metadata inspection.</p>
+            <div class="home-service-tags">
+                <span>Tamper Detection</span>
+                <span>Forensic Analysis</span>
+                <span>Multi-method</span>
+            </div>
+            <span class="home-service-link">Open Tool <i class="fas fa-arrow-right"></i></span>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HOW IT WORKS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="home-section">
+    <h2 class="home-section-title">How It Works</h2>
+    <p class="home-section-desc">A simple three-step workflow for all services.</p>
+
+    <div class="home-steps">
+        <div class="home-step">
+            <div class="home-step-number">1</div>
+            <h4>Upload Document</h4>
+            <p>Upload your clinical PDF, insurance policy, image, or text file through the web interface or API.</p>
+        </div>
+        <div class="home-step-arrow"><i class="fas fa-chevron-right"></i></div>
+        <div class="home-step">
+            <div class="home-step-number">2</div>
+            <h4>AI Processing</h4>
+            <p>Our AI models analyze, extract, classify, or detect — depending on the service — delivering results in seconds.</p>
+        </div>
+        <div class="home-step-arrow"><i class="fas fa-chevron-right"></i></div>
+        <div class="home-step">
+            <div class="home-step-number">3</div>
+            <h4>Get Results</h4>
+            <p>Download structured FHIR bundles, redacted documents, or forensic reports. Integrate via REST API for automation.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- KEY FEATURES -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="home-section">
+    <h2 class="home-section-title">Key Features</h2>
+    <div class="home-features-grid">
+        <div class="home-feature">
+            <i class="fas fa-lock"></i>
+            <h4>Privacy-First</h4>
+            <p>All services can run locally. No data leaves your infrastructure. Run Locally executables available for offline use.</p>
+        </div>
+        <div class="home-feature">
+            <i class="fas fa-code"></i>
+            <h4>API Access</h4>
+            <p>Every service exposes a REST API with demo token authentication. Integrate into your existing workflows programmatically.</p>
+        </div>
+        <div class="home-feature">
+            <i class="fas fa-layer-group"></i>
+            <h4>ABDM & NHCX Compliant</h4>
+            <p>Clinical and Insurance outputs follow ABDM FHIR R4 and NHCX standards for seamless interoperability.</p>
+        </div>
+        <div class="home-feature">
+            <i class="fas fa-download"></i>
+            <h4>Run Locally</h4>
+            <p>Download standalone executables for all four services. Process sensitive documents completely offline on your own machine.</p>
+        </div>
+        <div class="home-feature">
+            <i class="fas fa-tachometer-alt"></i>
+            <h4>Real-time Dashboard</h4>
+            <p>Monitor usage, track processed documents, and view service health across all tools from a unified dashboard.</p>
+        </div>
+        <div class="home-feature">
+            <i class="fab fa-github"></i>
+            <h4>Open Source</h4>
+            <p>Built transparently with open-source models and tools. Source code available for review, contribution, and self-hosting.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ABOUT TANUH -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="home-about">
+    <div class="home-about-content">
+        <h2>About TANUH</h2>
+        <p><strong>TANUH</strong> (Translational AI for Networked Universal Healthcare) is a Section 8 not-for-profit promoted by the <strong>Indian Institute of Science (IISc)</strong>, Bangalore. Funded by the Ministry of Education as an <strong>AI Centre of Excellence in Healthcare</strong>, TANUH builds secure, AI-driven Digital Public Infrastructure for India's healthcare ecosystem.</p>
+        <!-- <div class="home-about-links">
+            <a href="https://tanuh.ai" target="_blank"><i class="fas fa-globe"></i> tanuh.ai</a>
+            <a href="https://www.linkedin.com/company/tanuh-aicoe/" target="_blank"><i class="fab fa-linkedin"></i> LinkedIn</a>
+            <a href="https://github.com/tanuh-bcd" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+        </div> -->
+    </div>
+    <div class="home-about-logos">
+        <img src="assets/tanuh.png" alt="TANUH" class="logo">
+        <img src="assets/MoE_Logo.svg" alt="Ministry of Education" class="logo">
+        <img src="assets/IISc_Logo.png" alt="IISc" class="logo">
+    </div>
+</div>

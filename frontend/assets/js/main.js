@@ -28,7 +28,7 @@
         const pf   = isLocal ? 'http://localhost:8003' : `${window.location.origin}/privacy-filter`;
         checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, 'AI ON', 'AI OFF');
         checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, 'AI ON', 'AI OFF');
-        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'CPU Ready', 'Offline');
+        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'AI ON', 'AI OFF');
     }
 
     // ── Tab Management ──────────────────────────────────────────────────────────
@@ -69,7 +69,8 @@
         if (!el) return;
         try {
             let fileName = tabId.toLowerCase();
-            if (fileName === 'pdf2fhir') fileName = 'clinical';
+            if (fileName === 'home') fileName = 'home';
+            else if (fileName === 'pdf2fhir') fileName = 'clinical';
             else if (fileName === 'pdf2nhcx') fileName = 'insurance';
             else if (fileName === 'privacyfilter') fileName = 'privacyfilter';
             else if (fileName === 'forgerydetection') fileName = 'forgery';
@@ -171,8 +172,8 @@
 
     // Init
     document.addEventListener('DOMContentLoaded', () => {
-        openTab(null, 'PDF2FHIR');
-        document.getElementById('navClinical')?.classList.add('active');
+        openTab(null, 'Home');
+        document.getElementById('navHome')?.classList.add('active');
         if (window.initDashboard) window.initDashboard();
         setInterval(checkAllServiceBadges, 30000);
     });

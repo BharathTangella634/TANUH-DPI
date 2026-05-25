@@ -41,12 +41,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ── Table bootstrap ───────────────────────────────────────────────────────────
-if USE_SQLITE:
-    Base.metadata.create_all(bind=engine)
-    logger.info("session_logger started — SQLite tables created.")
-else:
-    AuthToken.__table__.create(engine, checkfirst=True)
-    logger.info("session_logger started — auth_tokens table ensured.")
+Base.metadata.create_all(bind=engine)
+logger.info("session_logger started — tables created/verified (%s).",
+            "SQLite" if USE_SQLITE else "MySQL")
 
 import hashlib
 from datetime import datetime, timedelta
@@ -480,8 +477,13 @@ def visit_stats(db: Session = Depends(get_db)):
                 text("SELECT DISTINCT state FROM page_visits WHERE state IS NOT NULL AND state != ''")
             ).fetchall()
         ]
-        return {"nhcx_page_visits": total, "states": states}
+        cities = [
+            r[0] for r in db.execute(
+                text("SELECT DISTINCT city FROM page_visits WHERE city IS NOT NULL AND city != ''")
+            ).fetchall()
+        ]
+        return {"nhcx_page_visits": total, "states": states, "cities": cities}
     except Exception as exc:
         logger.warning("[visit-stats] query failed: %s", exc)
-        return {"nhcx_page_visits": 0, "states": []}
+        return {"nhcx_page_visits": 0, "states": [], "cities": []}
 

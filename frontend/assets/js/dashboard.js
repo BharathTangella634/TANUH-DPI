@@ -188,6 +188,10 @@
             try {
                 const v = await visitRes.value.json();
                 pageVisits = v.nhcx_page_visits || 0;
+                const visitStates = v.states || [];
+                const visitCities = v.cities || [];
+                states = [...new Set([...states, ...visitStates])];
+                districts = [...new Set([...districts, ...visitCities])];
             } catch(e) {}
         }
 
@@ -198,23 +202,12 @@
             } catch(e) {}
         }
 
-        const totalDocs = clinical + insurance + docsRedacted + forgeryDocs;
-
         // Cards
         animate('statPageVisitors',    pageVisits);
-        animate('statAppUsers',        totalDocs);
         animate('statClinical',        clinical);
         animate('statInsurance',       insurance);
         animate('statDocsRedacted',    docsRedacted);
         animate('statForgery',         forgeryDocs);
-
-        // Footer
-        setCount('footerPageVisitors', pageVisits);
-        setCount('footerAppUsers',     totalDocs);
-        setCount('footerClinical',     clinical);
-        setCount('footerInsurance',    insurance);
-        setCount('footerDocsRedacted', docsRedacted);
-        setCount('footerForgery',      forgeryDocs);
 
         // Geo coverage
         const sCount = document.getElementById('stateCount');
@@ -229,9 +222,9 @@
     }
 
     // ── Public init ──────────────────────────────────────────────────────────
-    window.initDashboard = function() {
-        trackPageVisit();    // fire-and-forget visit ping (once per session)
-        fetchGeoLocation();  // cache geo for upload metadata
+    window.initDashboard = async function() {
+        await fetchGeoLocation();
+        trackPageVisit();
 
         renderDashboard();
 
