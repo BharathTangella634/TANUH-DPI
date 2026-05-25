@@ -26,23 +26,13 @@
     <div class="tab-header-text">
         <h2><i class="fas fa-search-plus" style="color:var(--primary)"></i> Document Forgery Detection</h2>
         <p>Classical forensic analysis to detect tampering, splicing, and manipulation in clinical documents.</p>
-        <div style="margin-top: 10px;">
-            <a href="forgensic-samples/forgery_image.jpeg" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px; margin-right: 15px;">
-                <i class="fas fa-file-download"></i> Sample image 1
-            </a>
-            <a href="forgensic-samples/no_foregery_image.png" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px; margin-right: 15px;">
-                <i class="fas fa-file-download"></i> Sample image 2
-            </a>
-            <a href="forgensic-samples/sample_document.pdf" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px;">
-                <i class="fas fa-file-download"></i> Sample PDF
-            </a>
-        </div>
+        
     </div>
-    <div class="tab-header-logos">
+    <!-- <div class="tab-header-logos">
         <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
         <img src="assets/MoE_Logo.svg" alt="Ministry of Education Logo" class="logo">
         <img src="assets/IISc_Logo.png" alt="IISc Logo" class="logo">
-    </div>
+    </div> -->
 </div>
 
 <div style="background:#f0fdfa; border-left:4px solid var(--primary); border-radius:0 6px 6px 0; padding:12px 16px; margin-bottom:20px;">
@@ -62,8 +52,8 @@
         </label>
     </div>
     <button class="process-btn" id="fgProcessBtn" onclick="window.FG_process()">
-        <i class="fas fa-search"></i>
-        <span>Analyze Document</span>
+        <!-- <i class="fas fa-search"></i> -->
+        <span>Analyze</span>
         <div class="loader" id="fgLoader"></div>
     </button>
 </div>
@@ -609,30 +599,115 @@ if preview_url:
 
         <!-- How to Use -->
         <div id="fgg-howto" class="guide-section">
-            <h2>How to Use</h2>
-            <p>Follow these three steps to analyze a document for potential forgery.</p>
+    <h2>How to Use</h2>
+    <p>Follow these three steps to analyze a document for potential forgery.</p>
 
-            <div class="guide-pipeline">
-                <div class="guide-pipeline-step">
-                    <h4>1. Upload Document</h4>
-                    <p>Click <strong>"Choose document (PDF / Image)..."</strong> and select a file. Supported: PDF, JPG, PNG, BMP, TIFF, WebP. Maximum size is 25 MB. Sample files are provided above the upload area.</p>
-                </div>
-                <div class="guide-pipeline-step">
-                    <h4>2. Analyze Document</h4>
-                    <p>Click <strong>"Analyze Document"</strong>. The progress bar shows real-time status. Processing is typically under 2 seconds per page. Multiple classical CV checks run on each page.</p>
-                </div>
-                <div class="guide-pipeline-step">
-                    <h4>3. Review Findings</h4>
-                    <p>The <strong>Findings panel</strong> shows forensic results with color-coded categories. The <strong>Annotated Document</strong> panel shows bounding-box overlays on suspicious regions. Click any finding to zoom in. Use Copy/Download to export results.</p>
-                </div>
-            </div>
+    <div class="guide-pipeline">
 
-            <div class="guide-callout guide-callout-warning">
-                <strong>Important</strong>
-                Forensic analysis provides indicators of potential tampering, not definitive proof. Results should be reviewed by domain experts. False positives may occur with legitimately complex document layouts.
+        <!-- Step 1 -->
+        <div class="guide-pipeline-step">
+            <h4>1. Upload Document</h4>
+
+            <p>
+                Click <strong>"Choose document (PDF / Image)..."</strong> and select
+                a file for analysis. Supported formats include PDF, JPG, PNG, BMP,
+                TIFF, and WebP. Maximum file size is 25 MB.
+            </p>
+
+            <p style="margin-top: 10px;">
+                Sample files are provided below and can be directly uploaded in the
+                upload area for testing.
+            </p>
+
+            <div style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 14px;
+                margin-top: 12px;
+                align-items: center;
+            ">
+
+                <a href="forgensic-samples/forgery_image.jpeg"
+                   download
+                   style="
+                        text-decoration: none;
+                        color: #14868C;
+                        font-weight: 600;
+                        font-size: 14px;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                   ">
+                    <i class="fas fa-file-download"></i>
+                    Sample Image 1
+                </a>
+
+                <a href="forgensic-samples/no_foregery_image.png"
+                   download
+                   style="
+                        text-decoration: none;
+                        color: #14868C;
+                        font-weight: 600;
+                        font-size: 14px;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                   ">
+                    <i class="fas fa-file-download"></i>
+                    Sample Image 2
+                </a>
+
+                <a href="forgensic-samples/sample_document.pdf"
+                   download
+                   style="
+                        text-decoration: none;
+                        color: #14868C;
+                        font-weight: 600;
+                        font-size: 14px;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                   ">
+                    <i class="fas fa-file-download"></i>
+                    Sample PDF
+                </a>
+
             </div>
         </div>
 
+        <!-- Step 2 -->
+        <div class="guide-pipeline-step">
+            <h4>2. Analyze Document</h4>
+
+            <p>
+                Click <strong>"Analyze Document"</strong>. The progress bar shows
+                real-time status. Processing is typically under 2 seconds per page.
+                Multiple classical CV checks run on each page.
+            </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="guide-pipeline-step">
+            <h4>3. Review Findings</h4>
+
+            <p>
+                The <strong>Findings panel</strong> shows forensic results with
+                color-coded categories. The
+                <strong>Annotated Document</strong> panel shows bounding-box
+                overlays on suspicious regions. Click any finding to zoom in.
+                Use Copy/Download to export results.
+            </p>
+        </div>
+
+    </div>
+
+    <div class="guide-callout guide-callout-warning">
+        <strong>Important</strong>
+        Forensic analysis provides indicators of potential tampering, not definitive proof.
+        Results should be reviewed by domain experts. False positives may occur with
+        legitimately complex document layouts.
+    </div>
+</div>
         <!-- Detection Pipeline -->
         <div id="fgg-pipeline" class="guide-section">
             <h2>Detection Pipeline</h2>

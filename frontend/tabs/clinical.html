@@ -27,19 +27,11 @@
     <div class="tab-header-text">
         <h2>PDF to ABDM Conversion</h2>
         <p>Transform clinical documents into ABDM compliant FHIR JSON resources.</p>
-        <div style="margin-top: 10px;">
-            <a href="assets/abdm_diagnostic_report.pdf" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px; margin-right: 15px;">
-                <i class="fas fa-file-download"></i> Download Demo Diagnostic Report
-            </a>
-            <a href="assets/abdm_discharge_summary.pdf" download style="text-decoration: none; color: #14868C; font-weight: bold; font-size: 14px;">
-                <i class="fas fa-file-download"></i> Download Demo Discharge Summary
-            </a>
-        </div>
     </div>
     <div class="tab-header-logos">
-        <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
+        <!-- <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
         <img src="assets/MoE_Logo.svg" alt="Ministry of Education Logo" class="logo">
-        <img src="assets/IISc_Logo.png" alt="IISc Logo" class="logo">
+        <img src="assets/IISc_Logo.png" alt="IISc Logo" class="logo"> -->
         <img src="assets/NHA_logo.png" alt="NHA Logo" class="logo">
     </div>
 </div>
@@ -66,7 +58,7 @@
             </label>
         </div>
         <button onclick="processFile('PDF2FHIR')" id="btnFHIR" class="process-btn">
-            <span>Process clinical document</span>
+            <span>Process</span>
             <div class="loader" id="loaderFHIR"></div>
         </button>
     </div>
@@ -378,9 +370,57 @@
             <p>Follow these three steps to convert a clinical PDF into an ABDM-compliant FHIR bundle.</p>
 
             <div class="guide-pipeline">
+                <!-- Step 1 -->
                 <div class="guide-pipeline-step">
                     <h4>1. Upload PDF</h4>
-                    <p>Click <strong>"Choose PDF file..."</strong> and select a clinical document (discharge summary or diagnostic report). Maximum file size is 25 MB. Sample PDFs are provided above the upload area.</p>
+                    <p>
+                        Click <strong>"Choose PDF file..."</strong> and upload a clinical
+                        document such as a discharge summary or diagnostic report.
+                        Maximum file size is 25 MB.
+                    </p>
+
+                    <p style="margin-top: 10px;">
+                        Sample demo PDFs are provided below and can be directly uploaded
+                        in the upload area for testing.
+                    </p>
+
+                    <div style="
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 14px;
+                        margin-top: 12px;
+                        align-items: center;
+                    ">
+                        <a href="assets/abdm_diagnostic_report.pdf"
+                        download
+                        style="
+                                text-decoration: none;
+                                color: #14868C;
+                                font-weight: 600;
+                                font-size: 14px;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                        ">
+                            <i class="fas fa-file-download"></i>
+                            Download Demo Diagnostic Report
+                        </a>
+
+                        <a href="assets/abdm_discharge_summary.pdf"
+                        download
+                        style="
+                                text-decoration: none;
+                                color: #14868C;
+                                font-weight: 600;
+                                font-size: 14px;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                        ">
+                            <i class="fas fa-file-download"></i>
+                            Download Demo Discharge Summary
+                        </a>
+                    </div>
                 </div>
                 <div class="guide-pipeline-step">
                     <h4>2. Process Document</h4>
@@ -388,7 +428,14 @@
                 </div>
                 <div class="guide-pipeline-step">
                     <h4>3. Download FHIR Bundle</h4>
-                    <p>Once complete, the ABDM-compliant FHIR JSON appears in the output panel. Use <strong>Copy JSON</strong> or <strong>Download JSON</strong> to save. You can validate the bundle using the <strong>Validate FHIR R4</strong> button.</p>
+                    <p>
+                        Once processing is complete, the ABDM-compliant FHIR JSON
+                        appears in the output panel. Use
+                        <strong>Copy JSON</strong> or
+                        <strong>Download JSON</strong> to save the result.
+                        You can also validate the generated bundle using the
+                        <strong>Validate FHIR R4</strong> button.
+                    </p>
                 </div>
             </div>
 
@@ -535,7 +582,7 @@
                 <tbody>
                     <tr><td>Model</td><td><code>publishers/google/models/gemma-4-26b-a4b-it-maas</code></td></tr>
                     <tr><td>Provider</td><td>Google Vertex AI (Model-as-a-Service)</td></tr>
-                    <tr><td>Temperature</td><td>0.3</td></tr>
+                    <!-- <tr><td>Temperature</td><td>0.3</td></tr> -->
                     <tr><td>Max Tokens</td><td>Depends on Resource</td></tr>
                     <tr><td>Context Window</td><td>128K tokens</td></tr>
                 </tbody>
