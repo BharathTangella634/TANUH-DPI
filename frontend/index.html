@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="assets/tanuh.png">
     <link rel="stylesheet" href="assets/style.css">
     <link rel="stylesheet" href="assets/privacy-filter.css">
+    <link rel="stylesheet" href="assets/home-modern.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
@@ -33,7 +34,6 @@
         <div class="header-tabs-bar">
             <nav class="header-nav">
                 <button class="tablinks" id="navHome" onclick="openTab(event, 'Home')"><i class="fas fa-home"></i> Home</button>
-                <button class="tablinks" id="navDashboard" onclick="openTab(event, 'Dashboard')"><i class="fas fa-chart-bar"></i> Dashboard</button>
                 <button class="tablinks" id="navClinical" onclick="openTab(event, 'PDF2FHIR')"><i class="fas fa-file-medical"></i> Clinical Document</button>
                 <button class="tablinks" id="navInsurance" onclick="openTab(event, 'PDF2NHCX')"><i class="fas fa-shield-alt"></i> Insurance Policy</button>
                 <button class="tablinks" id="navPrivacyFilter" onclick="openTab(event, 'PrivacyFilter')"><i class="fas fa-user-shield"></i> Privacy Filter</button>
@@ -45,7 +45,6 @@
 
     <main class="content-container">
         <div id="Home" class="tabcontent" style="display: block;"></div>
-        <div id="Dashboard" class="tabcontent" style="display: none;"></div>
         <div id="PDF2FHIR" class="tabcontent" style="display: none;"></div>
         <div id="PDF2NHCX" class="tabcontent" style="display: none;"></div>
         <div id="PrivacyFilter" class="tabcontent" style="display: none;"></div>

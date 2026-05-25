@@ -48,7 +48,7 @@
                 loadedTabs.add(tabName);
             }
 
-            if (tabName === 'Dashboard' && window.initDashboard) window.initDashboard();
+            if (tabName === 'Home' && window.initDashboard) window.initDashboard();
             if (tabName === 'PrivacyFilter' && window.PF_init) window.PF_init();
             if ((tabName === 'PDF2FHIR' || tabName === 'PDF2NHCX' || tabName === 'ForgeryDetection') && window.initApiAccess) {
                 window.initApiAccess();
