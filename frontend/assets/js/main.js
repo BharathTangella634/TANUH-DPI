@@ -38,6 +38,9 @@
         document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
         document.querySelectorAll(".tablinks").forEach(el => el.classList.remove("active"));
 
+        const contentWrap = document.querySelector('.content-container');
+        if (contentWrap) contentWrap.classList.toggle('full-width-home', tabName === 'Home');
+
         const container = document.getElementById(tabName);
         if (container) {
             container.style.display = "block";

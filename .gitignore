@@ -295,6 +295,10 @@ test_files/
 privacy_filter_data/
 forgensic_data/
 
+# ── Concurrency test outputs ─────────────────────────────────────────────────
+conc_test_*.json
+concurrency_*.txt
+
 # ── Unnecessary files (hackathon artefacts, scratch scripts) ─────────────────
 ABDM_problem_2_Architecture.png
 NHCX_problem_3_Architecture.png
