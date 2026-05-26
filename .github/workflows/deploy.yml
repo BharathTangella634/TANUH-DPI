@@ -38,7 +38,7 @@ jobs:
           envs: ABDM_KEY,NHCX_KEY,FORGENSIC_KEY,DB_USER,DB_PASS
           script: |
             cd ~/TANUH-DPI
-            cat > .env << EOF
+            cat > .env <<EOF
             ABDM_AUTH_ENABLED=false
             NHCX_AUTH_ENABLED=false
             ABDM_SECRET_KEY=${ABDM_KEY}
@@ -51,6 +51,7 @@ jobs:
             MYSQL_USER=${DB_USER}
             MYSQL_PASSWORD=${DB_PASS}
             EOF
+            sed -i 's/^[[:space:]]*//' .env
             chmod 600 .env
             echo ".env written"
         env:
