@@ -1,0 +1,915 @@
+name: Build Privacy Filter CLI Executables
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 1: Linux x86_64 — AppImage
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-linux:
+    name: Linux x86_64 (AppImage)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fuse libfuse2 rsync wget \
+            tesseract-ocr libtesseract-dev poppler-utils \
+            libglib2.0-0 libsm6 libxext6 libxrender1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu \
+            torch==2.5.1
+          pip install --no-cache-dir \
+            transformers==5.6.2 \
+            accelerate==1.10.0 \
+            safetensors==0.5.2 \
+            huggingface-hub==1.12.0 \
+            tokenizers==0.22.2 \
+            pypdf==5.1.0 \
+            pdfplumber==0.11.4 \
+            pdf2image==1.17.0 \
+            python-docx==1.1.2 \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            "numpy>=1.26,<3" \
+            pymupdf==1.24.13 \
+            python-dotenv==1.0.1 \
+            httpx==0.27.0
+          pip install pyinstaller
+
+      - name: Create CLI launcher
+        run: |
+          cat > privacy_filter_cli.py << 'PYEOF'
+          """Privacy Filter CLI — command-line PII detection and redaction."""
+          import argparse
+          import json
+          import os
+          import sys
+          import time
+          from pathlib import Path
+
+          os.environ["STORAGE_BACKEND"] = "local"
+          os.environ["KEYCLOAK_AUTH_ENABLED"] = "false"
+          os.environ["SECRET_KEY"] = "local-cli-key"
+
+          if getattr(sys, "frozen", False):
+              base = Path(sys._MEIPASS)
+          else:
+              base = Path(__file__).parent
+
+          model_cache = Path.home() / ".privacy_filter" / "models"
+          model_cache.mkdir(parents=True, exist_ok=True)
+          os.environ.setdefault("HF_HOME", str(model_cache))
+          os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(model_cache / "hub"))
+          os.environ.setdefault("TRANSFORMERS_CACHE", str(model_cache / "hub"))
+
+          sys.path.insert(0, str(base))
+
+
+          def print_banner():
+              print("=" * 60)
+              print("  TANUH Privacy Filter — PII Detection & Redaction CLI")
+              print("  TANUH AI-CoE, IISc Bangalore")
+              print("=" * 60)
+
+
+          def cmd_check(args):
+              """Check if models are downloaded and ready."""
+              print_banner()
+              print("\n[Check] Verifying model availability...\n")
+              hub_dir = model_cache / "hub"
+              if hub_dir.exists() and any(hub_dir.iterdir()):
+                  print("  Models cached at: " + str(model_cache))
+                  print("  Status: READY (models already downloaded)")
+              else:
+                  print("  Models not yet downloaded.")
+                  print("  They will be downloaded on first 'redact' run (~500 MB).")
+              print()
+
+
+          def cmd_redact(args):
+              """Redact PII from a document."""
+              print_banner()
+              input_path = Path(args.input)
+              if not input_path.exists():
+                  print(f"\n  Error: File not found: {input_path}")
+                  sys.exit(1)
+
+              print(f"\n  Input:  {input_path}")
+              print(f"  Output: {args.output or 'auto-generated'}")
+              print()
+
+              # Load models
+              first_run = not (model_cache / "hub").exists() or not any((model_cache / "hub").iterdir()) if (model_cache / "hub").exists() else True
+              if first_run:
+                  print("  [1/4] Downloading AI models (first run, ~500 MB)...")
+              else:
+                  print("  [1/4] Loading AI models from cache...")
+
+              from privacy_filter.app.model import PrivacyFilter
+              pf = PrivacyFilter.instance()
+              pf.load()
+              print("  [1/4] Models loaded successfully.")
+
+              # Determine handler
+              print(f"  [2/4] Detecting file type...")
+              from privacy_filter.app.redactor import get_handler
+              try:
+                  handler = get_handler(input_path.name)
+              except ValueError as e:
+                  print(f"\n  Error: {e}")
+                  sys.exit(1)
+              print(f"  [2/4] File type: {handler.name}")
+
+              # Extract text
+              print(f"  [3/4] Extracting text...")
+              t0 = time.time()
+              text = handler.extract(input_path)
+              if not text or not text.strip():
+                  print("  Warning: No text extracted from document.")
+
+              # Run detection
+              entities_raw = pf.detect(text) if text else []
+              detect_time = time.time() - t0
+
+              # Print detection results
+              entity_groups = {}
+              for e in entities_raw:
+                  grp = e.get("entity_group", "UNKNOWN")
+                  entity_groups[grp] = entity_groups.get(grp, 0) + 1
+
+              print(f"  [3/4] Detection complete in {detect_time:.1f}s")
+              print()
+              print("  " + "-" * 50)
+              print(f"  PII Entities Detected: {len(entities_raw)}")
+              print("  " + "-" * 50)
+              if entity_groups:
+                  for grp, cnt in sorted(entity_groups.items(), key=lambda x: -x[1]):
+                      print(f"    {grp:<25} {cnt}")
+              else:
+                  print("    No PII entities found.")
+              print("  " + "-" * 50)
+              print()
+
+              # Print individual detections
+              if entities_raw and not args.quiet:
+                  print("  Detected Entities:")
+                  for i, e in enumerate(entities_raw[:50], 1):
+                      word = e.get("word", "")
+                      grp = e.get("entity_group", "?")
+                      score = e.get("score", 0)
+                      print(f"    {i:3d}. [{grp}] \"{word}\" (confidence: {score:.2f})")
+                  if len(entities_raw) > 50:
+                      print(f"    ... and {len(entities_raw) - 50} more entities")
+                  print()
+
+              # Produce redacted output
+              if args.output:
+                  out_path = Path(args.output)
+              else:
+                  suffix = handler.out_extension
+                  out_path = input_path.parent / f"{input_path.stem}_redacted{suffix}"
+
+              print(f"  [4/4] Generating redacted output...")
+              out_path.parent.mkdir(parents=True, exist_ok=True)
+              handler.redact(input_path, entities_raw, out_path)
+
+              print(f"  [4/4] Redacted file saved: {out_path}")
+              print()
+
+              # Save JSON report if requested
+              if args.json:
+                  json_path = Path(args.json)
+                  report = {
+                      "input_file": str(input_path),
+                      "output_file": str(out_path),
+                      "total_entities": len(entities_raw),
+                      "entity_counts": entity_groups,
+                      "processing_time_seconds": round(detect_time, 2),
+                      "entities": [
+                          {"word": e.get("word", ""), "entity_group": e.get("entity_group", ""), "score": round(e.get("score", 0), 4)}
+                          for e in entities_raw
+                      ],
+                  }
+                  json_path.write_text(json.dumps(report, indent=2))
+                  print(f"  JSON report saved: {json_path}")
+
+              print()
+              print("  Done.")
+              print()
+
+
+          def cmd_supported(args):
+              """List supported file types."""
+              print_banner()
+              print("\n  Supported File Types:")
+              print("  " + "-" * 40)
+              formats = [
+                  (".pdf",                   "PDF documents"),
+                  (".docx",                  "Word documents"),
+                  (".png, .jpg, .jpeg",      "Images (OCR)"),
+                  (".tif, .tiff",            "TIFF images (OCR)"),
+                  (".dcm, .dicom",           "DICOM medical images"),
+                  (".txt, .csv, .md, .log",  "Plain text files"),
+              ]
+              for ext, desc in formats:
+                  print(f"    {ext:<25} {desc}")
+              print()
+
+
+          def main():
+              parser = argparse.ArgumentParser(
+                  prog="pf-redact",
+                  description="TANUH Privacy Filter — Offline PII Detection & Redaction",
+              )
+              parser.add_argument("--version", action="version", version="pf-redact 1.0.0")
+              sub = parser.add_subparsers(dest="command")
+
+              # check
+              sub.add_parser("check", help="Verify model availability")
+
+              # redact
+              p_redact = sub.add_parser("redact", help="Redact PII from a document")
+              p_redact.add_argument("input", help="Path to input document")
+              p_redact.add_argument("-o", "--output", help="Path for redacted output (default: <input>_redacted.<ext>)")
+              p_redact.add_argument("--json", help="Save detection report as JSON to this path")
+              p_redact.add_argument("-q", "--quiet", action="store_true", help="Suppress individual entity listing")
+
+              # supported-types
+              sub.add_parser("supported-types", help="List supported file formats")
+
+              args = parser.parse_args()
+
+              if args.command == "check":
+                  cmd_check(args)
+              elif args.command == "redact":
+                  cmd_redact(args)
+              elif args.command == "supported-types":
+                  cmd_supported(args)
+              else:
+                  parser.print_help()
+
+
+          if __name__ == "__main__":
+              main()
+          PYEOF
+
+      - name: Create PyInstaller spec
+        run: |
+          cat > privacy_filter_cli.spec << 'SPECEOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          block_cipher = None
+
+          a = Analysis(
+              ['privacy_filter_cli.py'],
+              pathex=['.'],
+              binaries=[],
+              datas=[
+                  ('privacy_filter', 'privacy_filter'),
+              ],
+              hiddenimports=[
+                  'privacy_filter', 'privacy_filter.app',
+                  'privacy_filter.app.model', 'privacy_filter.app.ner_model',
+                  'privacy_filter.app.redactor', 'privacy_filter.app.rule_detectors',
+                  'privacy_filter.app.extractors',
+                  'privacy_filter.app.extractors.txt',
+                  'privacy_filter.app.extractors.pdf',
+                  'privacy_filter.app.extractors.docx',
+                  'privacy_filter.app.extractors.image',
+                  'privacy_filter.app.extractors.dicom',
+                  'transformers', 'torch', 'safetensors', 'tokenizers',
+                  'accelerate', 'huggingface_hub',
+                  'pypdf', 'pdfplumber', 'docx', 'fitz',
+                  'pytesseract', 'pydicom', 'PIL',
+                  'dotenv', 'httpx',
+              ],
+              hookspath=[],
+              runtime_hooks=[],
+              excludes=[
+                  'matplotlib', 'scipy', 'pandas', 'notebook', 'IPython',
+                  'torch.distributed', 'torch.testing', 'torch.utils.tensorboard',
+                  'torch.cuda', 'torch.backends.cudnn', 'torch.backends.mps',
+                  'customtkinter', 'tkinter',
+                  'fastapi', 'starlette', 'uvicorn', 'pydantic', 'jose',
+              ],
+              cipher=block_cipher,
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+          exe = EXE(
+              pyz, a.scripts, a.binaries, a.datas,
+              name='pf-redact',
+              debug=False, strip=False, upx=True,
+              console=True,
+              onefile=True,
+          )
+          SPECEOF
+
+      - name: Build AppImage
+        run: |
+          pyinstaller privacy_filter_cli.spec
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+          cp dist/pf-redact AppDir/usr/bin/
+          chmod +x AppDir/usr/bin/pf-redact
+
+          cat > AppDir/usr/share/applications/pf-redact.desktop << 'DEOF'
+          [Desktop Entry]
+          Name=pf-redact
+          Exec=pf-redact
+          Type=Application
+          Icon=pf-redact
+          Categories=Utility;
+          Terminal=true
+          DEOF
+          cp AppDir/usr/share/applications/pf-redact.desktop AppDir/
+          convert -size 256x256 xc:transparent AppDir/usr/share/icons/hicolor/256x256/apps/pf-redact.png 2>/dev/null || touch AppDir/usr/share/icons/hicolor/256x256/apps/pf-redact.png
+          ln -sf usr/share/icons/hicolor/256x256/apps/pf-redact.png AppDir/.DirIcon
+          cat > AppDir/AppRun << 'AEOF'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          exec "$HERE/usr/bin/pf-redact" "$@"
+          AEOF
+          chmod +x AppDir/AppRun
+
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool AppDir pf-redact-1.0.0-x86_64.AppImage
+
+      - name: Verify AppImage
+        run: |
+          chmod +x pf-redact-1.0.0-x86_64.AppImage
+          ./pf-redact-1.0.0-x86_64.AppImage --version
+          ./pf-redact-1.0.0-x86_64.AppImage --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-linux-x86_64
+          path: pf-redact-1.0.0-x86_64.AppImage
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: Linux ARM64
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-linux-arm64:
+    name: Linux ARM64 (binary)
+    runs-on: ubuntu-22.04-arm
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr libtesseract-dev poppler-utils \
+            libglib2.0-0 libsm6 libxext6 libxrender1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu \
+            torch==2.5.1
+          pip install --no-cache-dir \
+            transformers==5.6.2 \
+            accelerate==1.10.0 \
+            safetensors==0.5.2 \
+            huggingface-hub==1.12.0 \
+            tokenizers==0.22.2 \
+            pypdf==5.1.0 \
+            pdfplumber==0.11.4 \
+            pdf2image==1.17.0 \
+            python-docx==1.1.2 \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            "numpy>=1.26,<3" \
+            pymupdf==1.24.13 \
+            python-dotenv==1.0.1 \
+            httpx==0.27.0
+          pip install pyinstaller
+
+      - name: Create CLI launcher
+        run: |
+          # Reuse the same CLI launcher from the x86_64 job
+          cat > privacy_filter_cli.py << 'PYEOF'
+          """Privacy Filter CLI — command-line PII detection and redaction."""
+          import argparse, json, os, sys, time
+          from pathlib import Path
+
+          os.environ["STORAGE_BACKEND"] = "local"
+          os.environ["KEYCLOAK_AUTH_ENABLED"] = "false"
+          os.environ["SECRET_KEY"] = "local-cli-key"
+
+          if getattr(sys, "frozen", False):
+              base = Path(sys._MEIPASS)
+          else:
+              base = Path(__file__).parent
+
+          model_cache = Path.home() / ".privacy_filter" / "models"
+          model_cache.mkdir(parents=True, exist_ok=True)
+          os.environ.setdefault("HF_HOME", str(model_cache))
+          os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(model_cache / "hub"))
+          os.environ.setdefault("TRANSFORMERS_CACHE", str(model_cache / "hub"))
+          sys.path.insert(0, str(base))
+
+          def print_banner():
+              print("=" * 60)
+              print("  TANUH Privacy Filter — PII Detection & Redaction CLI")
+              print("  TANUH AI-CoE, IISc Bangalore")
+              print("=" * 60)
+
+          def cmd_check(args):
+              print_banner()
+              print("\n[Check] Verifying model availability...\n")
+              hub_dir = model_cache / "hub"
+              if hub_dir.exists() and any(hub_dir.iterdir()):
+                  print("  Models cached at: " + str(model_cache))
+                  print("  Status: READY (models already downloaded)")
+              else:
+                  print("  Models not yet downloaded.")
+                  print("  They will be downloaded on first 'redact' run (~500 MB).")
+              print()
+
+          def cmd_redact(args):
+              print_banner()
+              input_path = Path(args.input)
+              if not input_path.exists():
+                  print(f"\n  Error: File not found: {input_path}"); sys.exit(1)
+              print(f"\n  Input:  {input_path}")
+              print(f"  Output: {args.output or 'auto-generated'}\n")
+              first_run = not (model_cache / "hub").exists() or not any((model_cache / "hub").iterdir()) if (model_cache / "hub").exists() else True
+              if first_run:
+                  print("  [1/4] Downloading AI models (first run, ~500 MB)...")
+              else:
+                  print("  [1/4] Loading AI models from cache...")
+              from privacy_filter.app.model import PrivacyFilter
+              pf = PrivacyFilter.instance(); pf.load()
+              print("  [1/4] Models loaded successfully.")
+              print(f"  [2/4] Detecting file type...")
+              from privacy_filter.app.redactor import get_handler
+              try:
+                  handler = get_handler(input_path.name)
+              except ValueError as e:
+                  print(f"\n  Error: {e}"); sys.exit(1)
+              print(f"  [2/4] File type: {handler.name}")
+              print(f"  [3/4] Extracting text...")
+              t0 = time.time()
+              text = handler.extract(input_path)
+              entities_raw = pf.detect(text) if text else []
+              detect_time = time.time() - t0
+              entity_groups = {}
+              for e in entities_raw:
+                  grp = e.get("entity_group", "UNKNOWN")
+                  entity_groups[grp] = entity_groups.get(grp, 0) + 1
+              print(f"  [3/4] Detection complete in {detect_time:.1f}s\n")
+              print("  " + "-" * 50)
+              print(f"  PII Entities Detected: {len(entities_raw)}")
+              print("  " + "-" * 50)
+              if entity_groups:
+                  for grp, cnt in sorted(entity_groups.items(), key=lambda x: -x[1]):
+                      print(f"    {grp:<25} {cnt}")
+              else:
+                  print("    No PII entities found.")
+              print("  " + "-" * 50 + "\n")
+              if entities_raw and not args.quiet:
+                  print("  Detected Entities:")
+                  for i, e in enumerate(entities_raw[:50], 1):
+                      print(f"    {i:3d}. [{e.get('entity_group','?')}] \"{e.get('word','')}\" (confidence: {e.get('score',0):.2f})")
+                  if len(entities_raw) > 50:
+                      print(f"    ... and {len(entities_raw) - 50} more entities")
+                  print()
+              if args.output:
+                  out_path = Path(args.output)
+              else:
+                  out_path = input_path.parent / f"{input_path.stem}_redacted{handler.out_extension}"
+              print(f"  [4/4] Generating redacted output...")
+              out_path.parent.mkdir(parents=True, exist_ok=True)
+              handler.redact(input_path, entities_raw, out_path)
+              print(f"  [4/4] Redacted file saved: {out_path}\n")
+              if args.json:
+                  json_path = Path(args.json)
+                  report = {"input_file": str(input_path), "output_file": str(out_path), "total_entities": len(entities_raw), "entity_counts": entity_groups, "processing_time_seconds": round(detect_time, 2), "entities": [{"word": e.get("word",""), "entity_group": e.get("entity_group",""), "score": round(e.get("score",0), 4)} for e in entities_raw]}
+                  json_path.write_text(json.dumps(report, indent=2))
+                  print(f"  JSON report saved: {json_path}")
+              print("\n  Done.\n")
+
+          def cmd_supported(args):
+              print_banner()
+              print("\n  Supported File Types:\n  " + "-" * 40)
+              for ext, desc in [(".pdf","PDF documents"),(".docx","Word documents"),(".png, .jpg, .jpeg","Images (OCR)"),(".tif, .tiff","TIFF images (OCR)"),(".dcm, .dicom","DICOM medical images"),(".txt, .csv, .md, .log","Plain text files")]:
+                  print(f"    {ext:<25} {desc}")
+              print()
+
+          def main():
+              parser = argparse.ArgumentParser(prog="pf-redact", description="TANUH Privacy Filter — Offline PII Detection & Redaction")
+              parser.add_argument("--version", action="version", version="pf-redact 1.0.0")
+              sub = parser.add_subparsers(dest="command")
+              sub.add_parser("check", help="Verify model availability")
+              p = sub.add_parser("redact", help="Redact PII from a document")
+              p.add_argument("input", help="Path to input document")
+              p.add_argument("-o", "--output", help="Path for redacted output")
+              p.add_argument("--json", help="Save detection report as JSON")
+              p.add_argument("-q", "--quiet", action="store_true", help="Suppress individual entity listing")
+              sub.add_parser("supported-types", help="List supported file formats")
+              args = parser.parse_args()
+              if args.command == "check": cmd_check(args)
+              elif args.command == "redact": cmd_redact(args)
+              elif args.command == "supported-types": cmd_supported(args)
+              else: parser.print_help()
+
+          if __name__ == "__main__":
+              main()
+          PYEOF
+
+      - name: Create PyInstaller spec
+        run: |
+          cat > privacy_filter_cli.spec << 'SPECEOF'
+          block_cipher = None
+          a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
+              hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
+              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','torch.cuda','torch.backends.cudnn','torch.backends.mps','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              cipher=block_cipher, noarchive=False)
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+          exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
+          SPECEOF
+
+      - name: Build binary
+        run: pyinstaller privacy_filter_cli.spec
+
+      - name: Verify binary
+        run: |
+          chmod +x dist/pf-redact
+          ./dist/pf-redact --version
+          ./dist/pf-redact --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-linux-aarch64
+          path: dist/pf-redact
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 3: Windows
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-windows:
+    name: Windows (exe)
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Tesseract
+        run: |
+          choco install tesseract -y
+          echo "C:\Program Files\Tesseract-OCR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.5.1
+          pip install --no-cache-dir transformers==5.6.2 accelerate==1.10.0 safetensors==0.5.2 huggingface-hub==1.12.0 tokenizers==0.22.2 pypdf==5.1.0 pdfplumber==0.11.4 pdf2image==1.17.0 python-docx==1.1.2 Pillow==11.0.0 pytesseract==0.3.13 pydicom==3.0.1 "numpy>=1.26,<3" pymupdf==1.24.13 python-dotenv==1.0.1 httpx==0.27.0
+          pip install pyinstaller
+
+      - name: Create CLI launcher and spec
+        shell: bash
+        run: |
+          cat > privacy_filter_cli.py << 'PYEOF'
+          """Privacy Filter CLI — command-line PII detection and redaction."""
+          import argparse, json, os, sys, time
+          from pathlib import Path
+          os.environ["STORAGE_BACKEND"] = "local"
+          os.environ["KEYCLOAK_AUTH_ENABLED"] = "false"
+          os.environ["SECRET_KEY"] = "local-cli-key"
+          if getattr(sys, "frozen", False): base = Path(sys._MEIPASS)
+          else: base = Path(__file__).parent
+          model_cache = Path.home() / ".privacy_filter" / "models"
+          model_cache.mkdir(parents=True, exist_ok=True)
+          os.environ.setdefault("HF_HOME", str(model_cache))
+          os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(model_cache / "hub"))
+          os.environ.setdefault("TRANSFORMERS_CACHE", str(model_cache / "hub"))
+          sys.path.insert(0, str(base))
+          def print_banner():
+              print("=" * 60); print("  TANUH Privacy Filter — PII Detection & Redaction CLI"); print("  TANUH AI-CoE, IISc Bangalore"); print("=" * 60)
+          def cmd_check(args):
+              print_banner(); print("\n[Check] Verifying model availability...\n")
+              hub_dir = model_cache / "hub"
+              if hub_dir.exists() and any(hub_dir.iterdir()): print("  Models cached at: " + str(model_cache)); print("  Status: READY")
+              else: print("  Models not yet downloaded."); print("  They will be downloaded on first 'redact' run (~500 MB).")
+              print()
+          def cmd_redact(args):
+              print_banner(); input_path = Path(args.input)
+              if not input_path.exists(): print(f"\n  Error: File not found: {input_path}"); sys.exit(1)
+              print(f"\n  Input:  {input_path}"); print(f"  Output: {args.output or 'auto-generated'}\n")
+              first_run = not (model_cache / "hub").exists() or not any((model_cache / "hub").iterdir()) if (model_cache / "hub").exists() else True
+              print("  [1/4] Downloading AI models (first run, ~500 MB)..." if first_run else "  [1/4] Loading AI models from cache...")
+              from privacy_filter.app.model import PrivacyFilter
+              pf = PrivacyFilter.instance(); pf.load(); print("  [1/4] Models loaded successfully.")
+              print(f"  [2/4] Detecting file type...")
+              from privacy_filter.app.redactor import get_handler
+              try: handler = get_handler(input_path.name)
+              except ValueError as e: print(f"\n  Error: {e}"); sys.exit(1)
+              print(f"  [2/4] File type: {handler.name}"); print(f"  [3/4] Extracting text...")
+              t0 = time.time(); text = handler.extract(input_path)
+              entities_raw = pf.detect(text) if text else []; detect_time = time.time() - t0
+              entity_groups = {}
+              for e in entities_raw: grp = e.get("entity_group", "UNKNOWN"); entity_groups[grp] = entity_groups.get(grp, 0) + 1
+              print(f"  [3/4] Detection complete in {detect_time:.1f}s\n")
+              print("  " + "-" * 50); print(f"  PII Entities Detected: {len(entities_raw)}"); print("  " + "-" * 50)
+              if entity_groups:
+                  for grp, cnt in sorted(entity_groups.items(), key=lambda x: -x[1]): print(f"    {grp:<25} {cnt}")
+              else: print("    No PII entities found.")
+              print("  " + "-" * 50 + "\n")
+              if entities_raw and not args.quiet:
+                  print("  Detected Entities:")
+                  for i, e in enumerate(entities_raw[:50], 1): print(f"    {i:3d}. [{e.get('entity_group','?')}] \"{e.get('word','')}\" (confidence: {e.get('score',0):.2f})")
+                  if len(entities_raw) > 50: print(f"    ... and {len(entities_raw) - 50} more entities")
+                  print()
+              out_path = Path(args.output) if args.output else input_path.parent / f"{input_path.stem}_redacted{handler.out_extension}"
+              print(f"  [4/4] Generating redacted output..."); out_path.parent.mkdir(parents=True, exist_ok=True)
+              handler.redact(input_path, entities_raw, out_path); print(f"  [4/4] Redacted file saved: {out_path}\n")
+              if args.json:
+                  json_path = Path(args.json)
+                  report = {"input_file": str(input_path), "output_file": str(out_path), "total_entities": len(entities_raw), "entity_counts": entity_groups, "processing_time_seconds": round(detect_time, 2), "entities": [{"word": e.get("word",""), "entity_group": e.get("entity_group",""), "score": round(e.get("score",0), 4)} for e in entities_raw]}
+                  json_path.write_text(json.dumps(report, indent=2)); print(f"  JSON report saved: {json_path}")
+              print("\n  Done.\n")
+          def cmd_supported(args):
+              print_banner(); print("\n  Supported File Types:\n  " + "-" * 40)
+              for ext, desc in [(".pdf","PDF documents"),(".docx","Word documents"),(".png, .jpg, .jpeg","Images (OCR)"),(".tif, .tiff","TIFF images (OCR)"),(".dcm, .dicom","DICOM medical images"),(".txt, .csv, .md, .log","Plain text files")]: print(f"    {ext:<25} {desc}")
+              print()
+          def main():
+              parser = argparse.ArgumentParser(prog="pf-redact", description="TANUH Privacy Filter — Offline PII Detection & Redaction")
+              parser.add_argument("--version", action="version", version="pf-redact 1.0.0")
+              sub = parser.add_subparsers(dest="command")
+              sub.add_parser("check", help="Verify model availability")
+              p = sub.add_parser("redact", help="Redact PII from a document")
+              p.add_argument("input", help="Path to input document"); p.add_argument("-o", "--output", help="Path for redacted output")
+              p.add_argument("--json", help="Save detection report as JSON"); p.add_argument("-q", "--quiet", action="store_true", help="Suppress individual entity listing")
+              sub.add_parser("supported-types", help="List supported file formats")
+              args = parser.parse_args()
+              if args.command == "check": cmd_check(args)
+              elif args.command == "redact": cmd_redact(args)
+              elif args.command == "supported-types": cmd_supported(args)
+              else: parser.print_help()
+          if __name__ == "__main__": main()
+          PYEOF
+
+          cat > privacy_filter_cli.spec << 'SPECEOF'
+          block_cipher = None
+          a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
+              hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
+              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','torch.cuda','torch.backends.cudnn','torch.backends.mps','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              cipher=block_cipher, noarchive=False)
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+          exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
+          SPECEOF
+
+      - name: Build exe
+        run: pyinstaller privacy_filter_cli.spec
+
+      - name: Verify exe
+        run: |
+          .\dist\pf-redact.exe --version
+          .\dist\pf-redact.exe --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-windows-x86_64
+          path: dist/pf-redact.exe
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 4: macOS
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-macos:
+    name: macOS (universal)
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: brew install tesseract poppler
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.5.1
+          pip install --no-cache-dir transformers==5.6.2 accelerate==1.10.0 safetensors==0.5.2 huggingface-hub==1.12.0 tokenizers==0.22.2 pypdf==5.1.0 pdfplumber==0.11.4 pdf2image==1.17.0 python-docx==1.1.2 Pillow==11.0.0 pytesseract==0.3.13 pydicom==3.0.1 "numpy>=1.26,<3" pymupdf==1.24.13 python-dotenv==1.0.1 httpx==0.27.0
+          pip install pyinstaller
+
+      - name: Create CLI launcher and spec
+        run: |
+          # Same CLI launcher and spec as ARM64 job
+          cat > privacy_filter_cli.py << 'PYEOF'
+          """Privacy Filter CLI — command-line PII detection and redaction."""
+          import argparse, json, os, sys, time
+          from pathlib import Path
+          os.environ["STORAGE_BACKEND"] = "local"
+          os.environ["KEYCLOAK_AUTH_ENABLED"] = "false"
+          os.environ["SECRET_KEY"] = "local-cli-key"
+          if getattr(sys, "frozen", False): base = Path(sys._MEIPASS)
+          else: base = Path(__file__).parent
+          model_cache = Path.home() / ".privacy_filter" / "models"
+          model_cache.mkdir(parents=True, exist_ok=True)
+          os.environ.setdefault("HF_HOME", str(model_cache))
+          os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(model_cache / "hub"))
+          os.environ.setdefault("TRANSFORMERS_CACHE", str(model_cache / "hub"))
+          sys.path.insert(0, str(base))
+          def print_banner():
+              print("=" * 60); print("  TANUH Privacy Filter — PII Detection & Redaction CLI"); print("  TANUH AI-CoE, IISc Bangalore"); print("=" * 60)
+          def cmd_check(args):
+              print_banner(); print("\n[Check] Verifying model availability...\n")
+              hub_dir = model_cache / "hub"
+              if hub_dir.exists() and any(hub_dir.iterdir()): print("  Models cached at: " + str(model_cache)); print("  Status: READY")
+              else: print("  Models not yet downloaded."); print("  They will be downloaded on first 'redact' run (~500 MB).")
+              print()
+          def cmd_redact(args):
+              print_banner(); input_path = Path(args.input)
+              if not input_path.exists(): print(f"\n  Error: File not found: {input_path}"); sys.exit(1)
+              print(f"\n  Input:  {input_path}"); print(f"  Output: {args.output or 'auto-generated'}\n")
+              first_run = not (model_cache / "hub").exists() or not any((model_cache / "hub").iterdir()) if (model_cache / "hub").exists() else True
+              print("  [1/4] Downloading AI models (first run, ~500 MB)..." if first_run else "  [1/4] Loading AI models from cache...")
+              from privacy_filter.app.model import PrivacyFilter
+              pf = PrivacyFilter.instance(); pf.load(); print("  [1/4] Models loaded successfully.")
+              print(f"  [2/4] Detecting file type...")
+              from privacy_filter.app.redactor import get_handler
+              try: handler = get_handler(input_path.name)
+              except ValueError as e: print(f"\n  Error: {e}"); sys.exit(1)
+              print(f"  [2/4] File type: {handler.name}"); print(f"  [3/4] Extracting text...")
+              t0 = time.time(); text = handler.extract(input_path)
+              entities_raw = pf.detect(text) if text else []; detect_time = time.time() - t0
+              entity_groups = {}
+              for e in entities_raw: grp = e.get("entity_group", "UNKNOWN"); entity_groups[grp] = entity_groups.get(grp, 0) + 1
+              print(f"  [3/4] Detection complete in {detect_time:.1f}s\n")
+              print("  " + "-" * 50); print(f"  PII Entities Detected: {len(entities_raw)}"); print("  " + "-" * 50)
+              if entity_groups:
+                  for grp, cnt in sorted(entity_groups.items(), key=lambda x: -x[1]): print(f"    {grp:<25} {cnt}")
+              else: print("    No PII entities found.")
+              print("  " + "-" * 50 + "\n")
+              if entities_raw and not args.quiet:
+                  print("  Detected Entities:")
+                  for i, e in enumerate(entities_raw[:50], 1): print(f"    {i:3d}. [{e.get('entity_group','?')}] \"{e.get('word','')}\" (confidence: {e.get('score',0):.2f})")
+                  if len(entities_raw) > 50: print(f"    ... and {len(entities_raw) - 50} more entities")
+                  print()
+              out_path = Path(args.output) if args.output else input_path.parent / f"{input_path.stem}_redacted{handler.out_extension}"
+              print(f"  [4/4] Generating redacted output..."); out_path.parent.mkdir(parents=True, exist_ok=True)
+              handler.redact(input_path, entities_raw, out_path); print(f"  [4/4] Redacted file saved: {out_path}\n")
+              if args.json:
+                  json_path = Path(args.json)
+                  report = {"input_file": str(input_path), "output_file": str(out_path), "total_entities": len(entities_raw), "entity_counts": entity_groups, "processing_time_seconds": round(detect_time, 2), "entities": [{"word": e.get("word",""), "entity_group": e.get("entity_group",""), "score": round(e.get("score",0), 4)} for e in entities_raw]}
+                  json_path.write_text(json.dumps(report, indent=2)); print(f"  JSON report saved: {json_path}")
+              print("\n  Done.\n")
+          def cmd_supported(args):
+              print_banner(); print("\n  Supported File Types:\n  " + "-" * 40)
+              for ext, desc in [(".pdf","PDF documents"),(".docx","Word documents"),(".png, .jpg, .jpeg","Images (OCR)"),(".tif, .tiff","TIFF images (OCR)"),(".dcm, .dicom","DICOM medical images"),(".txt, .csv, .md, .log","Plain text files")]: print(f"    {ext:<25} {desc}")
+              print()
+          def main():
+              parser = argparse.ArgumentParser(prog="pf-redact", description="TANUH Privacy Filter — Offline PII Detection & Redaction")
+              parser.add_argument("--version", action="version", version="pf-redact 1.0.0")
+              sub = parser.add_subparsers(dest="command")
+              sub.add_parser("check", help="Verify model availability")
+              p = sub.add_parser("redact", help="Redact PII from a document")
+              p.add_argument("input", help="Path to input document"); p.add_argument("-o", "--output", help="Path for redacted output")
+              p.add_argument("--json", help="Save detection report as JSON"); p.add_argument("-q", "--quiet", action="store_true", help="Suppress individual entity listing")
+              sub.add_parser("supported-types", help="List supported file formats")
+              args = parser.parse_args()
+              if args.command == "check": cmd_check(args)
+              elif args.command == "redact": cmd_redact(args)
+              elif args.command == "supported-types": cmd_supported(args)
+              else: parser.print_help()
+          if __name__ == "__main__": main()
+          PYEOF
+
+          cat > privacy_filter_cli.spec << 'SPECEOF'
+          block_cipher = None
+          a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
+              hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
+              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','torch.cuda','torch.backends.cudnn','torch.backends.mps','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              cipher=block_cipher, noarchive=False)
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+          exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
+          SPECEOF
+
+      - name: Build binary
+        run: pyinstaller privacy_filter_cli.spec
+
+      - name: Verify binary
+        run: |
+          chmod +x dist/pf-redact
+          ./dist/pf-redact --version
+          ./dist/pf-redact --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-macos
+          path: dist/pf-redact
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 5: Create GitHub Release (only on tags)
+  # ═══════════════════════════════════════════════════════════════════════════
+  release:
+    name: Create Release
+    needs: [build-linux, build-linux-arm64, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Rename artifacts
+        run: |
+          mkdir -p release
+          cp artifacts/pf-redact-linux-x86_64/pf-redact-1.0.0-x86_64.AppImage  release/pf-redact-linux-x86_64.AppImage
+          cp artifacts/pf-redact-linux-aarch64/pf-redact                        release/pf-redact-linux-aarch64
+          cp artifacts/pf-redact-windows-x86_64/pf-redact.exe                   release/pf-redact-windows-x86_64.exe
+          cp artifacts/pf-redact-macos/pf-redact                                release/pf-redact-macos
+          ls -lh release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Privacy Filter CLI ${{ github.ref_name }}"
+          body: |
+            ## Privacy Filter CLI ${{ github.ref_name }}
+
+            Command-line executables for offline PII detection and redaction in medical documents.
+
+            ### Downloads
+            | Platform | File |
+            |----------|------|
+            | Linux x86_64 | `pf-redact-linux-x86_64.AppImage` |
+            | Linux ARM64 | `pf-redact-linux-aarch64` |
+            | Windows x86_64 | `pf-redact-windows-x86_64.exe` |
+            | macOS (Apple Silicon) | `pf-redact-macos` |
+
+            ### Usage
+            ```bash
+            # Make executable (Linux/Mac only)
+            chmod +x pf-redact*
+
+            # Check model status
+            ./pf-redact check
+
+            # Redact a document (models auto-download on first run)
+            ./pf-redact redact document.pdf -o redacted.pdf
+
+            # Redact with JSON report
+            ./pf-redact redact document.pdf -o redacted.pdf --json report.json
+
+            # List supported file types
+            ./pf-redact supported-types
+            ```
+          files: release/*
+          draft: false
+          prerelease: false

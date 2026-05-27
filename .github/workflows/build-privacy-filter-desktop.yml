@@ -88,8 +88,8 @@ jobs:
         shell: bash
         run: |
           cat > privacy_filter_gui.py << 'PYEOF'
-          """Privacy Filter Desktop App — lightweight launcher (models downloaded on first run)."""
-          import os, sys, json, threading, tempfile, webbrowser
+          """Privacy Filter Desktop App — styled GUI launcher (models downloaded on first run)."""
+          import os, sys, json, threading, tempfile, webbrowser, time
           from pathlib import Path
 
           os.environ["STORAGE_BACKEND"] = "local"
@@ -116,74 +116,208 @@ jobs:
 
           import customtkinter as ctk
 
-          PORT = 8003
+          BRAND      = "#14868C"
+          BRAND_DARK = "#0E6C71"
+          BRAND_BG   = "#F0FDFA"
+          GRAY_50    = "#F8FAFC"
+          GRAY_100   = "#F1F5F9"
+          GRAY_200   = "#E2E8F0"
+          GRAY_500   = "#64748B"
+          GRAY_700   = "#334155"
+          GRAY_900   = "#0F172A"
+          RED_500    = "#EF4444"
+          GREEN_500  = "#22C55E"
+          GREEN_BG   = "#F0FDF4"
+          AMBER_BG   = "#FFFBEB"
+          PORT       = 8003
 
           class PrivacyFilterApp(ctk.CTk):
               def __init__(self):
                   super().__init__()
                   self.title("TANUH Privacy Filter")
-                  self.geometry("520x380")
-                  self.resizable(False, False)
+                  self.geometry("600x520")
+                  self.minsize(560, 480)
                   ctk.set_appearance_mode("light")
                   ctk.set_default_color_theme("blue")
+                  self.configure(fg_color="#FFFFFF")
 
                   self.server_thread = None
                   self.server_running = False
                   self.first_run = not (model_cache / "hub").exists()
+                  self._start_time = None
 
-                  main = ctk.CTkFrame(self, fg_color="transparent")
-                  main.pack(fill="both", expand=True, padx=30, pady=20)
+                  # ── Header bar ──
+                  header = ctk.CTkFrame(self, height=64, corner_radius=0, fg_color=BRAND)
+                  header.pack(fill="x")
+                  header.pack_propagate(False)
 
-                  ctk.CTkLabel(main, text="TANUH Privacy Filter",
-                               font=ctk.CTkFont(size=22, weight="bold")).pack(pady=(10,2))
-                  ctk.CTkLabel(main, text="PII Detection & Redaction — Offline Mode",
-                               font=ctk.CTkFont(size=13), text_color="gray").pack(pady=(0,15))
+                  ctk.CTkLabel(
+                      header, text="  TANUH Privacy Filter",
+                      font=ctk.CTkFont(size=20, weight="bold"),
+                      text_color="#FFFFFF"
+                  ).pack(side="left", padx=16, pady=12)
 
-                  self.status = ctk.CTkLabel(main, text="Ready to start",
-                                             font=ctk.CTkFont(size=14))
-                  self.status.pack(pady=5)
+                  self.status_dot = ctk.CTkLabel(
+                      header, text="●  Offline",
+                      font=ctk.CTkFont(size=13),
+                      text_color="#94A3B8"
+                  )
+                  self.status_dot.pack(side="right", padx=20, pady=12)
 
-                  self.detail = ctk.CTkLabel(main, text="",
-                                             font=ctk.CTkFont(size=11), text_color="gray")
-                  self.detail.pack(pady=(0,2))
+                  # ── Main container ──
+                  main = ctk.CTkFrame(self, fg_color="#FFFFFF")
+                  main.pack(fill="both", expand=True, padx=28, pady=20)
 
-                  self.progress = ctk.CTkProgressBar(main, width=350)
-                  self.progress.pack(pady=10)
+                  # ── Info card ──
+                  info_card = ctk.CTkFrame(main, fg_color=BRAND_BG, corner_radius=10, border_width=1, border_color=GRAY_200)
+                  info_card.pack(fill="x", pady=(0, 16))
+
+                  ctk.CTkLabel(
+                      info_card, text="PII Detection & Redaction",
+                      font=ctk.CTkFont(size=16, weight="bold"),
+                      text_color=GRAY_900
+                  ).pack(anchor="w", padx=16, pady=(14, 2))
+
+                  ctk.CTkLabel(
+                      info_card,
+                      text="Detect and redact personal information from documents.\nPDF, DOCX, images, DICOM — all processed locally on your machine.",
+                      font=ctk.CTkFont(size=12),
+                      text_color=GRAY_500,
+                      justify="left"
+                  ).pack(anchor="w", padx=16, pady=(0, 14))
+
+                  # ── Status panel ──
+                  status_frame = ctk.CTkFrame(main, fg_color=GRAY_50, corner_radius=10, border_width=1, border_color=GRAY_200)
+                  status_frame.pack(fill="x", pady=(0, 16))
+
+                  status_top = ctk.CTkFrame(status_frame, fg_color="transparent")
+                  status_top.pack(fill="x", padx=16, pady=(14, 6))
+
+                  self.status_label = ctk.CTkLabel(
+                      status_top, text="Ready to start",
+                      font=ctk.CTkFont(size=14, weight="bold"),
+                      text_color=GRAY_900
+                  )
+                  self.status_label.pack(side="left")
+
+                  self.elapsed_label = ctk.CTkLabel(
+                      status_top, text="",
+                      font=ctk.CTkFont(size=12),
+                      text_color=GRAY_500
+                  )
+                  self.elapsed_label.pack(side="right")
+
+                  self.detail_label = ctk.CTkLabel(
+                      status_frame, text="Click 'Start Server' to begin. Models will be loaded automatically.",
+                      font=ctk.CTkFont(size=12),
+                      text_color=GRAY_500,
+                      justify="left"
+                  )
+                  self.detail_label.pack(anchor="w", padx=16, pady=(0, 4))
+
+                  self.progress = ctk.CTkProgressBar(
+                      status_frame, width=400, height=10,
+                      corner_radius=5,
+                      progress_color=BRAND,
+                      fg_color=GRAY_200
+                  )
+                  self.progress.pack(fill="x", padx=16, pady=(4, 6))
                   self.progress.set(0)
 
+                  self.pct_label = ctk.CTkLabel(
+                      status_frame, text="",
+                      font=ctk.CTkFont(size=11),
+                      text_color=GRAY_500
+                  )
+                  self.pct_label.pack(anchor="e", padx=16, pady=(0, 12))
+
+                  # ── Log panel ──
+                  log_label = ctk.CTkLabel(
+                      main, text="Activity Log",
+                      font=ctk.CTkFont(size=12, weight="bold"),
+                      text_color=GRAY_700
+                  )
+                  log_label.pack(anchor="w", pady=(0, 4))
+
+                  self.log_box = ctk.CTkTextbox(
+                      main, height=90, corner_radius=8,
+                      font=ctk.CTkFont(family="Consolas, monospace", size=11),
+                      fg_color=GRAY_50,
+                      text_color=GRAY_700,
+                      border_width=1,
+                      border_color=GRAY_200,
+                      state="disabled"
+                  )
+                  self.log_box.pack(fill="both", expand=True, pady=(0, 16))
+
+                  # ── Button row ──
                   btn_frame = ctk.CTkFrame(main, fg_color="transparent")
-                  btn_frame.pack(pady=15)
+                  btn_frame.pack(fill="x")
 
-                  self.start_btn = ctk.CTkButton(btn_frame, text="Start Server",
-                                                  command=self.start_server, width=150,
-                                                  fg_color="#14868C", hover_color="#0E6C71")
-                  self.start_btn.pack(side="left", padx=8)
+                  self.start_btn = ctk.CTkButton(
+                      btn_frame, text="▶  Start Server",
+                      command=self.start_server,
+                      width=180, height=42,
+                      corner_radius=8,
+                      font=ctk.CTkFont(size=14, weight="bold"),
+                      fg_color=BRAND, hover_color=BRAND_DARK
+                  )
+                  self.start_btn.pack(side="left", padx=(0, 10))
 
-                  self.open_btn = ctk.CTkButton(btn_frame, text="Open Browser",
-                                                 command=self.open_browser, width=150,
-                                                 state="disabled",
-                                                 fg_color="#14868C", hover_color="#0E6C71")
-                  self.open_btn.pack(side="left", padx=8)
+                  self.open_btn = ctk.CTkButton(
+                      btn_frame, text="\U0001F310  Open in Browser",
+                      command=self.open_browser,
+                      width=180, height=42,
+                      corner_radius=8,
+                      font=ctk.CTkFont(size=14, weight="bold"),
+                      fg_color=BRAND, hover_color=BRAND_DARK,
+                      state="disabled"
+                  )
+                  self.open_btn.pack(side="left", padx=(0, 10))
 
-                  ctk.CTkLabel(main, text=f"Server runs at http://localhost:{PORT}",
-                               font=ctk.CTkFont(size=11), text_color="gray").pack(pady=(10,0))
-                  ctk.CTkLabel(main, text="TANUH AI-CoE, IISc Bangalore",
-                               font=ctk.CTkFont(size=10), text_color="gray").pack(pady=(2,0))
+                  url_label = ctk.CTkLabel(
+                      btn_frame,
+                      text=f"localhost:{PORT}",
+                      font=ctk.CTkFont(size=11),
+                      text_color=GRAY_500
+                  )
+                  url_label.pack(side="right", padx=4)
+
+                  # ── Footer ──
+                  footer = ctk.CTkLabel(
+                      self, text="TANUH AI-CoE  •  Indian Institute of Science, Bangalore",
+                      font=ctk.CTkFont(size=10),
+                      text_color=GRAY_500
+                  )
+                  footer.pack(pady=(0, 8))
 
                   self.protocol("WM_DELETE_WINDOW", self.on_close)
 
+              def _log(self, msg):
+                  self.log_box.configure(state="normal")
+                  ts = time.strftime("%H:%M:%S")
+                  self.log_box.insert("end", f"[{ts}]  {msg}\n")
+                  self.log_box.see("end")
+                  self.log_box.configure(state="disabled")
+
               def start_server(self):
-                  self.start_btn.configure(state="disabled")
+                  self.start_btn.configure(state="disabled", text="⏳  Starting...")
+                  self._start_time = time.time()
                   if self.first_run:
-                      self.status.configure(text="Downloading AI models (first run)...")
-                      self.detail.configure(text="This is a one-time download (~500 MB). Please wait.")
+                      self.status_label.configure(text="Downloading AI models (first run)...")
+                      self.detail_label.configure(text="One-time download ~500 MB from HuggingFace. Please wait.")
+                      self._log("First run detected — downloading models from HuggingFace")
                   else:
-                      self.status.configure(text="Loading models...")
-                      self.detail.configure(text="")
-                  self.progress.set(0.1)
+                      self.status_label.configure(text="Loading models from cache...")
+                      self.detail_label.configure(text="Models found in ~/.privacy_filter/models/")
+                      self._log("Loading cached models")
+                  self.progress.set(0.05)
+                  self.pct_label.configure(text="5%")
+                  self.status_dot.configure(text="●  Starting", text_color="#F59E0B")
                   self.server_thread = threading.Thread(target=self._run_server, daemon=True)
                   self.server_thread.start()
                   self.after(500, self._poll_health)
+                  self.after(1000, self._update_elapsed)
 
               def _run_server(self):
                   import uvicorn
@@ -192,29 +326,45 @@ jobs:
                   self.server_running = True
                   uvicorn.run(fastapi_app, host="127.0.0.1", port=PORT, log_level="warning")
 
+              def _update_elapsed(self):
+                  if self._start_time and not self.open_btn.cget("state") == "normal":
+                      elapsed = int(time.time() - self._start_time)
+                      m, s = divmod(elapsed, 60)
+                      self.elapsed_label.configure(text=f"{m:02d}:{s:02d}")
+                      self.after(1000, self._update_elapsed)
+
               def _poll_health(self):
                   import urllib.request
                   try:
                       r = urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/health", timeout=2)
                       data = json.loads(r.read())
                       if data.get("model_loaded"):
-                          self.status.configure(text="Server running — models loaded")
-                          self.detail.configure(text="Models cached locally for future use.")
+                          elapsed = int(time.time() - self._start_time) if self._start_time else 0
+                          m, s = divmod(elapsed, 60)
+                          self.status_label.configure(text="✅  Server running — models loaded")
+                          self.detail_label.configure(text=f"Ready at http://localhost:{PORT}")
                           self.progress.set(1.0)
+                          self.pct_label.configure(text="100%")
+                          self.status_dot.configure(text="●  Online", text_color=GREEN_500)
                           self.open_btn.configure(state="normal")
+                          self.start_btn.configure(text="▶  Running", state="disabled")
+                          self._log(f"Server ready in {m}m {s}s — open browser to start redacting")
                           return
                   except Exception:
                       pass
                   p = self.progress.get()
-                  self.progress.set(min(p + 0.03, 0.95))
+                  new_p = min(p + 0.02, 0.92)
+                  self.progress.set(new_p)
+                  self.pct_label.configure(text=f"{int(new_p * 100)}%")
                   if self.first_run:
-                      self.status.configure(text="Downloading & loading models...")
+                      self.status_label.configure(text="Downloading & loading models...")
                   else:
-                      self.status.configure(text="Loading models...")
+                      self.status_label.configure(text="Loading models...")
                   self.after(3000, self._poll_health)
 
               def open_browser(self):
                   webbrowser.open(f"http://localhost:{PORT}")
+                  self._log(f"Opened browser at http://localhost:{PORT}")
 
               def on_close(self):
                   self.destroy()
@@ -304,3 +454,61 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.zip_name }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          cp artifacts/PrivacyFilterApp-ubuntu-latest/PrivacyFilterApp-ubuntu-latest.zip       release/
+          cp artifacts/PrivacyFilterApp-ubuntu-24.04-arm/PrivacyFilterApp-ubuntu-24.04-arm.zip release/
+          cp artifacts/PrivacyFilterApp-windows-latest/PrivacyFilterApp-windows-latest.zip     release/
+          cp artifacts/PrivacyFilterApp-macos-latest/PrivacyFilterApp-macos-latest.zip         release/
+          ls -lh release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: privacy-filter-desktop-v1.1.0
+          name: "Privacy Filter Desktop App v1.1.0"
+          body: |
+            ## Privacy Filter Desktop App v1.1.0
+
+            Styled GUI application for PII detection and redaction. Runs a local FastAPI server with a browser-based interface.
+
+            **What's included:**
+            - Branded TANUH UI with activity log and progress tracking
+            - Auto-downloads AI models (~500 MB) on first launch, cached for future use
+            - Supports PDF, DOCX, images, DICOM, CSV, TXT, and more
+            - Fully offline after initial model download
+
+            **Models:** `openai/privacy-filter` + `dslim/bert-base-NER`
+            **Cache:** `~/.privacy_filter/models/`
+
+            ### Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Linux x86_64 | `PrivacyFilterApp-ubuntu-latest.zip` |
+            | Linux ARM64 | `PrivacyFilterApp-ubuntu-24.04-arm.zip` |
+            | Windows x86_64 | `PrivacyFilterApp-windows-latest.zip` |
+            | macOS (Apple Silicon / Intel) | `PrivacyFilterApp-macos-latest.zip` |
+
+            ### Usage
+            1. Unzip the downloaded file
+            2. Run `PrivacyFilterApp` (Linux/macOS: `chmod +x PrivacyFilterApp` first)
+            3. Click **Start Server** — models download on first run
+            4. Click **Open in Browser** to access the redaction interface at `http://localhost:8003`
+          files: release/*
+          draft: false
+          prerelease: false
