@@ -94,12 +94,18 @@
     align-items: center;
 }
 
-.hero-3d-logo {
+.hero-3d-svg-logo {
     max-width: 100%;
-    width: 600px;
+    width: 450px;
     height: auto;
-    border-radius: 20px;
-    mix-blend-mode: multiply; /* Blends nicely if background is not perfectly white */
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.6s ease;
+    filter: drop-shadow(0 15px 25px rgba(20, 134, 140, 0.25)); /* Permanent shadow to pop up */
+    transform-style: preserve-3d;
+}
+
+.hero-3d-svg-logo:hover {
+    transform: translateY(-8px) scale(1.02) perspective(1000px) rotateX(3deg) rotateY(-3deg);
+    filter: drop-shadow(0 20px 25px rgba(20, 134, 140, 0.15));
 }
 
 /* ── Header Area ── */
@@ -139,9 +145,7 @@
     letter-spacing: -0.02em;
 }
 .hub-title .highlight-text {
-    background: linear-gradient(135deg, var(--primary) 0%, #0ea5e9 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--primary);
 }
 .hub-motive {
     font-size: 1.15rem;

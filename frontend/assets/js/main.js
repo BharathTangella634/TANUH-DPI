@@ -64,6 +64,11 @@
             }
         }
 
+        // Smoothly scroll back to the top when navigating to a new tab
+        if (evt) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         try { mixpanel.track('Page View', { 'page_title': tabName }); } catch(e) {}
     }
 
