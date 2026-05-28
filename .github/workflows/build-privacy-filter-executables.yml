@@ -306,7 +306,6 @@ jobs:
               excludes=[
                   'matplotlib', 'scipy', 'pandas', 'notebook', 'IPython',
                   'torch.distributed', 'torch.testing', 'torch.utils.tensorboard',
-                  'torch.cuda', 'torch.backends.cudnn', 'torch.backends.mps',
                   'customtkinter', 'tkinter',
                   'fastapi', 'starlette', 'uvicorn', 'pydantic', 'jose',
               ],
@@ -571,7 +570,7 @@ jobs:
           block_cipher = None
           a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
               hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
-              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','torch.cuda','torch.backends.cudnn','torch.backends.mps','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
               cipher=block_cipher, noarchive=False)
           pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
           exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
@@ -709,7 +708,7 @@ jobs:
           block_cipher = None
           a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
               hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
-              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','torch.cuda','torch.backends.cudnn','torch.backends.mps','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
               cipher=block_cipher, noarchive=False)
           pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
           exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
@@ -844,7 +843,7 @@ jobs:
           block_cipher = None
           a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
               hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
-              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','torch.cuda','torch.backends.cudnn','torch.backends.mps','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
               cipher=block_cipher, noarchive=False)
           pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
           exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)

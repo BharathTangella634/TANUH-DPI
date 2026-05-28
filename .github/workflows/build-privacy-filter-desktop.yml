@@ -414,7 +414,6 @@ jobs:
               excludes=[
                   'matplotlib', 'scipy', 'pandas', 'notebook', 'IPython',
                   'torch.distributed', 'torch.testing', 'torch.utils.tensorboard',
-                  'torch.cuda', 'torch.backends.cudnn', 'torch.backends.mps',
               ],
               cipher=block_cipher,
               noarchive=False,
