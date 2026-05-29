@@ -52,7 +52,9 @@ jobs:
             "numpy>=1.26,<3" \
             pymupdf==1.24.13 \
             python-dotenv==1.0.1 \
-            httpx==0.27.0
+            httpx==0.27.0 \
+            scipy \
+            pandas
           pip install pyinstaller
 
       - name: Create CLI launcher
@@ -304,8 +306,8 @@ jobs:
               hookspath=[],
               runtime_hooks=[],
               excludes=[
-                  'matplotlib', 'scipy', 'pandas', 'notebook', 'IPython',
-                  'torch.distributed', 'torch.testing', 'torch.utils.tensorboard',
+                  'matplotlib', 'notebook', 'IPython',
+                  'torch.utils.tensorboard',
                   'customtkinter', 'tkinter',
                   'fastapi', 'starlette', 'uvicorn', 'pydantic', 'jose',
               ],
@@ -428,7 +430,9 @@ jobs:
             "numpy>=1.26,<3" \
             pymupdf==1.24.13 \
             python-dotenv==1.0.1 \
-            httpx==0.27.0
+            httpx==0.27.0 \
+            scipy \
+            pandas
           pip install pyinstaller
 
       - name: Create CLI launcher
@@ -570,7 +574,7 @@ jobs:
           block_cipher = None
           a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
               hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
-              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              excludes=['matplotlib','notebook','IPython','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
               cipher=block_cipher, noarchive=False)
           pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
           exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
@@ -618,7 +622,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.5.1
-          pip install --no-cache-dir transformers==5.6.2 accelerate==1.10.0 safetensors==0.5.2 huggingface-hub==1.12.0 tokenizers==0.22.2 pypdf==5.1.0 pdfplumber==0.11.4 pdf2image==1.17.0 python-docx==1.1.2 Pillow==11.0.0 pytesseract==0.3.13 pydicom==3.0.1 "numpy>=1.26,<3" pymupdf==1.24.13 python-dotenv==1.0.1 httpx==0.27.0
+          pip install --no-cache-dir transformers==5.6.2 accelerate==1.10.0 safetensors==0.5.2 huggingface-hub==1.12.0 tokenizers==0.22.2 pypdf==5.1.0 pdfplumber==0.11.4 pdf2image==1.17.0 python-docx==1.1.2 Pillow==11.0.0 pytesseract==0.3.13 pydicom==3.0.1 "numpy>=1.26,<3" pymupdf==1.24.13 python-dotenv==1.0.1 httpx==0.27.0 scipy pandas
           pip install pyinstaller
 
       - name: Create CLI launcher and spec
@@ -708,7 +712,7 @@ jobs:
           block_cipher = None
           a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
               hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
-              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              excludes=['matplotlib','notebook','IPython','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
               cipher=block_cipher, noarchive=False)
           pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
           exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)
@@ -753,7 +757,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.5.1
-          pip install --no-cache-dir transformers==5.6.2 accelerate==1.10.0 safetensors==0.5.2 huggingface-hub==1.12.0 tokenizers==0.22.2 pypdf==5.1.0 pdfplumber==0.11.4 pdf2image==1.17.0 python-docx==1.1.2 Pillow==11.0.0 pytesseract==0.3.13 pydicom==3.0.1 "numpy>=1.26,<3" pymupdf==1.24.13 python-dotenv==1.0.1 httpx==0.27.0
+          pip install --no-cache-dir transformers==5.6.2 accelerate==1.10.0 safetensors==0.5.2 huggingface-hub==1.12.0 tokenizers==0.22.2 pypdf==5.1.0 pdfplumber==0.11.4 pdf2image==1.17.0 python-docx==1.1.2 Pillow==11.0.0 pytesseract==0.3.13 pydicom==3.0.1 "numpy>=1.26,<3" pymupdf==1.24.13 python-dotenv==1.0.1 httpx==0.27.0 scipy pandas
           pip install pyinstaller
 
       - name: Create CLI launcher and spec
@@ -843,7 +847,7 @@ jobs:
           block_cipher = None
           a = Analysis(['privacy_filter_cli.py'], pathex=['.'], binaries=[], datas=[('privacy_filter', 'privacy_filter')],
               hiddenimports=['privacy_filter','privacy_filter.app','privacy_filter.app.model','privacy_filter.app.ner_model','privacy_filter.app.redactor','privacy_filter.app.rule_detectors','privacy_filter.app.extractors','privacy_filter.app.extractors.txt','privacy_filter.app.extractors.pdf','privacy_filter.app.extractors.docx','privacy_filter.app.extractors.image','privacy_filter.app.extractors.dicom','transformers','torch','safetensors','tokenizers','accelerate','huggingface_hub','pypdf','pdfplumber','docx','fitz','pytesseract','pydicom','PIL','dotenv','httpx'],
-              excludes=['matplotlib','scipy','pandas','notebook','IPython','torch.distributed','torch.testing','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
+              excludes=['matplotlib','notebook','IPython','torch.utils.tensorboard','customtkinter','tkinter','fastapi','starlette','uvicorn','pydantic','jose'],
               cipher=block_cipher, noarchive=False)
           pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
           exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='pf-redact', debug=False, strip=False, upx=True, console=True, onefile=True)

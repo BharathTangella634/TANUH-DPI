@@ -81,7 +81,9 @@ jobs:
             python-dotenv==1.0.1 \
             "python-jose[cryptography]==3.3.0" \
             email-validator==2.1.1 \
-            httpx==0.27.0
+            httpx==0.27.0 \
+            scipy \
+            pandas
           pip install --no-cache-dir customtkinter pyinstaller
 
       - name: Create GUI launcher
@@ -412,8 +414,8 @@ jobs:
               hookspath=[],
               runtime_hooks=[],
               excludes=[
-                  'matplotlib', 'scipy', 'pandas', 'notebook', 'IPython',
-                  'torch.distributed', 'torch.testing', 'torch.utils.tensorboard',
+                  'matplotlib', 'notebook', 'IPython',
+                  'torch.utils.tensorboard',
               ],
               cipher=block_cipher,
               noarchive=False,
