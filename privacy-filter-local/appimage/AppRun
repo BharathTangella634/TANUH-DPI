@@ -1,0 +1,26 @@
+#!/bin/bash
+# AppRun -- Entry point for the pf-redact AppImage
+#
+# This script is executed when the user runs the AppImage.
+# It sets up the bundled Python environment and runs the CLI.
+
+set -e
+
+# APPDIR is set automatically by the AppImage runtime
+# It points to the mounted squashfs filesystem inside the AppImage
+APPDIR="$(dirname "$(readlink -f "$0")")"
+
+# Use the bundled Python (not the system one)
+export PATH="${APPDIR}/usr/bin:${PATH}"
+export PYTHONHOME="${APPDIR}/usr"
+export PYTHONPATH="${APPDIR}/usr/lib/python3/site-packages:${PYTHONPATH}"
+
+# Library paths for bundled shared libraries
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+
+# SSL certificates (use system ones)
+export SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
+export REQUESTS_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
+
+# Run the CLI, passing all arguments through
+exec "${APPDIR}/usr/bin/python3" -m pf_local.cli "$@"

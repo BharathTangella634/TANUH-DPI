@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=PF Redact
+Comment=Redact PII from documents using ML models locally
+Exec=pf-redact
+Icon=pf-redact
+Type=Application
+Terminal=true
+Categories=Utility;Security;
