@@ -26,7 +26,7 @@
 <div class="tab-header">
     <div class="tab-header-text">
         <h2><i class="fas fa-user-shield" style="color:var(--primary)"></i> Privacy Filter</h2>
-        <p>De-identify medical documents using AI-powered PII detection.</p>
+        <p>De-identify medical images, scans, and documents — removes burned-in patient text and metadata, entirely on CPU.</p>
     </div>
     <!-- <div class="tab-header-logos">
         <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
@@ -43,7 +43,7 @@
         <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use.
     </p>
     <p style="margin: 0; color: #0f766e; font-size: 14px;">
-        <strong><i class="fas fa-exclamation-triangle"></i> Accuracy:</strong> AI detections may be incomplete or incorrect. Please review every output before use.
+        <strong><i class="fas fa-exclamation-triangle"></i> Accuracy:</strong> Detections may be incomplete or incorrect. Please review every output before use.
     </p>
 </div>
 
@@ -63,14 +63,8 @@
     </div>
 </div>
 
-<!-- Health & Status -->
-<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);">
-    <div class="ai-badge ai-badge-off" id="pfHealthBadge" style="margin-bottom:0;">
-        <span class="ai-badge-dot"></span>
-        <span id="pfHealthText">Checking status...</span>
-    </div>
-    <div id="pfStatus" class="pf-status-text hidden" style="font-size: 0.9rem; color: var(--primary); font-weight: 600;"></div>
-</div>
+<!-- Processing status (no health badge — readiness is shown by the top-right CPU READY chip) -->
+<div id="pfStatus" class="pf-status-text hidden" style="margin-bottom: 20px; font-size: 0.9rem; color: var(--primary); font-weight: 600;"></div>
 
 <div class="output-wrapper">
     <section id="pfResults" class="hidden">
@@ -204,7 +198,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/api/health</code></td><td>Liveness + model status</td></tr>
+            <tr><td><span class="api-method get">GET</span></td><td><code>/api/health</code></td><td>Liveness + engine status</td></tr>
             <tr><td><span class="api-method get">GET</span></td><td><code>/api/supported-types</code></td><td>List of accepted file extensions</td></tr>
             <tr><td><span class="api-method post">POST</span></td><td><code>/api/redact</code></td><td>Multipart upload, returns detected entities + redacted file URL</td></tr>
             <tr><td><span class="api-method get">GET</span></td><td><code>/api/files/{kind}/{key}</code></td><td>Download originals or redacted outputs</td></tr>
@@ -259,18 +253,18 @@ print(r.json()["entity_counts"])</pre>
 <div class="api-section-box">
     <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Supported File Types</h4>
     <p style="margin:0; font-size:0.88rem; color:#334155;">
-        <code>.txt</code>, <code>.md</code>, <code>.log</code>, <code>.csv</code>, <code>.pdf</code>, <code>.docx</code>,
+        <code>.dcm</code>/<code>.dicom</code>, <code>.nii</code>/<code>.nii.gz</code>,
         <code>.png</code>, <code>.jpg</code>/<code>.jpeg</code>, <code>.tif</code>/<code>.tiff</code>,
-        <code>.dcm</code>/<code>.dicom</code>
+        <code>.bmp</code>, <code>.pdf</code>
     </p>
 </div>
 
 <div class="api-section-box">
     <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Detection Layers</h4>
     <ul style="margin:0; padding-left:18px; font-size:0.86rem; color:#334155; line-height:1.7;">
-        <li><code>openai/privacy-filter</code> — personal PII (names, dates, IDs)</li>
-        <li><code>dslim/bert-base-NER</code> — organisations, locations, people</li>
-        <li>Deterministic regex rules — tax IDs, IFSC, IBAN, SSN, EIN, Aadhaar, emails, URLs</li>
+        <li>Metadata scrub — DICOM tags, EXIF, and NIfTI headers cleared; DICOM UIDs regenerated</li>
+        <li>Burned-in text detection — shape-based connected-component scan of image edges, modality-aware</li>
+        <li>OCR + rule-based classification — Tesseract reads overlay text; rules flag names, dates, and IDs</li>
     </ul>
 </div>
 
@@ -294,7 +288,7 @@ print(r.json()["entity_counts"])</pre>
     </div>
 </div>
 <p style="margin:0 0 20px; padding:10px 14px; background:#f0fdfa; border-left:4px solid #14868C; border-radius:0 6px 6px 0; font-size:14px; color:#0f766e;">
-    <strong><i class="fas fa-terminal"></i> CLI Tool:</strong> <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">pf-redact</code> — command-line PII detection &amp; redaction. On first run, AI models (~500 MB) are downloaded once and cached locally.
+    <strong><i class="fas fa-terminal"></i> CLI Tool:</strong> <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">pf-redact</code> — command-line PII/PHI detection &amp; redaction. Runs entirely on CPU — no model download; uses Tesseract OCR and rule-based detection.
 </p>
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;">
@@ -343,12 +337,12 @@ print(r.json()["entity_counts"])</pre>
     </div>
 
     <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Verify Setup (First Run — Downloads Models)</h4>
+        <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Verify Setup</h4>
         <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
             <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact check</code>
         </p>
         <p style="margin:0; color:#64748b; font-size:13px;">
-            On first run, downloads AI models from HuggingFace (~500 MB). Cached at <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">~/.privacy_filter/models/</code> for all future runs.
+            Confirms Tesseract OCR and dependencies are available. No model download required — detection runs entirely on CPU.
         </p>
     </div>
 
@@ -368,13 +362,13 @@ print(r.json()["entity_counts"])</pre>
             <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact supported-types</code>
         </p>
         <p style="margin:0; color:#64748b; font-size:13px;">
-            Lists all supported file formats: PDF, DOCX, PNG, JPG, TIFF, DICOM, TXT, CSV, MD, LOG.
+            Lists all supported file formats: DICOM, NIfTI, PNG, JPG, TIFF, BMP, PDF.
         </p>
     </div>
 
     <div style="padding:12px 15px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0;">
         <p style="margin:0; color:#92400e; font-size:14px;">
-            <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. Models are downloaded once from HuggingFace and cached locally. After the first run, zero internet or cloud API calls are made.
+            <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. No models are downloaded — detection runs locally on CPU. Zero internet or cloud API calls are made.
         </p>
     </div>
 </div>
@@ -395,7 +389,7 @@ print(r.json()["entity_counts"])</pre>
 <div class="tab-header">
     <div class="tab-header-text">
         <h2><i class="fas fa-book" style="color:var(--primary)"></i> Privacy Filter User Guide</h2>
-        <p>Complete guide for the Privacy Filter — AI-powered PII detection, redaction pipeline, supported formats, and API integration.</p>
+        <p>Complete guide for the Privacy Filter — PII/PHI detection, redaction pipeline, supported formats, and API integration.</p>
     </div>
 </div>
 
@@ -429,7 +423,7 @@ print(r.json()["entity_counts"])</pre>
             </div>
             <div class="guide-callout guide-callout-info">
                 <strong>What you will see</strong>
-                Upload a clinical or administrative document, watch the AI detect personal information (names, IDs, dates, addresses), and download the redacted version — typically in under 30 seconds.
+                Upload a medical image, scan, or document, watch the system detect patient information (names, IDs, dates) in metadata and burned-in text, and download the de-identified version — typically in under 30 seconds.
             </div>
         </div>
 
@@ -438,19 +432,19 @@ print(r.json()["entity_counts"])</pre>
             <div class="guide-hero">
                 <span style="display:inline-block;background:var(--primary);color:#fff;font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:20px;margin-bottom:10px;">CPU-Based &mdash; No GPU Required</span>
                 <h2>Privacy Filter</h2>
-                <p>AI-powered document de-identification service that detects and redacts Personally Identifiable Information (PII) and Protected Health Information (PHI) from clinical and administrative documents.</p>
+                <p>CPU-based de-identification service that detects and redacts Personally Identifiable Information (PII) and Protected Health Information (PHI) from medical images, DICOM/NIfTI scans, and documents — removing both metadata and burned-in pixel text while preserving all clinical content.</p>
             </div>
 
             <h3>Key Capabilities</h3>
             <table>
                 <thead><tr><th>Feature</th><th>Description</th></tr></thead>
                 <tbody>
-                    <tr><td>AI-Powered Detection</td><td>Transformer-based NER models identify names, dates, IDs, and medical record numbers</td></tr>
-                    <tr><td>Rule-Based Detectors</td><td>Regex patterns for Aadhaar, PAN, IFSC, SSN, emails, phone numbers, and more</td></tr>
-                    <tr><td>Multi-Format Support</td><td>PDF, DOCX, images (PNG/JPG/TIFF), plain text, CSV, Markdown, and DICOM files</td></tr>
-                    <tr><td>OCR Integration</td><td>Scanned PDFs are automatically OCR'd at 200 DPI before PII detection</td></tr>
+                    <tr><td>Metadata De-identification</td><td>Scrubs DICOM tags, EXIF, and NIfTI headers; regenerates DICOM UIDs</td></tr>
+                    <tr><td>Burned-in Text Removal</td><td>Shape-based connected-component detection + Tesseract OCR find and mask patient text overlaid on the image</td></tr>
+                    <tr><td>Modality-Aware Scanning</td><td>Fundus, OCT, ultrasound, CT, and MRI layouts handled with format-specific overlay regions, so clinical content is never touched</td></tr>
+                    <tr><td>Multi-Format Support</td><td>DICOM, NIfTI, images (PNG/JPG/TIFF/BMP), and PDF</td></tr>
                     <tr><td>On-Premises Processing</td><td>All data stays on the server &mdash; no external API calls, fully DPDP Act compliant</td></tr>
-                    <tr><td>Fast Processing</td><td>Typically 10&ndash;30 seconds per document on CPU</td></tr>
+                    <tr><td>Fast Processing</td><td>Typically 10&ndash;30 seconds per file on CPU</td></tr>
                 </tbody>
             </table>
         </div>
@@ -462,59 +456,47 @@ print(r.json()["entity_counts"])</pre>
 
             <div class="guide-pipeline">
                 <div class="guide-pipeline-step">
-                    <h4>1. Upload Document</h4>
-                    <p>Navigate to the Privacy Filter tab and click <strong>"Choose document to redact..."</strong>. Upload a PDF, DOCX, image, or text file. Maximum file size is 25 MB.</p>
+                    <h4>1. Upload File</h4>
+                    <p>Navigate to the Privacy Filter tab and click <strong>"Choose document to redact..."</strong>. Upload a DICOM, NIfTI, image, or PDF file. Maximum file size is 25 MB.</p>
                 </div>
                 <div class="guide-pipeline-step">
-                    <h4>2. Redact Document</h4>
-                    <p>Click <strong>"Redact Document"</strong>. The AI will scan for personal information using transformer models and regex rules. Processing takes 10&ndash;30 seconds.</p>
+                    <h4>2. Redact File</h4>
+                    <p>Click <strong>"Redact Document"</strong>. The system clears metadata tags and detects burned-in text using CV + OCR. Processing takes 10&ndash;30 seconds.</p>
                 </div>
                 <div class="guide-pipeline-step">
                     <h4>3. Review &amp; Download</h4>
-                    <p>Review detected entities in the results panel. The service replaces PII with type labels (e.g., [PERSON], [EMAIL], [AADHAAR]). Download the original and redacted versions.</p>
+                    <p>Review detected entities in the results panel. Burned-in text is masked with opaque boxes and metadata values are replaced with REDACTED. Download the original and de-identified versions.</p>
                 </div>
             </div>
 
             <div class="guide-callout guide-callout-warning">
                 <strong>Accuracy Notice</strong>
-                AI detections may be incomplete or incorrect. Please review every output before use in production. The system prioritizes recall (catching more PII) over precision.
+                Detections may be incomplete or incorrect. Please review every output before use in production. The system prioritizes recall (catching more PHI) over precision.
             </div>
         </div>
 
         <!-- Detection Pipeline -->
         <div id="pg-pipeline" class="guide-section">
             <h2>Detection Pipeline</h2>
-            <p>The Privacy Filter uses a three-layer detection pipeline to maximize PII coverage.</p>
+            <p>The Privacy Filter uses a layered, CPU-only pipeline that removes patient information from both the file's metadata and the image pixels, without altering any clinical content.</p>
 
-            <h3>Layer 1 &mdash; Primary NER</h3>
-            <p>The <code>openai/privacy-filter</code> HuggingFace token-classification model detects personal PII entities: names, dates of birth, ID numbers, addresses, phone numbers, and medical record numbers.</p>
+            <h3>Layer 1 &mdash; Metadata De-identification</h3>
+            <p>DICOM tags (patient name, ID, birth date, sex, institution, physician, device, &hellip;) are scrubbed and study/series/SOP UIDs regenerated; EXIF and NIfTI header fields are cleared. Pixel and voxel data are left untouched.</p>
 
-            <h3>Layer 2 &mdash; Secondary NER</h3>
-            <p>The <code>dslim/bert-base-NER</code> model provides additional coverage for organisations, locations, and named entities that the primary model may miss.</p>
+            <h3>Layer 2 &mdash; Burned-in Text Detection</h3>
+            <p>A shape-based connected-component scan locates character-like regions where overlays sit, without reading them. The scan is modality-aware: ophthalmic images (fundus, OCT) use a narrow band inside the black border, while ultrasound / CT / MRI use a full-width header band &mdash; so measurements, calipers, and clinical annotations are never masked.</p>
 
-            <h3>Layer 3 &mdash; Rule-Based Detectors</h3>
-            <p>Deterministic regex patterns catch structured identifiers:</p>
-            <table>
-                <thead><tr><th>Pattern</th><th>Example</th></tr></thead>
-                <tbody>
-                    <tr><td>Aadhaar Number</td><td>1234 5678 9012</td></tr>
-                    <tr><td>PAN Card</td><td>ABCDE1234F</td></tr>
-                    <tr><td>IFSC Code</td><td>SBIN0001234</td></tr>
-                    <tr><td>SSN / Tax ID</td><td>123-45-6789</td></tr>
-                    <tr><td>Email Address</td><td>user@example.com</td></tr>
-                    <tr><td>Phone Number</td><td>+91 98765 43210</td></tr>
-                    <tr><td>IBAN / EIN</td><td>International bank account numbers</td></tr>
-                </tbody>
-            </table>
+            <h3>Layer 3 &mdash; OCR + Rule-Based Classification</h3>
+            <p>Tesseract OCR reads the detected regions and deterministic rules classify the text as patient information &mdash; names, dates, identifiers, and ages. Confirmed regions are masked with opaque boxes; the redaction is irreversible and leaves surrounding pixels unchanged.</p>
 
             <h3>Processing Flow</h3>
             <div class="guide-pipeline">
-                <div class="guide-pipeline-step"><h4>1. Upload &amp; Format Detection</h4><p>File type identified. Images and scanned PDFs are routed through OCR.</p></div>
-                <div class="guide-pipeline-step"><h4>2. Text Extraction</h4><p>Text extracted via native parsing (PDF/DOCX) or Tesseract OCR (images/scanned).</p></div>
-                <div class="guide-pipeline-step"><h4>3. NER Inference</h4><p>Both transformer models run in parallel on extracted text.</p></div>
-                <div class="guide-pipeline-step"><h4>4. Rule Scan</h4><p>Regex patterns scan for structured identifiers (Aadhaar, PAN, SSN, etc.).</p></div>
-                <div class="guide-pipeline-step"><h4>5. Entity Merging</h4><p>Overlapping detections from all layers merged and deduplicated.</p></div>
-                <div class="guide-pipeline-step"><h4>6. Redacted Output</h4><p>PII replaced with type labels. Redacted file generated in original format.</p></div>
+                <div class="guide-pipeline-step"><h4>1. Load &amp; Format Detection</h4><p>File type identified and routed to the matching loader (DICOM, NIfTI, image, PDF).</p></div>
+                <div class="guide-pipeline-step"><h4>2. Metadata Scrub</h4><p>Header/tag PHI removed; DICOM UIDs regenerated.</p></div>
+                <div class="guide-pipeline-step"><h4>3. Text-Region Detection</h4><p>Connected-component scan locates burned-in text in modality-specific regions.</p></div>
+                <div class="guide-pipeline-step"><h4>4. OCR &amp; Rule Scan</h4><p>Tesseract reads regions; rules flag names, dates, and IDs.</p></div>
+                <div class="guide-pipeline-step"><h4>5. Masking</h4><p>Detected regions blacked out; clinical content preserved.</p></div>
+                <div class="guide-pipeline-step"><h4>6. Validation &amp; Output</h4><p>Redacted image re-checked for residual text; de-identified file written in the original format.</p></div>
             </div>
         </div>
 
@@ -526,12 +508,10 @@ print(r.json()["entity_counts"])</pre>
             <table>
                 <thead><tr><th>Format</th><th>Extensions</th><th>Notes</th></tr></thead>
                 <tbody>
-                    <tr><td>PDF</td><td><code>.pdf</code></td><td>Digital and scanned (auto-OCR at 200 DPI)</td></tr>
-                    <tr><td>Word Documents</td><td><code>.docx</code></td><td>Text and tables extracted</td></tr>
-                    <tr><td>Images</td><td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.tif</code>, <code>.tiff</code></td><td>OCR applied automatically</td></tr>
-                    <tr><td>Plain Text</td><td><code>.txt</code>, <code>.md</code>, <code>.log</code></td><td>Direct text processing</td></tr>
-                    <tr><td>Structured Data</td><td><code>.csv</code></td><td>Row-by-row PII detection</td></tr>
-                    <tr><td>Medical Imaging</td><td><code>.dcm</code>, <code>.dicom</code></td><td>DICOM metadata + embedded text</td></tr>
+                    <tr><td>DICOM</td><td><code>.dcm</code>, <code>.dicom</code></td><td>Metadata tags scrubbed + burned-in text masked; pixel data preserved</td></tr>
+                    <tr><td>NIfTI</td><td><code>.nii</code>, <code>.nii.gz</code></td><td>Header PHI fields cleared; volume data preserved</td></tr>
+                    <tr><td>Images</td><td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.tif</code>, <code>.tiff</code>, <code>.bmp</code></td><td>Burned-in text detected and masked; EXIF stripped</td></tr>
+                    <tr><td>PDF</td><td><code>.pdf</code></td><td>Rendered pages scanned for patient text</td></tr>
                 </tbody>
             </table>
         </div>
@@ -551,7 +531,7 @@ print(r.json()["entity_counts"])</pre>
 
             <div class="guide-callout guide-callout-success">
                 <strong>No External API Calls</strong>
-                Unlike cloud-based solutions, the Privacy Filter runs entirely on-premises. Your documents never leave your infrastructure. Both NER models run locally on CPU.
+                Unlike cloud-based solutions, the Privacy Filter runs entirely on-premises. Your files never leave your infrastructure. All detection runs locally on CPU.
             </div>
         </div>
 
@@ -561,8 +541,8 @@ print(r.json()["entity_counts"])</pre>
             <p>Download a single executable file for your operating system. No Python, no pip, no cloud APIs needed. All processing happens entirely on your machine with full data confidentiality.</p>
 
             <div class="guide-callout guide-callout-info">
-                <strong>AI Models — One-Time Download</strong>
-                The CLI uses two models: <code>openai/privacy-filter</code> (PII detection) and <code>dslim/bert-base-NER</code> (auxiliary NER). On first run, both are downloaded from HuggingFace (~500 MB total) and cached at <code>~/.privacy_filter/models/</code>. Subsequent runs load from cache in ~30 seconds — no internet required.
+                <strong>CPU-Only — No Model Download</strong>
+                The CLI runs entirely on CPU using Tesseract OCR and rule-based detection. There is no model download — only the system Tesseract package is required. Processing is fully offline with no internet needed.
             </div>
 
             <h3>Download</h3>
@@ -593,7 +573,7 @@ print(r.json()["entity_counts"])</pre>
             <div class="guide-pipeline">
                 <div class="guide-pipeline-step"><h4>1. Download Executable</h4><p>Download the <code>pf-redact</code> binary for your OS from the links above.</p></div>
                 <div class="guide-pipeline-step"><h4>2. Make Executable</h4><p>Linux/Mac: <code>chmod +x pf-redact*</code>. Linux AppImage may need <code>sudo apt install libfuse2</code>.</p></div>
-                <div class="guide-pipeline-step"><h4>3. Verify Setup</h4><p><code>./pf-redact check</code> — downloads models on first run (~500 MB, one-time).</p></div>
+                <div class="guide-pipeline-step"><h4>3. Verify Setup</h4><p><code>./pf-redact check</code> — confirms Tesseract OCR is available. No model download; runs on CPU.</p></div>
                 <div class="guide-pipeline-step"><h4>4. Redact a Document</h4><p><code>./pf-redact redact document.pdf -o redacted.pdf --json report.json</code></p></div>
                 <div class="guide-pipeline-step"><h4>5. Check Supported Types</h4><p><code>./pf-redact supported-types</code></p></div>
             </div>
@@ -624,7 +604,7 @@ print(r.json()["entity_counts"])</pre>
 
             <div class="guide-callout guide-callout-success">
                 <strong>About Run Locally — Secure Local Execution</strong>
-                This feature enables running the Privacy Filter completely locally. Models are downloaded once from HuggingFace on first run and cached on your machine. After that, all processing occurs within your local environment with zero external connections, ensuring data privacy and security. The service operates independently, making it ideal for confidential or sensitive data handling. For those interested in contributing, the source code is publicly available and contributions are welcome.
+                This feature enables running the Privacy Filter completely locally. It runs entirely on CPU using Tesseract OCR and rule-based detection — no models are downloaded. All processing occurs within your local environment with zero external connections, ensuring data privacy and security. The service operates independently, making it ideal for confidential or sensitive data handling. For those interested in contributing, the source code is publicly available and contributions are welcome.
             </div>
         </div>
 
@@ -642,7 +622,7 @@ print(r.json()["entity_counts"])</pre>
             <table>
                 <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>GET</strong></td><td><code>/api/health</code></td><td>Liveness + model status</td></tr>
+                    <tr><td><strong>GET</strong></td><td><code>/api/health</code></td><td>Liveness + engine status</td></tr>
                     <tr><td><strong>GET</strong></td><td><code>/api/supported-types</code></td><td>List of accepted file extensions</td></tr>
                     <tr><td><strong>POST</strong></td><td><code>/api/demo-token</code></td><td>Request a 1-day demo JWT</td></tr>
                     <tr><td><strong>POST</strong></td><td><code>/api/redact</code></td><td>Upload file, returns detected entities + redacted file URL</td></tr>
@@ -694,9 +674,7 @@ print(r.json()["entity_counts"])</code></pre>
                     <tr><td><code>LOCAL_DATA_DIR</code></td><td>/tmp/data</td><td>Directory for temporary file storage</td></tr>
                     <tr><td><code>KEYCLOAK_AUTH_ENABLED</code></td><td>false</td><td>Enable/disable JWT authentication</td></tr>
                     <tr><td><code>SECRET_KEY</code></td><td>&mdash;</td><td>JWT signing secret for demo tokens</td></tr>
-                    <tr><td><code>EXTRA_REDACTION_KEYWORDS</code></td><td>&mdash;</td><td>Additional keywords to always redact</td></tr>
-                    <tr><td><code>DISABLED_RULE_DETECTORS</code></td><td>&mdash;</td><td>Comma-separated rule detectors to skip</td></tr>
-                    <tr><td><code>PRIVACY_FILTER_OCR_DPI</code></td><td>200</td><td>OCR resolution for scanned documents</td></tr>
+                    <tr><td><code>SESSION_LOGGER_URL</code></td><td>&mdash;</td><td>Session logger service URL for usage stats</td></tr>
                 </tbody>
             </table>
 
@@ -717,7 +695,7 @@ docker compose up -d privacy-filter</code></pre>
                 <a href="https://github.com/tanuh-bcd/privacy-filter-app" target="_blank" class="guide-card" style="text-decoration:none;">
                     <div class="card-icon"><i class="fab fa-github"></i></div>
                     <h4>Privacy Filter</h4>
-                    <p>NER-based PII detection and redaction service</p>
+                    <p>CPU-based medical de-identification and redaction service</p>
                 </a>
                 <a href="https://github.com/tanuh-bcd/TANUH-DPI" target="_blank" class="guide-card" style="text-decoration:none;">
                     <div class="card-icon"><i class="fab fa-github"></i></div>
@@ -748,8 +726,17 @@ docker compose up -d privacy-filter</code></pre>
 <div style="padding:20px;background:white;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin:20px 0;">
     <!-- <h3>Team Members</h3> -->
     <div class="fg-team-grid">
+        <a href="https://www.linkedin.com/in/venkata-sai-manideep-nanepalli-42bab3261/" target="_blank" style="text-decoration:none;">
+            <div class="fg-team-card"><img src="assets/manideep.png" alt="Venkata Sai Manideep Nanepalli"><div class="team-name">Venkata Sai Manideep Nanepalli</div><div class="team-role">Technical Staff</div><div class="team-org">TANUH AI-CoE</div></div>
+        </a>
+        <a href="https://www.linkedin.com/in/bharath-kumar-tangella-628738213/" target="_blank" style="text-decoration:none;">
+            <div class="fg-team-card"><img src="assets/bharath.png" alt="Bharath Kumar Tangella"><div class="team-name">Bharath Kumar Tangella</div><div class="team-role">Technical Staff</div><div class="team-org">TANUH AI-CoE</div></div>
+        </a>
         <a href="https://www.linkedin.com/in/ashwin-rajkumar/" target="_blank" style="text-decoration:none;">
             <div class="fg-team-card"><img src="assets/ashwin.png" alt="Dr. Ashwin RajKumar"><div class="team-name">Dr. Ashwin RajKumar</div><div class="team-role">(Breast Cancer Detection)<br>Program Manager</div><div class="team-org">TANUH AI-CoE</div></div>
+        </a>
+        <a href="https://cds.iisc.ac.in/faculty/yalavarthy/" target="_blank" style="text-decoration:none;">
+            <div class="fg-team-card"><img src="assets/Prof_PKY.png" alt="Dr. Phaneendra K. Yalavarthy"><div class="team-name">Dr. Phaneendra K. Yalavarthy</div><div class="team-role">Chief Project Manager</div><div class="team-org">TANUH AI-CoE</div></div>
         </a>
     </div>
 </div>

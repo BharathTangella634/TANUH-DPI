@@ -1,0 +1,1 @@
+"""MedDeID command-line interface."""

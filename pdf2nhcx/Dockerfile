@@ -15,7 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pdf2nhcx/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install CPU-only torch first. docling depends on torch; the default PyPI wheel
+# bundles ~3-4 GB of NVIDIA CUDA libraries this CPU-only service never uses.
+# The CPU wheel (~190 MB) comes from PyTorch's CDN. The pip cache mount persists
+# downloads across retries and is shared with pdf2abdm (identical torch), so the
+# wheel is fetched at most once for the whole stack.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision \
+    && pip install -r requirements.txt
 
 COPY common/ ./common/
 COPY pdf2nhcx/__init__.py ./pdf2nhcx/__init__.py

@@ -14,11 +14,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pdf2nhcx and pdf2abdm Python deps
+# Install pdf2nhcx and pdf2abdm Python deps.
+# CPU-only torch first (docling pulls torch; default wheel bundles ~3-4 GB of
+# unused CUDA libs). Shared pip cache mount → torch fetched at most once.
 COPY pdf2nhcx/requirements.txt /tmp/nhcx-requirements.txt
 COPY pdf2abdm/requirements.txt /tmp/abdm-requirements.txt
-RUN pip install --no-cache-dir -r /tmp/nhcx-requirements.txt && \
-    pip install --no-cache-dir -r /tmp/abdm-requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision && \
+    pip install -r /tmp/nhcx-requirements.txt && \
+    pip install -r /tmp/abdm-requirements.txt
 
 # Copy shared common module
 COPY common/ ./common/

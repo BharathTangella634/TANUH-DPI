@@ -28,7 +28,7 @@
         const pf   = isLocal ? 'http://localhost:8003' : `${window.location.origin}/privacy-filter`;
         checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, 'AI ON', 'AI OFF');
         checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, 'AI ON', 'AI OFF');
-        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'AI ON', 'AI OFF');
+        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'CPU READY', 'OFFLINE');
     }
 
     // ── Tab Management ──────────────────────────────────────────────────────────

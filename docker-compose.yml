@@ -171,8 +171,11 @@ services:
       - LOCAL_DATA_DIR=/tmp/data
       - KEYCLOAK_AUTH_ENABLED=false
       - SECRET_KEY=dev-secret
+      - SESSION_LOGGER_URL=http://session-logger:8002
     volumes:
       - ./privacy_filter_data:/tmp/data
+    depends_on:
+      - session-logger
 
   forgensic:
     build:

@@ -1,15 +1,20 @@
-"""FastAPI app: privacy-filter PII detection + redaction service.
+"""FastAPI app: Privacy Filter de-identification service (MedDeID backend).
+
+Drop-in replacement for the original privacy_filter service. Same API contract
+— so the TANUH-DPI frontend, session logger, auth, and storage all keep
+working — but the redaction engine is now MedDeID, which removes PHI from
+medical images, DICOM/NIfTI scans, and documents (both metadata tags AND
+burned-in pixel text) without altering any clinical content.
 
 Endpoints
 ---------
-GET  /                          → frontend (single-page HTML)
-GET  /api/health                → liveness + model status
+GET  /                          → redirect to API docs (frontend is a separate service)
+GET  /api/health                → liveness + engine status
 GET  /api/supported-types       → list of accepted file extensions
-GET  /api/stats                 → live usage counters (visits, docs redacted)
+GET  /api/stats                 → live usage counters
 POST /api/demo-token            → self-service JWT (name + email → signed token)
 POST /api/redact                → multipart upload; returns RedactionResult  [auth required]
 GET  /api/files/{kind}/{key}    → download originals or redacted outputs      [auth required]
-                                  (kind ∈ {uploads, redacted})
 """
 from __future__ import annotations
 
@@ -22,36 +27,25 @@ import uuid
 from collections import Counter
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
+import httpx
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from jose import jwt
 from pydantic import BaseModel, EmailStr
 
-import httpx
-
 from .auth import require_bearer
-from .model import PrivacyFilter
-from .redactor import get_handler, supported_extensions
 from .schemas import Entity, HealthResponse, RedactionResult
 from .stats import get_stats, record_redaction, record_visit
 from .storage import get_storage, _guess_content_type
+from . import service
 
 load_dotenv()
 
 SESSION_LOGGER_URL = os.getenv("SESSION_LOGGER_URL", "http://session-logger:8002")
-
-
-def _fire_log(payload: dict):
-    """POST a session log entry to the logger service. Never raises."""
-    try:
-        with httpx.Client(timeout=5.0) as client:
-            client.post(f"{SESSION_LOGGER_URL}/log", json=payload)
-    except Exception as exc:
-        logger.warning("[session-logger] fire-and-forget failed: %s", exc)
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -60,26 +54,36 @@ logging.basicConfig(
 logger = logging.getLogger("privacy_filter")
 
 
+def _fire_log(payload: dict) -> None:
+    """POST a session log entry to the logger service. Never raises."""
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            client.post(f"{SESSION_LOGGER_URL}/log", json=payload)
+    except Exception as exc:
+        logger.warning("[session-logger] fire-and-forget failed: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pre-load model so first request is fast.
-    pf = PrivacyFilter.instance()
+    # Warm up the engine so the first request is fast.
     try:
-        pf.load()
+        service.engine_ready()
     except Exception:
-        # Don't crash startup — health endpoint will reflect failure.
-        logger.exception("Model failed to load at startup")
+        logger.exception("MedDeID engine failed to initialise at startup")
     yield
 
 
 app = FastAPI(
-    title="Privacy Filter Test App",
-    version="0.1.0",
-    description="Upload a file → detect & redact personal information using openai/privacy-filter.",
+    title="Privacy Filter — MedDeID",
+    version="1.0.0",
+    description=(
+        "Upload a medical image, DICOM/NIfTI scan, or document → detect & "
+        "remove patient information (metadata tags + burned-in pixel text) "
+        "using the MedDeID de-identification engine."
+    ),
     lifespan=lifespan,
 )
 
-from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -89,41 +93,31 @@ app.add_middleware(
 )
 
 
-# --- Static frontend (served from / ) ---
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-if FRONTEND_DIR.exists():
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
-
-
 @app.get("/", include_in_schema=False)
 async def root(request: Request):
-    # Record each page load; track unique visitors by client IP.
     client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() \
                 or (request.client.host if request.client else None)
     try:
         record_visit(client_ip)
     except Exception:
         pass  # Never let stats tracking break the page load.
-    index = FRONTEND_DIR / "index.html"
-    if index.exists():
-        return FileResponse(index)
     return RedirectResponse("/docs")
 
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
-    pf = PrivacyFilter.instance()
+    ready = service.engine_ready()
     return HealthResponse(
-        status="ok" if pf.loaded else "loading",
-        model=pf.model_name,
-        device=pf.device,
-        model_loaded=pf.loaded,
+        status="ok" if ready else "loading",
+        model="Privacy Filter",
+        device="cpu",
+        model_loaded=ready,
     )
 
 
 @app.get("/api/supported-types")
 async def supported_types():
-    return {"extensions": supported_extensions()}
+    return {"extensions": service.supported_extensions()}
 
 
 # ---------------------------------------------------------------------------
@@ -137,11 +131,7 @@ class DemoTokenRequest(BaseModel):
 
 @app.post("/api/demo-token")
 async def create_demo_token(body: DemoTokenRequest):
-    """Issue a signed demo JWT for the given name + email.
-
-    The token is valid for DEMO_TOKEN_EXPIRY_DAYS days (default: 1).
-    Pass it as ``Authorization: Bearer <token>`` on protected endpoints.
-    """
+    """Issue a signed demo JWT for the given name + email."""
     secret = os.getenv("SECRET_KEY", "")
     if not secret:
         raise HTTPException(
@@ -160,7 +150,8 @@ async def create_demo_token(body: DemoTokenRequest):
         "exp": now + expiry_days * 86_400,
     }
     token = jwt.encode(payload, secret, algorithm="HS256")
-    logger.info("Demo token issued for %s (%s), expires in %dd", body.name, body.email, expiry_days)
+    logger.info("Demo token issued for %s (%s), expires in %dd",
+                body.name, body.email, expiry_days)
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -179,106 +170,86 @@ async def redact_file(
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
 
-    try:
-        handler = get_handler(file.filename)
-    except ValueError as e:
-        raise HTTPException(status_code=415, detail=str(e))
+    if not service.is_supported(file.filename):
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                f"Unsupported file type. Supported: "
+                f"{', '.join(service.supported_extensions())}"
+            ),
+        )
 
     storage = get_storage()
     job_id = uuid.uuid4().hex[:12]
     safe_name = Path(file.filename).name
     upload_key = f"{job_id}__{safe_name}"
 
-    # Wrap the whole pipeline so we can guarantee a memory cleanup pass
-    # at the end (Cloud Run's 4 GiB instances OOM-kill if buffers from a
-    # previous request linger when a second large doc arrives, which the
-    # client sees as HTTP 503).
     raw_bytes: bytes | None = None
-    text: str | None = None
-    entities_raw: list = []
     try:
         raw_bytes = await file.read()
 
-        # Write to a local temp path first so the extractor can read it
-        # without a round-trip GCS download after save().
+        # Write upload to a local temp path the engine can read directly.
         tmp_upload_dir = Path(tempfile.gettempdir()) / "pf_uploads"
         tmp_upload_dir.mkdir(parents=True, exist_ok=True)
         upload_path = tmp_upload_dir / upload_key
         upload_path.write_bytes(raw_bytes)
 
-        # Push to configured storage (GCS or local ./data).
+        # Persist the original to configured storage (GCS or local).
         storage.save("uploads", upload_key, raw_bytes)
-        # Drop the in-memory copy as soon as it's on disk.
-        raw_bytes = None
+        raw_bytes = None  # drop the in-memory copy
 
-        # 1. Extract text
-        try:
-            text = handler.extract(upload_path)
-        except Exception as e:
-            logger.exception("Extraction failed")
-            raise HTTPException(status_code=500, detail=f"Extraction failed: {e}")
-
-        # 2. Run privacy-filter
-        pf = PrivacyFilter.instance()
-        try:
-            entities_raw = pf.detect(text) if text else []
-        except Exception as e:
-            logger.exception("Model inference failed")
-            raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
-
-        entities = [Entity(**e) for e in entities_raw]
-        counts = Counter(e.entity_group for e in entities)
-
-
-        # 3. Produce redacted output (same format)
-        redacted_key = f"{job_id}__redacted{handler.out_extension}"
-
-        # Always write to a local temp path first — GCSStorage.local_path()
-        # would attempt a GCS download for a file that doesn't exist yet.
+        # Produce the de-identified output (format-preserving).
+        out_ext = service.out_extension(safe_name)
+        redacted_key = f"{job_id}__redacted{out_ext}"
         tmp_redact_dir = Path(tempfile.gettempdir()) / "pf_redacted"
         tmp_redact_dir.mkdir(parents=True, exist_ok=True)
         redacted_local = tmp_redact_dir / redacted_key
 
         try:
-            handler.redact(upload_path, entities_raw, redacted_local)
+            entities_raw, counts, meta = service.run_deidentification(
+                upload_path, redacted_local,
+            )
         except Exception as e:
-            logger.exception("Redaction failed")
-            raise HTTPException(status_code=500, detail=f"Redaction failed: {e}")
+            logger.exception("De-identification failed")
+            raise HTTPException(status_code=500, detail=f"De-identification failed: {e}")
 
-        # Upload to GCS (or local storage keeps the file in place).
+        if not redacted_local.exists():
+            raise HTTPException(
+                status_code=500,
+                detail="Engine completed but produced no output file.",
+            )
+
+        # Upload redacted output to storage.
         with open(redacted_local, "rb") as fh:
             storage.save("redacted", redacted_key, fh.read())
 
+        entities = [Entity(**e) for e in entities_raw]
 
-        # 4. Build text previews (truncate)
-        preview_orig = text[:2000] if text else None
-        redacted_text_for_preview = None
-        if handler.name in {"text"}:
-            redacted_text_for_preview = redacted_local.read_text(encoding="utf-8", errors="replace")[:2000]
-        elif handler.name in {"pdf", "docx", "image", "dicom"}:
-            # Best-effort: re-extract from redacted output for preview
-            try:
-                redacted_text_for_preview = handler.extract(redacted_local)[:2000]
-            except Exception:
-                redacted_text_for_preview = None
+        notes = None
+        if not meta.get("validation_passed", False):
+            notes = (
+                f"Validation risk score {meta.get('risk_score', 0)}. "
+                f"{meta.get('notes') or ''}".strip()
+            )
 
         result = RedactionResult(
             job_id=job_id,
             filename=safe_name,
             content_type=file.content_type or "application/octet-stream",
             entities=entities,
-            entity_counts=dict(counts),
+            entity_counts=dict(Counter(counts)),
             original_url=storage.url("uploads", upload_key),
             redacted_url=storage.url("redacted", redacted_key),
-            text_preview_original=preview_orig,
-            text_preview_redacted=redacted_text_for_preview,
-            notes=None,
+            text_preview_original=None,   # binary medical formats: no text preview
+            text_preview_redacted=None,
+            notes=notes,
         )
-        # Count successful redactions for the dashboard.
+
         try:
             record_redaction()
         except Exception:
             pass
+
         client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() \
                     or (request.client.host if request.client else "unknown")
         _fire_log({
@@ -288,10 +259,7 @@ async def redact_file(
         })
         return result
     finally:
-        # Drop large transient buffers so the next request starts clean.
         raw_bytes = None
-        text = None
-        entities_raw = []
         gc.collect()
 
 
@@ -305,7 +273,6 @@ async def download_file(
         raise HTTPException(status_code=404, detail="Unknown kind")
     storage = get_storage()
     if os.getenv("STORAGE_BACKEND", "local").lower() == "gcs":
-        # Stream bytes directly from GCS — no signed URL required.
         try:
             data = storage.open_read(kind, key)
         except Exception as e:
@@ -338,4 +305,3 @@ async def stats():
         return get_stats()
     except Exception:
         return {"page_visits": 0, "unique_visitors": 0, "docs_redacted": 0}
-
