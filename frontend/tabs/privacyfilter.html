@@ -26,7 +26,7 @@
 <div class="tab-header">
     <div class="tab-header-text">
         <h2><i class="fas fa-user-shield" style="color:var(--primary)"></i> Privacy Filter</h2>
-        <p>De-identify medical images, scans, and documents — removes burned-in patient text and metadata, entirely on CPU.</p>
+        <p>De-identify medical images, scans, and PDF reports — removes burned-in text, metadata, and document PII, with a built-in editor to manually redact anything the system misses. Runs entirely on CPU.</p>
     </div>
     <!-- <div class="tab-header-logos">
         <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
@@ -43,7 +43,7 @@
         <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use.
     </p>
     <p style="margin: 0; color: #0f766e; font-size: 14px;">
-        <strong><i class="fas fa-exclamation-triangle"></i> Accuracy:</strong> Detections may be incomplete or incorrect. Please review every output before use.
+        <strong><i class="fas fa-exclamation-triangle"></i> Accuracy:</strong> Detections may be incomplete or incorrect. Use the <strong>Edit</strong> button on a preview to manually black out anything missed, then review every output before use.
     </p>
 </div>
 
@@ -437,6 +437,7 @@ print(r.json()["entity_counts"])</pre>
         <a class="active" onclick="guideNav('pf-guide-container','pg-video',this)"><i class="fas fa-play-circle"></i> Video Demo</a>
         <a onclick="guideNav('pf-guide-container','pg-overview',this)"><i class="fas fa-info-circle"></i> Overview</a>
         <a onclick="guideNav('pf-guide-container','pg-howto',this)"><i class="fas fa-list-ol"></i> How to Use</a>
+        <a onclick="guideNav('pf-guide-container','pg-editor',this)"><i class="fas fa-pen-to-square"></i> Review &amp; Edit</a>
         <div class="guide-sidebar-title">Technical</div>
         <a onclick="guideNav('pf-guide-container','pg-pipeline',this)"><i class="fas fa-project-diagram"></i> Detection Pipeline</a>
         <a onclick="guideNav('pf-guide-container','pg-formats',this)"><i class="fas fa-file-alt"></i> Supported Formats</a>
@@ -469,7 +470,7 @@ print(r.json()["entity_counts"])</pre>
             <div class="guide-hero">
                 <span style="display:inline-block;background:var(--primary);color:#fff;font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:20px;margin-bottom:10px;">CPU-Based &mdash; No GPU Required</span>
                 <h2>Privacy Filter</h2>
-                <p>CPU-based de-identification service that detects and redacts Personally Identifiable Information (PII) and Protected Health Information (PHI) from medical images, DICOM/NIfTI scans, and documents — removing both metadata and burned-in pixel text while preserving all clinical content.</p>
+                <p>CPU-based de-identification service that detects and redacts Personally Identifiable Information (PII) and Protected Health Information (PHI) from medical images, DICOM/NIfTI scans, and PDF reports — removing metadata, burned-in pixel text, and document PII while preserving all clinical content.</p>
             </div>
 
             <h3>Key Capabilities</h3>
@@ -478,7 +479,9 @@ print(r.json()["entity_counts"])</pre>
                 <tbody>
                     <tr><td>Metadata De-identification</td><td>Scrubs DICOM tags, EXIF, and NIfTI headers; regenerates DICOM UIDs</td></tr>
                     <tr><td>Burned-in Text Removal</td><td>Shape-based connected-component detection + Tesseract OCR find and mask patient text overlaid on the image</td></tr>
+                    <tr><td>PDF / Document Redaction</td><td>Reads the PDF's native text and removes HIPAA Safe Harbor identifiers (names, dates, IDs, contacts) anywhere on the page, plus QR codes &amp; barcodes — true text removal, not a cosmetic overlay</td></tr>
                     <tr><td>Modality-Aware Scanning</td><td>Fundus, OCT, ultrasound, CT, and MRI layouts handled with format-specific overlay regions, so clinical content is never touched</td></tr>
+                    <tr><td>Manual Review &amp; Edit</td><td>Interactive preview with draw-to-redact boxes, zoom &amp; pan, and one-click removal — catch anything the automated pass misses</td></tr>
                     <tr><td>Multi-Format Support</td><td>DICOM, NIfTI, images (PNG/JPG/TIFF/BMP), and PDF</td></tr>
                     <tr><td>On-Premises Processing</td><td>All data stays on the server &mdash; no external API calls, fully DPDP Act compliant</td></tr>
                     <tr><td>Fast Processing</td><td>Typically 10&ndash;30 seconds per file on CPU</td></tr>
@@ -489,7 +492,7 @@ print(r.json()["entity_counts"])</pre>
         <!-- How to Use -->
         <div id="pg-howto" class="guide-section">
             <h2>How to Use</h2>
-            <p>Follow these three steps to de-identify a document.</p>
+            <p>Follow these steps to de-identify a file.</p>
 
             <div class="guide-pipeline">
                 <div class="guide-pipeline-step">
@@ -498,17 +501,48 @@ print(r.json()["entity_counts"])</pre>
                 </div>
                 <div class="guide-pipeline-step">
                     <h4>2. Redact File</h4>
-                    <p>Click <strong>"Redact Document"</strong>. The system clears metadata tags and detects burned-in text using CV + OCR. Processing takes 10&ndash;30 seconds.</p>
+                    <p>Click <strong>"Redact Document"</strong>. The system clears metadata, detects burned-in text (CV + OCR), and removes document PII from PDFs. Processing takes 10&ndash;30 seconds.</p>
                 </div>
                 <div class="guide-pipeline-step">
-                    <h4>3. Review &amp; Download</h4>
-                    <p>Review detected entities in the results panel. Burned-in text is masked with opaque boxes and metadata values are replaced with REDACTED. Download the original and de-identified versions.</p>
+                    <h4>3. Review &amp; Edit <span style="font-size:0.7rem;font-weight:700;color:#fff;background:var(--primary);padding:2px 8px;border-radius:10px;vertical-align:middle;">New</span></h4>
+                    <p>Check the detected entities and previews. If anything was missed, click <strong>Edit</strong> on a preview to open the interactive editor and draw black boxes over it (see <em>Review &amp; Edit</em>).</p>
+                </div>
+                <div class="guide-pipeline-step">
+                    <h4>4. Download</h4>
+                    <p>Download the original and the de-identified output. Redactions are applied to the file itself, in its original format.</p>
                 </div>
             </div>
 
             <div class="guide-callout guide-callout-warning">
                 <strong>Accuracy Notice</strong>
                 Detections may be incomplete or incorrect. Please review every output before use in production. The system prioritizes recall (catching more PHI) over precision.
+            </div>
+        </div>
+
+        <!-- Review & Edit -->
+        <div id="pg-editor" class="guide-section">
+            <h2>Review &amp; Edit <span style="font-size:0.8rem;font-weight:700;color:#fff;background:var(--primary);padding:2px 10px;border-radius:12px;vertical-align:middle;">New</span></h2>
+            <p>Automated de-identification prioritises recall, but no detector is perfect. The interactive editor lets you visually confirm the result and manually redact anything that was missed &mdash; for PDFs, images, and DICOM alike.</p>
+
+            <h3>Opening the editor</h3>
+            <p>After redaction, each result shows an <strong>Original</strong> and <strong>Redacted</strong> preview. Click the <strong>Edit</strong> button above either preview to open the full-screen editor. Auto-detected redactions appear as boxes you can keep or remove.</p>
+
+            <h3>Editing tools</h3>
+            <table>
+                <thead><tr><th>Action</th><th>How</th></tr></thead>
+                <tbody>
+                    <tr><td>Add a redaction</td><td>Drag a rectangle over any PII the system missed &mdash; it is black-mapped on apply</td></tr>
+                    <tr><td>Remove a box</td><td>Click a box (or its row in the side panel) to delete an unwanted/incorrect redaction</td></tr>
+                    <tr><td>Zoom</td><td>Use the <em>+ / &minus; / Fit</em> controls or <kbd>Ctrl</kbd> + scroll to zoom toward the cursor</td></tr>
+                    <tr><td>Pan high-res scans</td><td>Use the scrollbars, or hold <kbd>Space</kbd> and drag, to move around a zoomed image &mdash; you can reach every edge</td></tr>
+                    <tr><td>Undo / Clear</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> to undo, or Clear All to start over</td></tr>
+                    <tr><td>Apply</td><td><strong>Apply Changes</strong> burns the boxes into the file (true removal) and refreshes the preview &amp; download</td></tr>
+                </tbody>
+            </table>
+
+            <div class="guide-callout guide-callout-info">
+                <strong>Why manual edit matters</strong>
+                The editor is your safety net for HIPAA Safe Harbor compliance: if any name, ID, date, or other identifier slips through the automated pass, you can remove it in seconds before sharing the file.
             </div>
         </div>
 
@@ -525,6 +559,9 @@ print(r.json()["entity_counts"])</pre>
 
             <h3>Layer 3 &mdash; OCR + Rule-Based Classification</h3>
             <p>Tesseract OCR reads the detected regions and deterministic rules classify the text as patient information &mdash; names, dates, identifiers, and ages. Confirmed regions are masked with opaque boxes; the redaction is irreversible and leaves surrounding pixels unchanged.</p>
+
+            <h3>Documents (PDF) &mdash; Native-Text Safe Harbor Path</h3>
+            <p>PDFs take a dedicated, content-based path rather than the pixel pipeline. The PDF's own text layer is read with coordinates and scanned for all HIPAA Safe Harbor identifiers (names, dates &amp; times, phone/email/URL/IP, MRNs and other IDs) anywhere on the page &mdash; header banners, body, signatures, footers. Matches are removed with PyMuPDF true redaction (the underlying glyphs are deleted, not just covered), QR codes and barcodes are stripped, and document metadata is scrubbed. Clinical values and reference ranges are preserved.</p>
 
             <h3>Processing Flow</h3>
             <div class="guide-pipeline">
@@ -548,7 +585,7 @@ print(r.json()["entity_counts"])</pre>
                     <tr><td>DICOM</td><td><code>.dcm</code>, <code>.dicom</code></td><td>Metadata tags scrubbed + burned-in text masked; pixel data preserved</td></tr>
                     <tr><td>NIfTI</td><td><code>.nii</code>, <code>.nii.gz</code></td><td>Header PHI fields cleared; volume data preserved</td></tr>
                     <tr><td>Images</td><td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.tif</code>, <code>.tiff</code>, <code>.bmp</code></td><td>Burned-in text detected and masked; EXIF stripped</td></tr>
-                    <tr><td>PDF</td><td><code>.pdf</code></td><td>Rendered pages scanned for patient text</td></tr>
+                    <tr><td>PDF</td><td><code>.pdf</code></td><td>Native text scanned for Safe Harbor identifiers; true text removal + QR/barcode &amp; document-metadata stripping</td></tr>
                 </tbody>
             </table>
         </div>
