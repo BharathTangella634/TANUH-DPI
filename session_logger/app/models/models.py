@@ -48,3 +48,15 @@ class AuthToken(Base):
     @staticmethod
     def hash_token(raw_jwt: str) -> str:
         return hashlib.sha256(raw_jwt.encode()).hexdigest()
+
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id         = Column(Integer,      primary_key=True, autoincrement=True)
+    service    = Column(String(50),   nullable=False)
+    name       = Column(String(200),  nullable=False, default="Anonymous")
+    place      = Column(String(200),  nullable=False, default="Anonymous place")
+    feedback   = Column(Text,         nullable=False)
+    ip_address = Column(String(45),   nullable=True)
+    created_at = Column(DateTime,     server_default=_CREATED_AT_DEFAULT)

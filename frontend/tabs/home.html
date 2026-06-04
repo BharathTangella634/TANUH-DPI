@@ -20,9 +20,13 @@
                 </div>
             </div>
 
-            <!-- Right: 3D Video Logo -->
+            <!-- Right: Institutional Logos -->
             <div class="hero-top-right">
-                <img class="hero-3d-svg-logo" src="assets/TANUH.svg" alt="TANUH AI Logo">
+                <div class="hero-logos-group">
+                    <img class="hero-inst-logo" src="assets/tanuh.png" alt="TANUH AI Logo">
+                    <img class="hero-inst-logo" src="assets/MoE_Logo.svg" alt="Ministry of Education Logo">
+                    <img class="hero-inst-logo" src="assets/IISc_Logo.png" alt="IISc Logo">
+                </div>
             </div>
         </div>
 
@@ -150,11 +154,11 @@
         <div class="feature-content">
             <div class="feature-badge privacy-badge">Privacy Filter</div>
             <h2>Intelligent Privacy Filter</h2>
-            <p>De-identify medical documents using AI-powered PII detection. Ensure full compliance with the DPDP Act with our zero-retention architecture.</p>
+            <p>De-identify medical images, scans, and PDF reports — removing burned-in patient text, metadata, and document PII entirely on CPU. Ensure full compliance with the DPDP Act with our zero-retention architecture.</p>
             <ul class="feature-list">
                 <li><i class="fas fa-check"></i> Protects patient confidentiality by automatically hiding sensitive details</li>
-                <li><i class="fas fa-check"></i> Ensures full compliance with national data privacy laws (DPDP Act)</li>
-                <li><i class="fas fa-check"></i> 3-Layer AI Architecture combining NER models and Regex patterns</li>
+                <li><i class="fas fa-check"></i> Works across DICOM, NIfTI, images, and PDFs — with a manual editor to catch anything missed</li>
+                <li><i class="fas fa-check"></i> 3-layer CPU pipeline — metadata scrubbing, burned-in text detection, and OCR-based redaction</li>
             </ul>
             <button class="feature-launch-btn" onclick="openTab(null,'PrivacyFilter'); document.getElementById('navPrivacyFilter').classList.add('active');">
                 Launch Service <i class="fas fa-arrow-right"></i>

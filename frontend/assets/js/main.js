@@ -28,7 +28,7 @@
         const pf   = isLocal ? 'http://localhost:8003' : `${window.location.origin}/privacy-filter`;
         checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, 'AI ON', 'AI OFF');
         checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, 'AI ON', 'AI OFF');
-        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'AI ON', 'AI OFF');
+        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'CPU READY', 'OFFLINE');
     }
 
     // ── Tab Management ──────────────────────────────────────────────────────────
@@ -185,5 +185,47 @@
         if (window.initDashboard) window.initDashboard();
         setInterval(checkAllServiceBadges, 30000);
     });
+
+    // ── Feedback Submission (shared across all 4 services) ────────────────
+    window.DPI_submitFeedback = async function (btn) {
+        const wrap = btn.closest('.dpi-feedback-form-wrap');
+        if (!wrap) return;
+        const service  = wrap.dataset.service || "Unknown";
+        const nameEl   = wrap.querySelector('.dpi-fb-name');
+        const placeEl  = wrap.querySelector('.dpi-fb-place');
+        const textEl   = wrap.querySelector('.dpi-fb-text');
+        const feedback = (textEl?.value || "").trim();
+        if (!feedback) {
+            window.showToast?.("Missing Feedback", "Please write your feedback before submitting.", "error", 4000);
+            textEl?.focus();
+            return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        const isLocal = window.location.hostname === 'localhost';
+        const loggerUrl = isLocal ? 'http://localhost:8002' : `${window.location.origin}/session-logger`;
+        try {
+            const r = await fetch(`${loggerUrl}/logs/feedback`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    service, name: (nameEl?.value || "").trim() || "Anonymous",
+                    place: (placeEl?.value || "").trim() || "Anonymous place",
+                    feedback, ip_address: null,
+                }),
+                signal: AbortSignal.timeout(10000),
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            if (nameEl) nameEl.value = "";
+            if (placeEl) placeEl.value = "";
+            if (textEl) textEl.value = "";
+            window.showToast?.("Thank You!", "Your feedback has been submitted successfully.", "info", 5000);
+        } catch (e) {
+            window.showToast?.("Submission Failed", `Could not submit feedback: ${e.message}`, "error", 5000);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback';
+        }
+    };
 
 })();

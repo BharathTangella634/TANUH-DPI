@@ -25,7 +25,7 @@ import uuid
 import logging
 from typing import Optional, Literal
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -34,7 +34,7 @@ from sqlalchemy import func, text
 
 from .core.config import settings
 from .db.session import Base, engine, get_db, USE_SQLITE
-from .models.models import SessionLog, AuthToken
+from .models.models import SessionLog, AuthToken, Feedback
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -515,4 +515,65 @@ def visit_stats(db: Session = Depends(get_db)):
     except Exception as exc:
         logger.warning("[visit-stats] query failed: %s", exc)
         return {"nhcx_page_visits": 0, "states": [], "cities": []}
+
+
+# ── Feedback ─────────────────────────────────────────────────────────────────
+
+class FeedbackCreate(BaseModel):
+    service:    str
+    name:       Optional[str] = "Anonymous"
+    place:      Optional[str] = "Anonymous place"
+    feedback:   str
+    ip_address: Optional[str] = None
+
+
+@app.post("/logs/feedback", tags=["Feedback"],
+          summary="Submit user feedback for a service",
+          status_code=201)
+def submit_feedback(payload: FeedbackCreate, request: Request, db: Session = Depends(get_db)):
+    client_ip = (
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or (request.client.host if request.client else None)
+        or payload.ip_address
+    )
+    try:
+        record = Feedback(
+            service=payload.service,
+            name=payload.name or "Anonymous",
+            place=payload.place or "Anonymous place",
+            feedback=payload.feedback,
+            ip_address=client_ip,
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        logger.info("[feedback] id=%d service=%s name=%s", record.id, record.service, record.name)
+        return {"status": "recorded", "id": record.id}
+    except Exception as exc:
+        db.rollback()
+        logger.error("[feedback] DB write failed: %s", exc)
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+@app.get("/logs/feedback", tags=["Feedback"],
+         summary="List all feedback entries")
+def list_feedback(
+    skip: int = 0, limit: int = 50,
+    service: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Feedback)
+    if service:
+        query = query.filter(Feedback.service == service)
+    total = query.count()
+    rows = query.order_by(Feedback.id.desc()).offset(skip).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {"id": r.id, "service": r.service, "name": r.name, "place": r.place,
+             "feedback": r.feedback, "ip_address": r.ip_address,
+             "created_at": str(r.created_at) if r.created_at else None}
+            for r in rows
+        ],
+    }
 

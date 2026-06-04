@@ -28,10 +28,14 @@
     : "/privacy-filter"; // prod: go through Apache reverse proxy
   const PF_TOKEN_KEY = "pf_token";
 
+  // Expose for pf-editor.js
+  window._PF_BASE = PF_BASE;
+
   // ── Auth helpers ─────────────────────────────────────────────────────────
   function PF_getToken() {
     return sessionStorage.getItem(PF_TOKEN_KEY) || "";
   }
+  window._PF_getToken = PF_getToken;
   function PF_storeToken(token) {
     sessionStorage.setItem(PF_TOKEN_KEY, token);
   }
@@ -184,27 +188,38 @@
     setChip("pfMetaNotes",   res.notes || "", !!res.notes);
 
     // ── 2. Download buttons — store URLs and enable ──────────────────────────
-    // We use fetch+blob instead of <a download> because the `download`
-    // attribute is silently ignored by browsers on cross-origin URLs.
     window._PF_urls = {
       original: res.original_url ? `${PF_BASE}${res.original_url}` : null,
       redacted:  res.redacted_url  ? `${PF_BASE}${res.redacted_url}`  : null,
     };
     window._PF_filename = res.filename || "document";
+    window._PF_jobId = res.job_id || "";
+    window._PF_uploadKey = res.original_url ? res.original_url.split("/").pop() : "";
 
     const btnOrig = pfQ("pfDlOriginal");
     const btnRed  = pfQ("pfDlRedacted");
-    const subOrig = pfQ("pfDlOriginalSub");
-    const subRed  = pfQ("pfDlRedactedSub");
 
-    if (btnOrig) {
-      btnOrig.disabled = !window._PF_urls.original;
-      if (subOrig) subOrig.textContent = window._PF_filename;
-    }
-    if (btnRed) {
-      btnRed.disabled = !window._PF_urls.redacted;
-      if (subRed) subRed.textContent = window._PF_filename.replace(/(\.[^.]+)$/, "__redacted$1");
-    }
+    if (btnOrig) btnOrig.disabled = !window._PF_urls.original;
+    if (btnRed) btnRed.disabled = !window._PF_urls.redacted;
+
+    // Build AI boxes for the editor from entities that have bounding boxes
+    window._PF_aiBoxes = (res.entities || [])
+      .filter(e => e.bbox)
+      .map(e => ({
+        page: e.bbox.page || 0,
+        x: e.bbox.x1,
+        y: e.bbox.y1,
+        w: e.bbox.x2 - e.bbox.x1,
+        h: e.bbox.y2 - e.bbox.y1,
+        label: e.entity_group || "PHI",
+        source: "ai",
+      }));
+
+    // ── 2b. Load visual previews ─────────────────────────────────────────────
+    const origKey = res.original_url ? res.original_url.split("/").pop() : null;
+    const redKey = res.redacted_url ? res.redacted_url.split("/").pop() : null;
+    if (origKey && window.PF_loadPreview) window.PF_loadPreview("original", origKey);
+    if (redKey && window.PF_loadPreview) window.PF_loadPreview("redacted", redKey);
 
     // ── 3. Summary cards (one per entity_type) ───────────────────────────────
     const cardsEl = pfQ("pfSummaryCards");
@@ -286,11 +301,17 @@
       }
     }
 
-    // ── 5. Text previews ──────────────────────────────────────────────────────
+    // ── 5. Text previews (fallback for text-only formats) ───────────────────
     const prevOrig = pfQ("pfPrevOriginal");
     const prevRed  = pfQ("pfPrevRedacted");
+    const textSection = pfQ("pfTextPreviewSection");
     if (prevOrig) prevOrig.textContent = res.text_preview_original || "(no text preview available)";
     if (prevRed)  prevRed.textContent  = res.text_preview_redacted  || "(no text preview available)";
+    if (textSection) {
+      const ext = (res.filename || "").split(".").pop().toLowerCase();
+      const textOnly = ["txt", "md", "log", "csv", "docx"];
+      textSection.style.display = textOnly.includes(ext) ? "" : "none";
+    }
   }
 
   function escHtml(str) {
@@ -364,6 +385,7 @@
 
   async function PF_uploadFile(file) {
     PF_clearStatus();
+    if (window.PF_resetEditorState) window.PF_resetEditorState();
     const resultsEl = pfQ("pfResults");
     const loader    = pfQ("pfLoader");
     const btnText   = pfQ("pfProcessBtn")?.querySelector("span");

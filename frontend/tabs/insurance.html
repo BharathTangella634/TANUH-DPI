@@ -370,6 +370,7 @@ print(r.json())</pre>
         <a onclick="guideNav('insurance-guide-container','ig-concurrency',this)"><i class="fas fa-layer-group"></i> Concurrency</a>
         <a onclick="guideNav('insurance-guide-container','ig-env',this)"><i class="fas fa-cog"></i> Configuration</a>
         <a onclick="guideNav('insurance-guide-container','ig-source',this)"><i class="fab fa-github"></i> Source Code</a>
+        <a onclick="guideNav('insurance-guide-container','ig-feedback',this)"><i class="fas fa-comment-dots"></i> Feedback</a>
     </nav>
 
     <!-- Content -->
@@ -828,6 +829,33 @@ docker compose logs -f pdf2nhcx celery-worker</code></pre>
                     <h4>DPI Portal</h4>
                     <p>Frontend application, Docker orchestration, deployment configs</p>
                 </a>
+            </div>
+        </div>
+
+        <!-- Feedback -->
+        <div id="ig-feedback" class="guide-section">
+            <h2>Feedback</h2>
+            <p>Help us improve the Insurance Policy service. Your feedback is valuable — tell us what works, what doesn't, and what you'd like to see next.</p>
+            <div class="dpi-feedback-form-wrap" data-service="Insurance Policy">
+                <div class="dpi-feedback-fields">
+                    <div class="dpi-feedback-row">
+                        <div class="dpi-feedback-field">
+                            <label>Name <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                            <input type="text" class="dpi-fb-name" placeholder="Anonymous">
+                        </div>
+                        <div class="dpi-feedback-field">
+                            <label>Place <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                            <input type="text" class="dpi-fb-place" placeholder="Anonymous place">
+                        </div>
+                    </div>
+                    <div class="dpi-feedback-field">
+                        <label>Your Feedback</label>
+                        <textarea class="dpi-fb-text" rows="5" placeholder="Share your experience, suggestions, or report an issue..."></textarea>
+                    </div>
+                </div>
+                <button class="dpi-fb-submit" onclick="DPI_submitFeedback(this)">
+                    <i class="fas fa-paper-plane"></i> Submit Feedback
+                </button>
             </div>
         </div>
 
