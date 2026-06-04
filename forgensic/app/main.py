@@ -51,6 +51,9 @@ if CORS_ORIGINS:
         allow_headers=["*"],
     )
 
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="forgensic")
+
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -248,11 +251,13 @@ async def create_job(
     # Enqueue the Celery task — import lazily so the API starts even if the
     # broker is temporarily unavailable (health check will report degraded).
     from forgensic.tasks import process_forgensic_job  # noqa: PLC0415
+    from common.metrics import DOCUMENTS_PROCESSED_TOTAL
     process_forgensic_job.apply_async(
         args=[job_id, str(input_path), PIPELINE_PRESET, resolved_ocr],
         task_id=job_id,          # use job_id as Celery task ID for easy lookup
         queue="forgensic",
     )
+    DOCUMENTS_PROCESSED_TOTAL.labels(service="forgensic").inc()
 
     return JobCreateResponse(job_id=job_id, status="queued", message="Job accepted")
 

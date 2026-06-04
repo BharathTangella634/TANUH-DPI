@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY session_logger/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY common/ ./common/
 COPY session_logger/__init__.py          ./session_logger/__init__.py
 COPY session_logger/app/                 ./session_logger/app/
 

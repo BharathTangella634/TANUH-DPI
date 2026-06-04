@@ -20,6 +20,14 @@ import uuid
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from common.celery_app import celery_app
+from common.metrics import (
+    TASKS_STARTED_TOTAL,
+    TASKS_COMPLETED_TOTAL,
+    TASKS_FAILED_TOTAL,
+    TASK_DURATION_SECONDS,
+    DOCUMENTS_PROCESSED_TOTAL,
+    DOCUMENTS_FAILED_TOTAL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +63,7 @@ def process_nhcx_task(self, pdf_path: str, model: str = "gemma4"):
     session_id = str(uuid.uuid4())
     task_filename = os.path.basename(pdf_path)
     start_time = time.perf_counter()
+    TASKS_STARTED_TOTAL.labels(service="pdf2nhcx").inc()
 
     def update(step: str, progress: int):
         self.update_state(state="PROGRESS",
@@ -147,11 +156,17 @@ def process_nhcx_task(self, pdf_path: str, model: str = "gemma4"):
         })
 
         update("Completed", 100)
+        elapsed = time.perf_counter() - start_time
+        TASKS_COMPLETED_TOTAL.labels(service="pdf2nhcx").inc()
+        TASK_DURATION_SECONDS.labels(service="pdf2nhcx").observe(elapsed)
+        DOCUMENTS_PROCESSED_TOTAL.labels(service="pdf2nhcx").inc()
         logger.info(f"[{task_id}] NHCX task completed")
         return result_payload
 
     except Exception as exc:
         logger.exception(f"[{task_id}] NHCX task failed: {exc}")
+        TASKS_FAILED_TOTAL.labels(service="pdf2nhcx").inc()
+        DOCUMENTS_FAILED_TOTAL.labels(service="pdf2nhcx").inc()
         error_payload = {"status": "failed", "task_id": task_id, "error": str(exc)}
         try:
             r = _get_redis()

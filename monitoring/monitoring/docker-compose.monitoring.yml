@@ -13,6 +13,8 @@ services:
       - prometheus_data:/prometheus
     ports:
       - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - monitoring_internal
 
@@ -82,6 +84,24 @@ services:
     networks:
       - monitoring_internal
 
+  queue-exporter:
+    build:
+      context: ../../monitoring/queue-exporter
+      dockerfile: Dockerfile
+    container_name: queue-exporter
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - POLL_INTERVAL_SECONDS=15
+      - METRICS_PORT=9101
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring_internal
+      - app_network
+    depends_on:
+      - prometheus
+
 volumes:
   prometheus_data:
   grafana_data:
@@ -91,3 +111,6 @@ volumes:
 networks:
   monitoring_internal:
     driver: bridge
+  app_network:
+    external: true
+    name: tanuh-dpi_default

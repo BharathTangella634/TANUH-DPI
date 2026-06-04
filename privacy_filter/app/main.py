@@ -133,6 +133,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="privacy_filter")
+
 
 @app.get("/", include_in_schema=False)
 async def root(request: Request):
@@ -252,6 +255,8 @@ async def redact_file(
             )
         except Exception as e:
             logger.exception("De-identification failed")
+            from common.metrics import DOCUMENTS_FAILED_TOTAL
+            DOCUMENTS_FAILED_TOTAL.labels(service="privacy_filter").inc()
             raise HTTPException(status_code=500, detail=f"De-identification failed: {e}")
 
         if not redacted_local.exists():
@@ -290,6 +295,8 @@ async def redact_file(
             record_redaction()
         except Exception:
             pass
+        from common.metrics import DOCUMENTS_PROCESSED_TOTAL
+        DOCUMENTS_PROCESSED_TOTAL.labels(service="privacy_filter").inc()
 
         client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() \
                     or (request.client.host if request.client else "unknown")

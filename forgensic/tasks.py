@@ -26,6 +26,13 @@ import redis as redis_lib
 import httpx
 
 from forgensic.celery_app import celery_app
+from common.metrics import (
+    TASKS_STARTED_TOTAL,
+    TASKS_COMPLETED_TOTAL,
+    TASKS_FAILED_TOTAL,
+    TASK_DURATION_SECONDS,
+    DOCUMENTS_FAILED_TOTAL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +123,8 @@ def process_forgensic_job(
         {"status": "processing", "updated_at": _now_iso(), "progress": 0.05},
     )
     self.update_state(state="PROGRESS", meta={"progress": 0.05, "step": "starting"})
+    TASKS_STARTED_TOTAL.labels(service="forgensic").inc()
+    _task_start = perf_counter()
 
     try:
         # ── 2. Run the CV pipeline ────────────────────────────────────────────
@@ -231,6 +240,9 @@ def process_forgensic_job(
         # Single-image uploads use the original file as the `image_path` for the frontend.
         # The entire job directory will be cleaned up by the API's _cleanup_jobs TTL check.
 
+        _task_elapsed = perf_counter() - _task_start
+        TASKS_COMPLETED_TOTAL.labels(service="forgensic").inc()
+        TASK_DURATION_SECONDS.labels(service="forgensic").observe(_task_elapsed)
         logger.info(
             "Job %s completed in %.2fs (%d pages)",
             job_id, inference_seconds, len(pages),
@@ -239,6 +251,8 @@ def process_forgensic_job(
 
     except Exception as exc:
         logger.exception("Pipeline error for job %s: %s", job_id, exc)
+        TASKS_FAILED_TOTAL.labels(service="forgensic").inc()
+        DOCUMENTS_FAILED_TOTAL.labels(service="forgensic").inc()
         _write_job_state(
             job_id,
             {"status": "error", "updated_at": _now_iso(), "message": str(exc)},

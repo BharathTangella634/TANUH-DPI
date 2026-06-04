@@ -67,6 +67,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="session_logger")
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

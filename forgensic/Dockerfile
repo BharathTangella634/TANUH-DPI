@@ -17,6 +17,7 @@ COPY forgensic/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Application code ───────────────────────────────────────────────────────────
+COPY common/ ./common/
 # Copy the full forgensic package so it is importable as `forgensic.*`
 COPY forgensic/ ./forgensic/
 

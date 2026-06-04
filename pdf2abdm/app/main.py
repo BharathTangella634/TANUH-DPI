@@ -226,6 +226,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="pdf2abdm")
+
 from pdf2abdm.tasks import process_abdm_task
 from celery.result import AsyncResult
 
@@ -354,6 +357,7 @@ async def convert_pdf_to_abdm(
         "city": city,
     }
     try:
+        from common.metrics import DOCUMENTS_PROCESSED_TOTAL, DOCUMENTS_FAILED_TOTAL
         validate_pdf_upload(tmp_path)
         start_time = time.perf_counter()
         result = await get_abdm_json(tmp_path, model=model)
@@ -361,7 +365,11 @@ async def convert_pdf_to_abdm(
         processing_time = round(time.perf_counter() - start_time, 2)
         if bundles and doc_types:
             log_payload["json_location"] = f"json_output/abdm/FHIR_BUNDLE_{doc_types[0]}_Patient_0.json"
+            DOCUMENTS_PROCESSED_TOTAL.labels(service="pdf2abdm").inc()
+        else:
+            DOCUMENTS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
     except Exception as exc:
+        DOCUMENTS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
         raise
     finally:
         os.unlink(tmp_path)

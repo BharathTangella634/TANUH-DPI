@@ -25,6 +25,9 @@ WORKDIR /app
 COPY privacy_filter/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Phase 3: shared metrics module
+COPY common/ ./common/
+
 # Copy the MedDeID engine + FastAPI service as the `privacy_filter` package.
 # Build context is the repo root (see docker-compose: context: .).
 COPY privacy_filter/__init__.py   ./privacy_filter/__init__.py
