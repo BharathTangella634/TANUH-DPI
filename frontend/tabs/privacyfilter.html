@@ -375,30 +375,20 @@ print(r.json()["entity_counts"])</pre>
     <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
         <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Verify Setup</h4>
         <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
-            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact check</code>
+            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact-* check</code>
         </p>
         <p style="margin:0; color:#64748b; font-size:13px;">
-            Confirms Tesseract OCR and dependencies are available. No model download required — detection runs entirely on CPU.
+            Confirms Tesseract OCR and all dependencies are available. No model download required — detection runs entirely on CPU.
         </p>
     </div>
 
     <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
         <h4 style="margin:0 0 8px 0; color:#0f766e;">4. Redact a Document</h4>
         <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
-            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact redact document.pdf -o redacted.pdf --json report.json</code>
+            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact-* document.png redacted.png --backend tesseract --json report.json</code>
         </p>
         <p style="margin:0; color:#64748b; font-size:13px;">
-            Outputs a redacted file + JSON report with all detected PII entities, confidence scores, and positions. Add <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">-q</code> for quiet mode (no progress output).
-        </p>
-    </div>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">5. Check Supported Formats</h4>
-        <p style="margin:0; color:#0f766e; font-size:14px;">
-            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./pf-redact supported-types</code>
-        </p>
-        <p style="margin:0; color:#64748b; font-size:13px;">
-            Lists all supported file formats: DICOM, NIfTI, PNG, JPG, TIFF, BMP, PDF.
+            Outputs a redacted file + JSON report with PHI count, overlay count, validation status, and risk score. Supports DICOM, NIfTI, images (PNG/JPG/TIFF/BMP), and PDF.
         </p>
     </div>
 
@@ -651,20 +641,20 @@ print(r.json()["entity_counts"])</pre>
             <div class="guide-pipeline">
                 <div class="guide-pipeline-step"><h4>1. Download Executable</h4><p>Download the <code>pf-redact</code> binary for your OS from the links above.</p></div>
                 <div class="guide-pipeline-step"><h4>2. Make Executable</h4><p>Linux/Mac: <code>chmod +x pf-redact*</code>. Linux AppImage may need <code>sudo apt install libfuse2</code>.</p></div>
-                <div class="guide-pipeline-step"><h4>3. Verify Setup</h4><p><code>./pf-redact check</code> — confirms Tesseract OCR is available. No model download; runs on CPU.</p></div>
-                <div class="guide-pipeline-step"><h4>4. Redact a Document</h4><p><code>./pf-redact redact document.pdf -o redacted.pdf --json report.json</code></p></div>
-                <div class="guide-pipeline-step"><h4>5. Check Supported Types</h4><p><code>./pf-redact supported-types</code></p></div>
+                <div class="guide-pipeline-step"><h4>3. Verify Setup</h4><p><code>./pf-redact-* check</code> — confirms Tesseract OCR and all dependencies are available. No model download; runs on CPU.</p></div>
+                <div class="guide-pipeline-step"><h4>4. Redact a Document</h4><p><code>./pf-redact-* document.png redacted.png --backend tesseract --json report.json</code></p></div>
             </div>
 
             <h3>Command Reference</h3>
             <table>
                 <thead><tr><th>Command</th><th>Description</th></tr></thead>
                 <tbody>
-                    <tr><td><code>pf-redact check</code></td><td>Verify models are installed and ready</td></tr>
-                    <tr><td><code>pf-redact redact &lt;file&gt; -o &lt;output&gt;</code></td><td>Redact PII from a document</td></tr>
-                    <tr><td><code>pf-redact redact &lt;file&gt; -o &lt;output&gt; --json &lt;report&gt;</code></td><td>Redact + save JSON detection report</td></tr>
-                    <tr><td><code>pf-redact redact &lt;file&gt; -o &lt;output&gt; -q</code></td><td>Quiet mode (no progress output)</td></tr>
-                    <tr><td><code>pf-redact supported-types</code></td><td>List all supported file formats</td></tr>
+                    <tr><td><code>./pf-redact-* check</code></td><td>Verify Tesseract OCR and all dependencies are installed and ready</td></tr>
+                    <tr><td><code>./pf-redact-* --help</code></td><td>Show usage help and all available options</td></tr>
+                    <tr><td><code>./pf-redact-* &lt;input&gt; &lt;output&gt;</code></td><td>Redact PII/PHI from a document</td></tr>
+                    <tr><td><code>./pf-redact-* &lt;input&gt; &lt;output&gt; --backend tesseract</code></td><td>Specify OCR backend (tesseract or paddle)</td></tr>
+                    <tr><td><code>./pf-redact-* &lt;input&gt; &lt;output&gt; --redactor mask</code></td><td>Choose redaction strategy (mask, crop, or inpaint)</td></tr>
+                    <tr><td><code>./pf-redact-* &lt;input&gt; &lt;output&gt; --json report.json</code></td><td>Redact + save JSON detection report</td></tr>
                 </tbody>
             </table>
 
@@ -672,11 +662,10 @@ print(r.json()["entity_counts"])</pre>
             <table>
                 <thead><tr><th>Format</th><th>Extensions</th><th>Notes</th></tr></thead>
                 <tbody>
-                    <tr><td>PDF</td><td>.pdf</td><td>Native text + OCR fallback for scanned pages</td></tr>
-                    <tr><td>Word</td><td>.docx</td><td>Paragraph text extraction</td></tr>
-                    <tr><td>Images</td><td>.png, .jpg, .jpeg, .tif, .tiff</td><td>OCR via Tesseract (bundled)</td></tr>
-                    <tr><td>DICOM</td><td>.dcm, .dicom</td><td>Medical imaging metadata redaction</td></tr>
-                    <tr><td>Text</td><td>.txt, .csv, .md, .log</td><td>Direct text processing</td></tr>
+                    <tr><td>DICOM</td><td>.dcm, .dicom</td><td>Metadata tags scrubbed + burned-in text masked; pixel data preserved</td></tr>
+                    <tr><td>NIfTI</td><td>.nii, .nii.gz</td><td>Header PHI fields cleared; volume data preserved</td></tr>
+                    <tr><td>Images</td><td>.png, .jpg, .jpeg, .tif, .tiff, .bmp</td><td>Burned-in text detected and masked; EXIF stripped</td></tr>
+                    <tr><td>PDF</td><td>.pdf</td><td>Native text scanned for Safe Harbor identifiers; true text removal + QR/barcode stripping</td></tr>
                 </tbody>
             </table>
 
