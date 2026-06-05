@@ -32,8 +32,8 @@ groups:
           description: >
             More than 5% of HTTP requests to {{ $labels.service }} are returning
             5xx errors, sustained for 5 minutes. This indicates a systemic failure
-            in the service, not isolated errors. Check application logs:
-            docker logs <service-container>
+            in the service, not isolated errors. Check application logs in Loki:
+            {container="{{ $labels.service }}"} | level = "error"
 
       # Task failure spike: more than 5 failed Celery tasks in a 15-minute window,
       # sustained for 5 minutes.
@@ -57,5 +57,137 @@ groups:
           description: >
             More than 5 Celery task failures recorded on {{ $labels.service }}
             in the past 15 minutes (sustained for 5+ minutes). This exceeds
-            normal failure rates. Check worker logs for recurring error patterns:
-            docker logs <celery-worker-container>
+            normal failure rates. Check worker logs in Loki:
+            {container=~".*{{ $labels.service }}.*"} | level = "error"
+
+  - name: exception_monitoring
+    rules:
+
+      # Application exception spike: more than 10 exceptions in 15 minutes from
+      # any single service, sustained for 5 minutes.
+      #
+      # Threshold rationale:
+      #   - Under normal operation, exceptions are rare events (0–2 per hour).
+      #   - 10 exceptions in 15 minutes indicates repeated failures: a recurring
+      #     bug class, a degraded upstream dependency, or a bad document batch.
+      #   - Covers both task-level and HTTP-level exceptions captured by
+      #     dpi_exceptions_total (populated by record_exception() and the
+      #     metrics middleware).
+      - alert: ApplicationExceptionSpike
+        expr: increase(dpi_exceptions_total[15m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Exception spike on {{ $labels.service }} ({{ $labels.exception_type }})"
+          description: >
+            More than 10 {{ $labels.exception_type }} exceptions on {{ $labels.service }}
+            in the past 15 minutes. Search Loki for root cause:
+            {container="{{ $labels.service }}"} |= "exception_type={{ $labels.exception_type }}"
+
+      # Critical exception spike: any CRITICAL-severity exception sustained for 5 minutes.
+      #
+      # Threshold rationale:
+      #   - CRITICAL exceptions (connection failures, timeouts, retry exhaustion)
+      #     directly indicate infrastructure degradation.
+      #   - 3 critical exceptions in 15 minutes signals a sustained connectivity
+      #     or worker crash problem, not an isolated event.
+      - alert: CriticalExceptionSpike
+        expr: increase(dpi_exceptions_total{severity="CRITICAL"}[15m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical exceptions on {{ $labels.service }} ({{ $labels.exception_type }})"
+          description: >
+            More than 3 CRITICAL-severity {{ $labels.exception_type }} exceptions on
+            {{ $labels.service }} in the past 15 minutes. This indicates an
+            infrastructure or connectivity failure. Check Loki:
+            {container="{{ $labels.service }}"} |= "severity=CRITICAL"
+
+      # Task retry exhaustion: any task has exceeded its retry limit.
+      #
+      # Threshold rationale:
+      #   - MaxRetriesExceededError means a task failed on every attempt.
+      #     Even a single occurrence may indicate a systemic issue (bad model state,
+      #     document class that always fails).
+      #   - `for: 2m` gives a short window to distinguish a one-off from a recurring
+      #     problem before paging.
+      - alert: TaskRetryExhausted
+        expr: increase(dpi_task_retry_exhausted_total[15m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Task retry exhausted on {{ $labels.service }}"
+          description: >
+            A Celery task on {{ $labels.service }} has exhausted all retry attempts
+            (MaxRetriesExceededError). The task will not be rescheduled. Check Loki
+            for the underlying cause:
+            {container=~".*{{ $labels.service }}.*"} |= "retry_exhausted"
+
+  - name: container_crash_monitoring
+    rules:
+
+      # Container restart warning: 3 or more restarts in 30 minutes.
+      #
+      # Threshold rationale:
+      #   - Matches the Phase 5 specification: Warning at 3 restarts / 30 minutes.
+      #   - A single restart is expected behaviour (deployment, OOM under load).
+      #   - Three restarts in 30 minutes suggests a recurring crash, not a one-off.
+      #   - `for: 5m` prevents alerting on a burst of restarts that self-heals.
+      #   - `dpi_container_restart_count` is a cumulative gauge set by the
+      #     queue-exporter polling the Docker socket; `increase()` gives the delta.
+      - alert: ContainerRestartWarning
+        expr: increase(dpi_container_restart_count[30m]) >= 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} has restarted {{ $value | humanize }} times in 30m"
+          description: >
+            Container {{ $labels.container }} has restarted 3 or more times in the
+            past 30 minutes. This may indicate a recurring crash, OOM kill, or
+            unhealthy startup. Check Docker logs:
+            docker logs {{ $labels.container }} --tail 100
+
+      # Container restart critical: 5 or more restarts in 30 minutes.
+      #
+      # Threshold rationale:
+      #   - Matches the Phase 5 specification: Critical at 5 restarts / 30 minutes.
+      #   - 5 restarts in 30 minutes = one every 6 minutes — the container is
+      #     in a sustained crash cycle. Immediate investigation required.
+      - alert: ContainerRestartCritical
+        expr: increase(dpi_container_restart_count[30m]) >= 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.container }} is crash-looping ({{ $value | humanize }} restarts in 30m)"
+          description: >
+            Container {{ $labels.container }} has restarted 5 or more times in the
+            past 30 minutes. The service is likely in a crash loop. Check Docker
+            logs and system events:
+            docker logs {{ $labels.container }} --tail 200
+            docker inspect {{ $labels.container }}
+
+      # Container crash loop: 3 or more restarts within a 5-minute window.
+      #
+      # Threshold rationale:
+      #   - 3 restarts in 5 minutes (one every ~100 seconds) is an active crash
+      #     loop — the container is not surviving long enough to serve traffic.
+      #   - `for: 2m` fires quickly to minimise detection latency for crash loops.
+      #   - This rule fires earlier than ContainerRestartCritical for containers
+      #     that restart very rapidly (OOM kills, init failures).
+      - alert: ContainerCrashLoop
+        expr: increase(dpi_container_restart_count[5m]) >= 3
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.container }} is in an active crash loop"
+          description: >
+            Container {{ $labels.container }} has restarted 3 or more times in the
+            past 5 minutes. This is an active crash loop requiring immediate action.
+            Check OOM killer events: dmesg | grep -i "oom\|killed"
+            Check container logs: docker logs {{ $labels.container }} --tail 200

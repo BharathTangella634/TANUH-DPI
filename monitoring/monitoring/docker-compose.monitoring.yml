@@ -125,6 +125,8 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - POLL_INTERVAL_SECONDS=15
       - METRICS_PORT=9101
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

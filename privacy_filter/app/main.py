@@ -254,9 +254,13 @@ async def redact_file(
                 upload_path, redacted_local,
             )
         except Exception as e:
-            logger.exception("De-identification failed")
-            from common.metrics import DOCUMENTS_FAILED_TOTAL
+            logger.exception(
+                "De-identification failed exception_type=%s severity=ERROR: %s",
+                type(e).__name__, e,
+            )
+            from common.metrics import DOCUMENTS_FAILED_TOTAL, record_exception
             DOCUMENTS_FAILED_TOTAL.labels(service="privacy_filter").inc()
+            record_exception("privacy_filter", e)
             raise HTTPException(status_code=500, detail=f"De-identification failed: {e}")
 
         if not redacted_local.exists():

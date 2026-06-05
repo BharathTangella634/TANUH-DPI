@@ -30,6 +30,7 @@ from common.metrics import (
     TASK_DURATION_SECONDS,
     DOCUMENTS_PROCESSED_TOTAL,
     DOCUMENTS_FAILED_TOTAL,
+    record_exception,
 )
 
 logger = logging.getLogger(__name__)
@@ -167,9 +168,15 @@ def process_abdm_task(self, pdf_path: str, model: str = "gemma4"):
         return result_payload
 
     except Exception as exc:
-        logger.exception(f"[{task_id}] ABDM task failed: {exc}")
+        logger.exception(
+            "[%s] ABDM task failed exception_type=%s severity=%s: %s",
+            task_id, type(exc).__name__,
+            "CRITICAL" if "connection" in type(exc).__name__.lower() or "timeout" in type(exc).__name__.lower() else "ERROR",
+            exc,
+        )
         TASKS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
         DOCUMENTS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
+        record_exception("pdf2abdm", exc)
         error_payload = {"status": "failed", "task_id": task_id, "error": str(exc)}
         try:
             r = _get_redis()

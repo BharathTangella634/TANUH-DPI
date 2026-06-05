@@ -5,6 +5,8 @@ All metrics use the `dpi_` prefix. Labels are kept intentionally low-cardinality
   - `service`: one of the known DPI service names (5 values max)
   - `method`:  HTTP verb (GET/POST — 2 values)
   - `status_code`: HTTP status as string ("200", "422", "500" etc — ~10 distinct values)
+  - `exception_type`: normalized Python exception class name (~10 distinct values max)
+  - `severity`: INFO / WARNING / ERROR / CRITICAL (4 values)
 
 Forbidden labels (never added): request_id, user_id, email, token,
 document_name, file_name, job_id, task_id, ip_address.
@@ -20,7 +22,11 @@ Import pattern (in each service):
         TASK_DURATION_SECONDS,
         DOCUMENTS_PROCESSED_TOTAL,
         DOCUMENTS_FAILED_TOTAL,
+        EXCEPTIONS_TOTAL,
+        TASK_RETRIES_TOTAL,
+        TASK_RETRY_EXHAUSTED_TOTAL,
         instrument_fastapi,
+        record_exception,
     )
 """
 
@@ -98,6 +104,69 @@ QUEUE_DEPTH = Gauge(
     ["queue"],
 )
 
+# ── Error & Crash Metrics (Phase 5) ──────────────────────────────────────────
+
+EXCEPTIONS_TOTAL = Counter(
+    "dpi_exceptions_total",
+    "Total exceptions captured by DPI services, classified by type and severity.",
+    ["service", "exception_type", "severity"],
+)
+
+TASK_RETRIES_TOTAL = Counter(
+    "dpi_task_retries_total",
+    "Total Celery task retry attempts.",
+    ["service"],
+)
+
+TASK_RETRY_EXHAUSTED_TOTAL = Counter(
+    "dpi_task_retry_exhausted_total",
+    "Total Celery tasks where the retry limit was reached.",
+    ["service"],
+)
+
+# ── Severity classification ───────────────────────────────────────────────────
+
+# Exception types that indicate infrastructure/connectivity failures.
+_CRITICAL_EXCEPTION_TYPES = frozenset({
+    "ConnectionError",
+    "ConnectionRefusedError",
+    "ConnectionResetError",
+    "TimeoutError",
+    "MaxRetriesExceededError",
+    "WorkerLostError",
+    "TimeLimitExceeded",
+    "SoftTimeLimitExceeded",
+    "RedisError",
+    "ResponseError",
+})
+
+
+def _classify_severity(exc: Exception) -> str:
+    """Return ERROR or CRITICAL based on the exception type."""
+    name = type(exc).__name__
+    if name in _CRITICAL_EXCEPTION_TYPES:
+        return "CRITICAL"
+    lname = name.lower()
+    if "timeout" in lname or "connection" in lname or "redis" in lname:
+        return "CRITICAL"
+    return "ERROR"
+
+
+def record_exception(service: str, exc: Exception, severity: str | None = None) -> None:
+    """Increment dpi_exceptions_total for the given service and exception.
+
+    Severity is auto-classified when not provided:
+      CRITICAL — infrastructure/connectivity failures (timeouts, connection errors)
+      ERROR    — application/pipeline failures
+    """
+    exc_type = type(exc).__name__
+    resolved_severity = severity if severity else _classify_severity(exc)
+    EXCEPTIONS_TOTAL.labels(
+        service=service,
+        exception_type=exc_type,
+        severity=resolved_severity,
+    ).inc()
+
 # ── FastAPI middleware helper ─────────────────────────────────────────────────
 
 import time
@@ -129,12 +198,19 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
         method = request.method
         start = time.perf_counter()
         status_code = 500
+        _unhandled_exc: Exception | None = None
         try:
             response: Response = await call_next(request)
             status_code = response.status_code
             return response
-        except Exception:
+        except Exception as exc:
+            _unhandled_exc = exc
             HTTP_REQUEST_FAILURES_TOTAL.labels(service=self._service).inc()
+            EXCEPTIONS_TOTAL.labels(
+                service=self._service,
+                exception_type=type(exc).__name__,
+                severity="CRITICAL",
+            ).inc()
             raise
         finally:
             duration = time.perf_counter() - start
@@ -148,8 +224,15 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
                 service=self._service,
                 method=method,
             ).observe(duration)
-            if status_code >= 500:
+            if status_code >= 500 and _unhandled_exc is None:
+                # Unhandled exceptions are already counted above; only count
+                # 5xx responses that were returned normally (not via exception).
                 HTTP_REQUEST_FAILURES_TOTAL.labels(service=self._service).inc()
+                EXCEPTIONS_TOTAL.labels(
+                    service=self._service,
+                    exception_type="HTTPServerError",
+                    severity="ERROR",
+                ).inc()
 
 
 def instrument_fastapi(app, service: str) -> None:

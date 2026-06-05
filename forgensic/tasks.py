@@ -32,6 +32,7 @@ from common.metrics import (
     TASKS_FAILED_TOTAL,
     TASK_DURATION_SECONDS,
     DOCUMENTS_FAILED_TOTAL,
+    record_exception,
 )
 
 logger = logging.getLogger(__name__)
@@ -250,9 +251,15 @@ def process_forgensic_job(
         return {"status": "success", "job_id": job_id}
 
     except Exception as exc:
-        logger.exception("Pipeline error for job %s: %s", job_id, exc)
+        logger.exception(
+            "Pipeline error job=%s exception_type=%s severity=%s: %s",
+            job_id, type(exc).__name__,
+            "CRITICAL" if "connection" in type(exc).__name__.lower() or "timeout" in type(exc).__name__.lower() else "ERROR",
+            exc,
+        )
         TASKS_FAILED_TOTAL.labels(service="forgensic").inc()
         DOCUMENTS_FAILED_TOTAL.labels(service="forgensic").inc()
+        record_exception("forgensic", exc)
         _write_job_state(
             job_id,
             {"status": "error", "updated_at": _now_iso(), "message": str(exc)},
