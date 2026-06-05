@@ -70,7 +70,7 @@ jobs:
           mkdir -p "${APPDIR}/usr/bin"
           mkdir -p "${APPDIR}/usr/lib/python3/site-packages"
           mkdir -p "${APPDIR}/usr/share/applications"
-          mkdir -p "${APPDIR}/usr/share/icons/hicolor/256x256/apps"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
 
           # Copy Python interpreter
           PYTHON_REAL="$(readlink -f "$(which python3)")"
@@ -164,18 +164,19 @@ jobs:
           sed -i 's/^          //' "${APPDIR}/pf-redact.desktop"
           cp "${APPDIR}/pf-redact.desktop" "${APPDIR}/usr/share/applications/"
 
-          # Generate icon with Python (no ImageMagick needed)
-          python3 -c "
-          from PIL import Image, ImageDraw
-          img = Image.new('RGBA', (256, 256), (0, 120, 200, 255))
-          d = ImageDraw.Draw(img)
-          d.rectangle([40, 40, 216, 216], fill=(255, 255, 255, 255))
-          d.rectangle([60, 80, 196, 100], fill=(0, 0, 0, 255))
-          d.rectangle([60, 120, 196, 140], fill=(0, 0, 0, 255))
-          d.rectangle([60, 160, 140, 180], fill=(0, 0, 0, 255))
-          img.save('${APPDIR}/pf-redact.png')
-          "
-          cp "${APPDIR}/pf-redact.png" "${APPDIR}/usr/share/icons/hicolor/256x256/apps/"
+          # Generate icon as SVG (no external Python libraries needed)
+          cat > "${APPDIR}/pf-redact.svg" << 'SVG_EOF'
+          <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+            <rect width="256" height="256" fill="#0078C8"/>
+            <rect x="40" y="40" width="176" height="176" fill="#fff"/>
+            <rect x="60" y="80" width="136" height="20" fill="#000"/>
+            <rect x="60" y="120" width="136" height="20" fill="#000"/>
+            <rect x="60" y="160" width="80" height="20" fill="#000"/>
+          </svg>
+          SVG_EOF
+          sed -i 's/^          //' "${APPDIR}/pf-redact.svg"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+          cp "${APPDIR}/pf-redact.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/"
 
       - name: Build AppImage
         run: |
@@ -188,7 +189,27 @@ jobs:
           cd pf-build
           chmod +x pf-redact-1.0.0-x86_64.AppImage
           ./pf-redact-1.0.0-x86_64.AppImage --help
-          echo "AppImage verification passed"
+          echo "AppImage --help verification passed"
+
+      - name: Smoke test AppImage (end-to-end)
+        run: |
+          cd pf-build
+          source venv/bin/activate
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          deactivate
+          ./pf-redact-1.0.0-x86_64.AppImage test_input.png test_output.png --backend tesseract --json test_report.json
+          if [ ! -f test_output.png ]; then echo "FAIL: output image not created"; exit 1; fi
+          if [ ! -f test_report.json ]; then echo "FAIL: JSON report not created"; exit 1; fi
+          python3 -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "AppImage end-to-end smoke test passed"
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
@@ -320,7 +341,24 @@ jobs:
         run: |
           chmod +x dist/pf-redact
           ./dist/pf-redact --help
-          echo "ARM64 binary verification passed"
+          echo "ARM64 --help verification passed"
+
+      - name: Smoke test binary (end-to-end)
+        run: |
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact test_input.png test_output.png --backend tesseract --json test_report.json
+          test -f test_output.png || { echo "FAIL: output image not created"; exit 1; }
+          test -f test_report.json || { echo "FAIL: JSON report not created"; exit 1; }
+          python3 -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "ARM64 end-to-end smoke test passed"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -448,7 +486,25 @@ jobs:
       - name: Verify exe
         run: |
           .\dist\pf-redact.exe --help
-          echo "Windows exe verification passed"
+          echo "Windows --help verification passed"
+
+      - name: Smoke test exe (end-to-end)
+        shell: bash
+        run: |
+          python -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact.exe test_input.png test_output.png --backend tesseract --json test_report.json
+          test -f test_output.png || { echo "FAIL: output image not created"; exit 1; }
+          test -f test_report.json || { echo "FAIL: JSON report not created"; exit 1; }
+          python -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "Windows end-to-end smoke test passed"
 
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
@@ -576,7 +632,24 @@ jobs:
         run: |
           chmod +x dist/pf-redact
           ./dist/pf-redact --help
-          echo "macOS binary verification passed"
+          echo "macOS --help verification passed"
+
+      - name: Smoke test binary (end-to-end)
+        run: |
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact test_input.png test_output.png --backend tesseract --json test_report.json
+          test -f test_output.png || { echo "FAIL: output image not created"; exit 1; }
+          test -f test_report.json || { echo "FAIL: JSON report not created"; exit 1; }
+          python3 -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "macOS end-to-end smoke test passed"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
