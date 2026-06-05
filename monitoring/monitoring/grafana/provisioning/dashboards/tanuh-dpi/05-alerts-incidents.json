@@ -1,0 +1,288 @@
+{
+  "uid": "tanuh-alerts-incidents",
+  "title": "Alerts & Incidents",
+  "description": "On-call engineer's first stop. Shows every active alert, recent state changes, and frequency history to detect recurring problems.",
+  "tags": ["alerts", "tanuh-dpi"],
+  "schemaVersion": 38,
+  "version": 1,
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "links": [
+    { "title": "Platform Overview", "url": "/d/tanuh-platform-overview", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Service Operations", "url": "/d/tanuh-service-ops", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Worker Pipeline", "url": "/d/tanuh-worker-pipeline", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Infrastructure", "url": "/d/tanuh-infra-reliability", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Alerts", "url": "/d/tanuh-alerts-incidents", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Log Explorer", "url": "/d/tanuh-log-explorer", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] }
+  ],
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "━━━━━━  ACTIVE ALERTS SUMMARY  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Critical Firing",
+      "description": "Number of critical-severity alert rules currently in firing state.",
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\",severity=\"critical\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — All Clear" } } }]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Warning Firing",
+      "description": "Number of warning-severity alert rules currently in firing state.",
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\",severity=\"warning\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }] },
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — All Clear" } } }]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "All Clear",
+      "description": "Total alerts currently firing. 0 means no active incidents.",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ All Clear" } } }]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Platform Health Score",
+      "description": "Composite 0–100 health score. Degraded score often precedes or coincides with alert firing.",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "dpi:platform_health_score", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 60, "color": "#FFA500" }, { "value": 80, "color": "#4299E1" }, { "value": 95, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "━━━━━━  SERVICE ALERT FREQUENCY  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "Alerts Fired by Service — Last 24h",
+      "description": "Which services fire the most alerts. Persistent top-offender signals systemic instability in that service.",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count by (service)(max_over_time(ALERTS{alertstate=\"firing\"}[24h]))",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#4299E1" }] }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Active Service Alerts Over Time",
+      "description": "Count of firing alerts over time. Peaks indicate incident windows. Sustained elevation = unresolved incident.",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "count(ALERTS{alertstate=\"firing\",severity=\"critical\"}) or vector(0)", "legendFormat": "Critical", "refId": "A" },
+        { "expr": "count(ALERTS{alertstate=\"firing\",severity=\"warning\"}) or vector(0)", "legendFormat": "Warning", "refId": "B" }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 15 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E53E3E", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Warning" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FFA500", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "row",
+      "title": "━━━━━━  ALERT FIRING HISTORY  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "type": "statushistory",
+      "title": "Alert Firing History — Last 24 Hours",
+      "description": "One row per alert rule. Red = firing, amber = pending, green = inactive. Color change marks exact firing time. Scan horizontally for patterns.",
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "ALERTS{alertstate=~\"firing|pending\"}",
+          "legendFormat": "{{alertname}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colWidth": 0.9,
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "#3CB371" },
+              { "value": 0.5, "color": "#FFA500" },
+              { "value": 1, "color": "#E53E3E" }
+            ]
+          },
+          "custom": { "lineWidth": 1, "fillOpacity": 80 }
+        }
+      }
+    },
+
+    {
+      "id": 30,
+      "type": "row",
+      "title": "━━━━━━  RELEVANT METRICS AT ALERT TIME  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 1 }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Service Uptime Signals",
+      "description": "up=1 per service over time. Drop to 0 marks exact service downtime windows. Correlate with alert firing history above.",
+      "gridPos": { "x": 0, "y": 26, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "up{job=\"pdf2abdm\"}", "legendFormat": "pdf2abdm", "refId": "A" },
+        { "expr": "up{job=\"pdf2nhcx\"}", "legendFormat": "pdf2nhcx", "refId": "B" },
+        { "expr": "up{job=\"privacy_filter\"}", "legendFormat": "privacy_filter", "refId": "C" },
+        { "expr": "up{job=\"forgensic\"}", "legendFormat": "forgensic", "refId": "D" },
+        { "expr": "up{job=\"session_logger\"}", "legendFormat": "session_logger", "refId": "E" }
+      ],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "min": 0, "max": 1.1 },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "pdf2abdm" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "pdf2nhcx" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "privacy_filter" }, "properties": [{ "id": "color", "value": { "fixedColor": "#38A169", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "forgensic" }, "properties": [{ "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "session_logger" }, "properties": [{ "id": "color", "value": { "fixedColor": "#718096", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Queue Depth History",
+      "description": "Queue depth over time. Spikes correlate with queue-related alerts. Sustained elevation confirms worker capacity issue.",
+      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM", "refId": "A" },
+        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX", "refId": "B" },
+        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forgensic", "refId": "C" }
+      ],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 10 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "ABDM" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "NHCX" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Forgensic" }, "properties": [{ "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] }
+        ]
+      }
+    }
+  ]
+}

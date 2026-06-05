@@ -1,0 +1,359 @@
+{
+  "uid": "tanuh-worker-pipeline",
+  "title": "Worker Pipeline",
+  "description": "Async document processing pipeline. Queue depths, task throughput, processing durations, and per-worker instance health.",
+  "tags": ["worker", "tanuh-dpi"],
+  "schemaVersion": 38,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "links": [
+    { "title": "Platform Overview", "url": "/d/tanuh-platform-overview", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Service Operations", "url": "/d/tanuh-service-ops", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Worker Pipeline", "url": "/d/tanuh-worker-pipeline", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Infrastructure", "url": "/d/tanuh-infra-reliability", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Alerts", "url": "/d/tanuh-alerts-incidents", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Log Explorer", "url": "/d/tanuh-log-explorer", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "expr": "ALERTS{alertstate=\"firing\"}",
+        "hide": false,
+        "iconColor": "#E53E3E",
+        "name": "Firing Alerts",
+        "step": "60s",
+        "titleFormat": "{{alertname}}"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "interval",
+        "type": "interval",
+        "label": "Interval",
+        "query": "1m,5m,15m",
+        "current": { "selected": true, "text": "5m", "value": "5m" },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "━━━━━━  PIPELINE HEALTH STRIP  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Queue Total",
+      "description": "Total documents currently queued across all pipelines.",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(dpi_queue_depth)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 10, "color": "#FFA500" }, { "value": 50, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Tasks Started",
+      "description": "Total tasks accepted by workers in the selected time range.",
+      "gridPos": { "x": 4, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_tasks_started_total[$__range]))", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "area", "justifyMode": "center" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#4299E1", "mode": "fixed" } } }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Tasks Completed",
+      "description": "Total tasks successfully completed in the selected time range.",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_tasks_completed_total[$__range]))", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "area", "justifyMode": "center" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#3CB371", "mode": "fixed" } } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Tasks Failed",
+      "description": "Total tasks permanently failed in the selected time range. Any value > 0 requires investigation.",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_tasks_failed_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 5, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Retries Today",
+      "description": "Total task retries in the selected time range. Retries are expected; exhaustions are not.",
+      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_task_retries_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" } ] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Retries Exhausted",
+      "description": "Tasks that exhausted all retry attempts. These documents are permanently lost. Target: 0.",
+      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_task_retry_exhausted_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "━━━━━━  PROCESSING FUNNEL  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "Document Processing Funnel — Last 1 Hour",
+      "description": "Lifecycle stages from API reception to task completion. Narrowing bars show drop-off. Healthy pipeline: Completed ≈ Received.",
+      "gridPos": { "x": 0, "y": 6, "w": 16, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(increase(dpi_http_requests_total{method=\"POST\",status_code=~\"2..\"}[1h]))", "legendFormat": "Received", "refId": "A" },
+        { "expr": "sum(increase(dpi_tasks_started_total[1h]))", "legendFormat": "Started", "refId": "B" },
+        { "expr": "sum(increase(dpi_tasks_completed_total[1h]))", "legendFormat": "Completed", "refId": "C" },
+        { "expr": "sum(increase(dpi_tasks_failed_total[1h])) or vector(0)", "legendFormat": "Failed", "refId": "D" }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Received" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Started" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Completed" }, "properties": [{ "id": "color", "value": { "fixedColor": "#3CB371", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Failed" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E53E3E", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": "bargauge",
+      "title": "Queue Depth Now",
+      "description": "Current documents waiting in each queue. Green = idle, Amber = moderate load, Red = backlog.",
+      "gridPos": { "x": 16, "y": 6, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM", "refId": "A" },
+        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX", "refId": "B" },
+        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forgensic", "refId": "C" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 10, "color": "#FFA500" }, { "value": 50, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "row",
+      "title": "━━━━━━  QUEUE ACTIVITY  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Queue Depth Over Time",
+      "description": "Queue depth for each pipeline over time. Rising queue = workers falling behind. Should return to 0 between bursts.",
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM Queue", "refId": "A" },
+        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX Queue", "refId": "B" },
+        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forgensic Queue", "refId": "C" }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 10 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "ABDM Queue" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "NHCX Queue" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Forgensic Queue" }, "properties": [{ "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 30,
+      "type": "row",
+      "title": "━━━━━━  TASK THROUGHPUT  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Task Rate — All Pipelines",
+      "description": "Task rates across all worker pipelines. Gap between Started and Completed = in-flight tasks. Widening gap signals pipeline backing up.",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(dpi_tasks_started_total[$interval])) by (service)", "legendFormat": "Started — {{service}}", "refId": "A" },
+        { "expr": "sum(rate(dpi_tasks_completed_total[$interval])) by (service)", "legendFormat": "Completed — {{service}}", "refId": "B" },
+        { "expr": "sum(rate(dpi_tasks_failed_total[$interval])) by (service)", "legendFormat": "Failed — {{service}}", "refId": "C" }
+      ],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Task Completion Ratio",
+      "description": "completed / started × 100. Target: 100%. Dip below 95% indicates tasks are failing or stuck in-flight.",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(dpi_tasks_completed_total[$interval])) / (sum(rate(dpi_tasks_started_total[$interval])) > 0) * 100",
+          "legendFormat": "Completion Ratio %",
+          "refId": "A"
+        }
+      ],
+      "options": { "tooltip": { "mode": "single" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "fillOpacity": 15 },
+          "color": { "fixedColor": "#3CB371", "mode": "fixed" },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 90, "color": "#FFA500" }, { "value": 99, "color": "#3CB371" }] }
+        }
+      }
+    },
+
+    {
+      "id": 40,
+      "type": "row",
+      "title": "━━━━━━  PER-WORKER INSTANCE  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 32, "w": 24, "h": 1 }
+    },
+    {
+      "id": 41,
+      "type": "barchart",
+      "title": "Tasks Started per Worker Instance — Last 1h",
+      "description": "Task distribution across individual worker containers. Dead worker = bar of 0. Unbalanced bars = load imbalance. Healthy = roughly equal bars.",
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(increase(dpi_tasks_started_total[1h])) by (instance)", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 50,
+      "type": "row",
+      "title": "━━━━━━  RETRY & FAILURE ANALYSIS  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 41, "w": 24, "h": 1 }
+    },
+    {
+      "id": 51,
+      "type": "timeseries",
+      "title": "Retry Events",
+      "description": "Task retry rate. Some retries are expected (transient failures). Spike indicates underlying instability. Watch for trend — increasing retries signal degrading upstream dependency.",
+      "gridPos": { "x": 0, "y": 42, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_task_retries_total[$interval])) by (service)", "legendFormat": "Retries — {{service}}", "refId": "A" }],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "fixedColor": "#FFA500", "mode": "fixed" } } }
+    },
+    {
+      "id": 52,
+      "type": "timeseries",
+      "title": "Retry Exhausted (Permanent Failures)",
+      "description": "Tasks that exhausted all retry attempts. These are permanently lost documents. Target: 0 at all times.",
+      "gridPos": { "x": 12, "y": 42, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_task_retry_exhausted_total[$interval])) by (service)", "legendFormat": "Exhausted — {{service}}", "refId": "A" }],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "fixedColor": "#E53E3E", "mode": "fixed" },
+          "custom": { "fillOpacity": 20 },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 0.001, "color": "#E53E3E" }] }
+        }
+      }
+    }
+  ]
+}

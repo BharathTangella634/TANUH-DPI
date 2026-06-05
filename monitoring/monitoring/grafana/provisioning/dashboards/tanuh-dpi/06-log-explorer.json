@@ -1,0 +1,245 @@
+{
+  "uid": "tanuh-log-explorer",
+  "title": "Log Explorer",
+  "description": "Developer debugging tool. Rapid log investigation with flexible filtering by service, level, and free-text search.",
+  "tags": ["logs", "tanuh-dpi"],
+  "schemaVersion": 38,
+  "version": 1,
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "refresh": "off",
+  "graphTooltip": 1,
+  "links": [
+    { "title": "Platform Overview", "url": "/d/tanuh-platform-overview", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Service Operations", "url": "/d/tanuh-service-ops", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Worker Pipeline", "url": "/d/tanuh-worker-pipeline", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Infrastructure", "url": "/d/tanuh-infra-reliability", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Alerts", "url": "/d/tanuh-alerts-incidents", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Log Explorer", "url": "/d/tanuh-log-explorer", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] }
+  ],
+  "annotations": { "list": [] },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "custom",
+        "label": "Service",
+        "query": "pdf2abdm,pdf2nhcx,privacy_filter,forgensic,session_logger",
+        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": "pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger",
+        "options": [
+          { "selected": true,  "text": "All",           "value": "$__all" },
+          { "selected": false, "text": "pdf2abdm",       "value": "pdf2abdm" },
+          { "selected": false, "text": "pdf2nhcx",       "value": "pdf2nhcx" },
+          { "selected": false, "text": "privacy_filter", "value": "privacy_filter" },
+          { "selected": false, "text": "forgensic",      "value": "forgensic" },
+          { "selected": false, "text": "session_logger", "value": "session_logger" }
+        ],
+        "hide": 0,
+        "multi": false
+      },
+      {
+        "name": "level",
+        "type": "custom",
+        "label": "Log Level",
+        "query": "error,warn,info,debug",
+        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".*",
+        "options": [
+          { "selected": true,  "text": "All",   "value": "$__all" },
+          { "selected": false, "text": "error",  "value": "error" },
+          { "selected": false, "text": "warn",   "value": "warn" },
+          { "selected": false, "text": "info",   "value": "info" },
+          { "selected": false, "text": "debug",  "value": "debug" }
+        ],
+        "hide": 0,
+        "multi": false
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "label": "Search",
+        "current": { "selected": false, "text": "", "value": "" },
+        "hide": 0,
+        "query": ""
+      },
+      {
+        "name": "interval",
+        "type": "interval",
+        "label": "Interval",
+        "query": "1m,5m,15m",
+        "current": { "selected": true, "text": "1m", "value": "1m" },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "━━━━━━  LOG STATS  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Error Count",
+      "description": "Total error log lines in the selected time range and service filter.",
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "sum(count_over_time({job=~\"$service\"} |= \"\" | level =~ \"error|ERROR\" [$__range]))",
+        "legendFormat": "",
+        "refId": "A"
+      }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 10, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Warning Count",
+      "description": "Total warning log lines in the selected time range and service filter.",
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "sum(count_over_time({job=~\"$service\"} |= \"\" | level =~ \"warn|WARN|WARNING\" [$__range]))",
+        "legendFormat": "",
+        "refId": "A"
+      }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" } ] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Log Volume",
+      "description": "Total log lines across all levels in the selected time range.",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "sum(count_over_time({job=~\"$service\"} [$__range]))",
+        "legendFormat": "",
+        "refId": "A"
+      }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#4299E1", "mode": "fixed" } } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Services Active",
+      "description": "Services currently producing logs within the selected time range.",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "count(sum by (job) (count_over_time({job=~\"pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger\"} [$__range])))",
+        "legendFormat": "",
+        "refId": "A"
+      }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#3CB371", "mode": "fixed" } } }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "━━━━━━  LOG VOLUME  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Log Volume by Level",
+      "description": "Log line rate broken down by severity level. Error spike = active issue. Warning spike = degraded but functional. Use for time-based correlation with metric anomalies.",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 6 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        { "expr": "sum(count_over_time({job=~\"$service\"} |= \"\" | level =~ \"error|ERROR\" [$interval]))", "legendFormat": "Error", "refId": "A" },
+        { "expr": "sum(count_over_time({job=~\"$service\"} |= \"\" | level =~ \"warn|WARN|WARNING\" [$interval]))", "legendFormat": "Warning", "refId": "B" },
+        { "expr": "sum(count_over_time({job=~\"$service\"} |= \"\" | level =~ \"info|INFO\" [$interval]))", "legendFormat": "Info", "refId": "C" }
+      ],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Error" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E53E3E", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Warning" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FFA500", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Info" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "row",
+      "title": "━━━━━━  MAIN LOG PANEL  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "type": "logs",
+      "title": "Logs — $service · Level: $level",
+      "description": "Full log stream with service and level filters. Use the search variable to filter by keyword. Expand entries to see full structured log context.",
+      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 22 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{job=~\"$service\"} |= \"$search\" | level =~ \"$level\"",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    }
+  ]
+}

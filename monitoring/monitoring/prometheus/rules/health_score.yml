@@ -1,0 +1,68 @@
+groups:
+  - name: platform_health_score
+    interval: 30s
+    rules:
+      # Component 1: Service Availability (35 pts)
+      # All 5 services UP = 35, each DOWN = -7
+      - record: dpi:health_score:service_availability
+        expr: |
+          sum(up{job=~"pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger"})
+          / 5 * 35
+
+      # Component 2: Error Rate Health (25 pts)
+      # 0% error = 25, >=10% error = 0, linear between
+      # NaN-safe: when rate=0 (no traffic), treat as healthy (full 25 pts)
+      - record: dpi:health_score:error_rate
+        expr: |
+          clamp_min(
+            25 * (1 - clamp_max(
+              (
+                sum(rate(dpi_http_requests_total{status_code=~"5.."}[5m]))
+                /
+                (sum(rate(dpi_http_requests_total[5m])) > 0)
+              ) / 0.10,
+            1)),
+          0)
+          or vector(25)
+
+      # Component 3: Queue Health (15 pts)
+      # 0 items = 15, 100+ items = 0, linear between
+      - record: dpi:health_score:queue_health
+        expr: |
+          clamp_min(
+            15 * (1 - clamp_max(sum(dpi_queue_depth) / 100, 1)),
+          0)
+
+      # Component 4: Alert Health (15 pts)
+      # -10 per critical firing, -3 per warning firing, floor at 0
+      - record: dpi:health_score:alert_health
+        expr: |
+          clamp_min(
+            15
+            - (count(ALERTS{alertstate="firing",severity="critical"}) or vector(0)) * 10
+            - (count(ALERTS{alertstate="firing",severity="warning"}) or vector(0)) * 3,
+          0)
+
+      # Component 5: Infrastructure Health (10 pts)
+      # CPU: degrade linearly from 70% to 100%; floor at 0
+      - record: dpi:health_score:infra_health
+        expr: |
+          clamp_min(
+            10 * (1 - clamp_max(
+              (
+                1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))
+                - 0.70
+              ) / 0.30,
+            1)),
+          0)
+
+      # Composite Score: sum of all 5 components, clamped [0, 100]
+      - record: dpi:platform_health_score
+        expr: |
+          clamp_max(clamp_min(
+            dpi:health_score:service_availability
+            + dpi:health_score:error_rate
+            + dpi:health_score:queue_health
+            + dpi:health_score:alert_health
+            + dpi:health_score:infra_health,
+          0), 100)

@@ -1,0 +1,341 @@
+{
+  "uid": "tanuh-ops-command",
+  "title": "Operations Command Center",
+  "description": "Purpose-built wallboard dashboard. Open with ?kiosk=1&refresh=30s&theme=dark for NOC/office display. No scrolling — all critical information above the fold.",
+  "tags": ["overview", "wallboard", "tanuh-dpi"],
+  "schemaVersion": 38,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": { "hidden": true },
+  "refresh": "30s",
+  "graphTooltip": 1,
+  "links": [
+    { "title": "Platform Overview", "url": "/d/tanuh-platform-overview", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Service Operations", "url": "/d/tanuh-service-ops", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Alerts", "url": "/d/tanuh-alerts-incidents", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] }
+  ],
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "",
+      "description": "Platform identity banner for wallboard display.",
+      "gridPos": { "x": 0, "y": 0, "w": 14, "h": 3 },
+      "options": {
+        "mode": "html",
+        "content": "<div style=\"display:flex;align-items:center;height:100%;padding:8px 20px;background:#1a1a2e;border-radius:4px\"><div style=\"font-size:28px;font-weight:800;color:#ffffff;letter-spacing:2px\">TANUH-DPI</div><div style=\"font-size:14px;color:#a0aec0;margin-left:20px\">Healthcare Document Processing Platform &nbsp;·&nbsp; Production Operations</div></div>"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Health Score",
+      "description": "Composite 0-100 platform health score.",
+      "gridPos": { "x": 14, "y": 0, "w": 5, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "dpi:platform_health_score", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 60, "color": "#FFA500" }, { "value": 80, "color": "#4299E1" }, { "value": 95, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Platform Status",
+      "description": "Overall operational status based on service availability.",
+      "gridPos": { "x": 19, "y": 0, "w": 5, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "min(up{job=~\"pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger\"})", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "⚠ DEGRADED" }, "1": { "text": "● OPERATIONAL" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Clinical Records",
+      "description": "ABDM records processed in selected time range.",
+      "gridPos": { "x": 0, "y": 3, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2abdm\"}[$__range]))", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#4299E1", "mode": "fixed" } } }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Insurance Claims",
+      "description": "NHCX claims processed in selected time range.",
+      "gridPos": { "x": 4, "y": 3, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2nhcx\"}[$__range]))", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#805AD5", "mode": "fixed" } } }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Privacy Filtered",
+      "description": "Documents privacy-filtered in selected time range.",
+      "gridPos": { "x": 8, "y": 3, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"privacy_filter\"}[$__range]))", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#38A169", "mode": "fixed" } } }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Forensic Analyses",
+      "description": "Forgery analyses completed in selected time range.",
+      "gridPos": { "x": 12, "y": 3, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"forgensic\"}[$__range]))", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#DD6B20", "mode": "fixed" } } }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Error Rate",
+      "description": "Platform-wide 5xx error rate.",
+      "gridPos": { "x": 16, "y": 3, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(dpi_http_requests_total[5m])) * 100 or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "decimals": 2,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 5, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Active Alerts",
+      "description": "Total alert rules currently firing.",
+      "gridPos": { "x": 20, "y": 3, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 3, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ Clear" } } }]
+        }
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "pdf2abdm",
+      "description": "ABDM service status.",
+      "gridPos": { "x": 0, "y": 7, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "up{job=\"pdf2abdm\"}", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "pdf2nhcx",
+      "description": "NHCX service status.",
+      "gridPos": { "x": 4, "y": 7, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "up{job=\"pdf2nhcx\"}", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "privacy_filter",
+      "description": "Privacy filter service status.",
+      "gridPos": { "x": 8, "y": 7, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "up{job=\"privacy_filter\"}", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "forgensic",
+      "description": "Forgensic service status.",
+      "gridPos": { "x": 12, "y": 7, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "up{job=\"forgensic\"}", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "session_logger",
+      "description": "Session logger service status.",
+      "gridPos": { "x": 16, "y": 7, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "up{job=\"session_logger\"}", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 25,
+      "type": "bargauge",
+      "title": "Queue Depths",
+      "description": "Current queue depths for all three pipelines.",
+      "gridPos": { "x": 20, "y": 7, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM", "refId": "A" },
+        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX", "refId": "B" },
+        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forgensic", "refId": "C" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 50,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 10, "color": "#FFA500" }, { "value": 50, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Platform Health Score — Last 1h",
+      "description": "Health score trend. Dip below 80 = degradation event.",
+      "gridPos": { "x": 0, "y": 11, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "dpi:platform_health_score", "legendFormat": "Health Score", "refId": "A" }],
+      "options": { "tooltip": { "mode": "single" }, "legend": { "displayMode": "hidden" } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "custom": { "fillOpacity": 20 },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 60, "color": "#FFA500" }, { "value": 80, "color": "#4299E1" }, { "value": 95, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Request Throughput",
+      "description": "Request rate by service in real time.",
+      "gridPos": { "x": 8, "y": 11, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"pdf2abdm\"}[5m]))", "legendFormat": "pdf2abdm", "refId": "A" },
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"pdf2nhcx\"}[5m]))", "legendFormat": "pdf2nhcx", "refId": "B" },
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"privacy_filter\"}[5m]))", "legendFormat": "privacy_filter", "refId": "C" },
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"forgensic\"}[5m]))", "legendFormat": "forgensic", "refId": "D" }
+      ],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "pdf2abdm" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "pdf2nhcx" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "privacy_filter" }, "properties": [{ "id": "color", "value": { "fixedColor": "#38A169", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "forgensic" }, "properties": [{ "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "type": "logs",
+      "title": "Recent Errors",
+      "description": "Live error log tail — all services.",
+      "gridPos": { "x": 16, "y": 11, "w": 8, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "{job=~\"pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger\"} |= \"\" | level =~ \"error|ERROR\"",
+        "legendFormat": "",
+        "refId": "A"
+      }],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": false,
+        "prettifyLogMessage": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    }
+  ]
+}
