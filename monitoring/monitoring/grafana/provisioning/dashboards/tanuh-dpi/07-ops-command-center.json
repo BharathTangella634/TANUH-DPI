@@ -38,7 +38,7 @@
       "targets": [{ "expr": "dpi:platform_health_score", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
@@ -64,7 +64,7 @@
       "targets": [{ "expr": "min(up{job=~\"pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger\"})", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
@@ -87,7 +87,7 @@
       "gridPos": { "x": 0, "y": 3, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2abdm\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#4299E1", "mode": "fixed" } } }
     },
     {
@@ -98,7 +98,7 @@
       "gridPos": { "x": 4, "y": 3, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2nhcx\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#805AD5", "mode": "fixed" } } }
     },
     {
@@ -109,7 +109,7 @@
       "gridPos": { "x": 8, "y": 3, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"privacy_filter\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#38A169", "mode": "fixed" } } }
     },
     {
@@ -120,7 +120,7 @@
       "gridPos": { "x": 12, "y": 3, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"forgensic\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "none", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#DD6B20", "mode": "fixed" } } }
     },
     {
@@ -131,7 +131,7 @@
       "gridPos": { "x": 16, "y": 3, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(rate(dpi_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(dpi_http_requests_total[5m])) * 100 or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "unit": "percent", "decimals": 2,
@@ -148,7 +148,7 @@
       "gridPos": { "x": 20, "y": 3, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -164,9 +164,10 @@
       "type": "stat",
       "title": "Clinical Records",
       "description": "ABDM Clinical Record Extraction service status (internal id: pdf2abdm).",
+      "gridPos": { "x": 0, "y": 7, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "up{job=\"pdf2abdm\"}", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
@@ -180,9 +181,10 @@
       "type": "stat",
       "title": "Insurance Claims",
       "description": "NHCX Insurance Policy Extraction service status (internal id: pdf2nhcx).",
+      "gridPos": { "x": 4, "y": 7, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "up{job=\"pdf2nhcx\"}", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
@@ -196,9 +198,10 @@
       "type": "stat",
       "title": "Privacy Filter",
       "description": "MedDeID PII Redaction service status (internal id: privacy_filter).",
+      "gridPos": { "x": 8, "y": 7, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "up{job=\"privacy_filter\"}", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
@@ -212,9 +215,10 @@
       "type": "stat",
       "title": "Forensic Analysis",
       "description": "Forgery Detection Analysis service status (internal id: forgensic).",
+      "gridPos": { "x": 12, "y": 7, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "up{job=\"forgensic\"}", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],
@@ -228,9 +232,10 @@
       "type": "stat",
       "title": "Session Logger",
       "description": "Session Logging and Analytics service status (internal id: session_logger).",
+      "gridPos": { "x": 16, "y": 7, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "up{job=\"session_logger\"}", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "none", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "● UP" } } }],

@@ -96,7 +96,7 @@
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -135,7 +135,7 @@
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -183,7 +183,7 @@
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "none",
         "justifyMode": "center"
@@ -206,7 +206,7 @@
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2nhcx\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "none",
         "justifyMode": "center"
@@ -229,7 +229,7 @@
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"privacy_filter\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "none",
         "justifyMode": "center"
@@ -252,7 +252,7 @@
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"forgensic\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "none",
         "justifyMode": "center"
@@ -283,7 +283,7 @@
       "targets": [{ "expr": "sum(increase(dpi_documents_processed_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center"
@@ -306,7 +306,7 @@
       "targets": [{ "expr": "sum(rate(dpi_http_requests_total{status_code=~\"5..\"}[1h])) / sum(rate(dpi_http_requests_total[1h])) * 100 or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -330,7 +330,7 @@
       "targets": [{ "expr": "sum(dpi_queue_depth) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -340,7 +340,7 @@
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 10, "color": "#FFA500" }, { "value": 50, "color": "#E53E3E" }] },
           "color": { "mode": "thresholds" },
           "unit": "short",
-          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — Caught Up" } } }],
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ Caught Up" } } }],
           "noValue": "Queue empty — caught up"
         }
       }
@@ -355,7 +355,7 @@
       "targets": [{ "expr": "avg(avg_over_time(up{job=~\"pdf2abdm|pdf2nhcx|privacy_filter|forgensic|session_logger\"}[24h])) * 100", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -379,7 +379,7 @@
       "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -411,9 +411,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "up{job=\"pdf2abdm\"}", "legendFormat": "Status", "refId": "A" },
-        { "expr": "sum(rate(dpi_http_requests_total{service=\"pdf2abdm\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" },
-        { "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"pdf2abdm\"}[$interval])) by (le))", "legendFormat": "P95 Latency", "refId": "C" },
-        { "expr": "sum(increase(dpi_http_requests_total{service=\"pdf2abdm\",status_code=~\"5..\"}[1h])) or vector(0)", "legendFormat": "5xx Errors", "refId": "D" }
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"pdf2abdm\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -430,9 +428,7 @@
         },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Status" }, "properties": [{ "id": "mappings", "value": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "#E53E3E" }, "1": { "text": "UP", "color": "#3CB371" } } }] }, { "id": "color", "value": { "mode": "thresholds" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] } }] },
-          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "s" }, { "id": "color", "value": { "fixedColor": "#718096", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "5xx Errors" }, "properties": [{ "id": "color", "value": { "mode": "thresholds" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] } }] }
+          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] }
         ]
       },
       "links": [{ "title": "Investigate Service", "url": "/d/tanuh-service-ops?var-service=pdf2abdm", "targetBlank": false }]
@@ -446,9 +442,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "up{job=\"pdf2nhcx\"}", "legendFormat": "Status", "refId": "A" },
-        { "expr": "sum(rate(dpi_http_requests_total{service=\"pdf2nhcx\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" },
-        { "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"pdf2nhcx\"}[$interval])) by (le))", "legendFormat": "P95 Latency", "refId": "C" },
-        { "expr": "sum(increase(dpi_http_requests_total{service=\"pdf2nhcx\",status_code=~\"5..\"}[1h])) or vector(0)", "legendFormat": "5xx Errors", "refId": "D" }
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"pdf2nhcx\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -462,9 +456,7 @@
         "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }] } },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Status" }, "properties": [{ "id": "mappings", "value": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "#E53E3E" }, "1": { "text": "UP", "color": "#3CB371" } } }] }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] } }] },
-          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "s" }] },
-          { "matcher": { "id": "byName", "options": "5xx Errors" }, "properties": [{ "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] } }] }
+          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] }
         ]
       },
       "links": [{ "title": "Investigate Service", "url": "/d/tanuh-service-ops?var-service=pdf2nhcx", "targetBlank": false }]
@@ -478,9 +470,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "up{job=\"privacy_filter\"}", "legendFormat": "Status", "refId": "A" },
-        { "expr": "sum(rate(dpi_http_requests_total{service=\"privacy_filter\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" },
-        { "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"privacy_filter\"}[$interval])) by (le))", "legendFormat": "P95 Latency", "refId": "C" },
-        { "expr": "sum(increase(dpi_http_requests_total{service=\"privacy_filter\",status_code=~\"5..\"}[1h])) or vector(0)", "legendFormat": "5xx Errors", "refId": "D" }
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"privacy_filter\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -494,9 +484,7 @@
         "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }] } },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Status" }, "properties": [{ "id": "mappings", "value": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "#E53E3E" }, "1": { "text": "UP", "color": "#3CB371" } } }] }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] } }] },
-          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#38A169", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "s" }] },
-          { "matcher": { "id": "byName", "options": "5xx Errors" }, "properties": [{ "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] } }] }
+          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#38A169", "mode": "fixed" } }] }
         ]
       },
       "links": [{ "title": "Investigate Service", "url": "/d/tanuh-service-ops?var-service=privacy_filter", "targetBlank": false }]
@@ -510,9 +498,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "up{job=\"forgensic\"}", "legendFormat": "Status", "refId": "A" },
-        { "expr": "sum(rate(dpi_http_requests_total{service=\"forgensic\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" },
-        { "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"forgensic\"}[$interval])) by (le))", "legendFormat": "P95 Latency", "refId": "C" },
-        { "expr": "sum(increase(dpi_http_requests_total{service=\"forgensic\",status_code=~\"5..\"}[1h])) or vector(0)", "legendFormat": "5xx Errors", "refId": "D" }
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"forgensic\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -526,9 +512,7 @@
         "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }] } },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Status" }, "properties": [{ "id": "mappings", "value": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "#E53E3E" }, "1": { "text": "UP", "color": "#3CB371" } } }] }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] } }] },
-          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "s" }] },
-          { "matcher": { "id": "byName", "options": "5xx Errors" }, "properties": [{ "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] } }] }
+          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] }
         ]
       },
       "links": [{ "title": "Investigate Service", "url": "/d/tanuh-service-ops?var-service=forgensic", "targetBlank": false }]
@@ -542,8 +526,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "up{job=\"session_logger\"}", "legendFormat": "Status", "refId": "A" },
-        { "expr": "sum(rate(dpi_http_requests_total{service=\"session_logger\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" },
-        { "expr": "sum(increase(dpi_http_requests_total{service=\"session_logger\",status_code=~\"5..\"}[1h])) or vector(0)", "legendFormat": "5xx Errors", "refId": "D" }
+        { "expr": "sum(rate(dpi_http_requests_total{service=\"session_logger\"}[$interval]))", "legendFormat": "Req/s", "refId": "B" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -557,8 +540,7 @@
         "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }] } },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Status" }, "properties": [{ "id": "mappings", "value": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "#E53E3E" }, "1": { "text": "UP", "color": "#3CB371" } } }] }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] } }] },
-          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#718096", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "5xx Errors" }, "properties": [{ "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] } }] }
+          { "matcher": { "id": "byName", "options": "Req/s" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "color", "value": { "fixedColor": "#718096", "mode": "fixed" } }] }
         ]
       },
       "links": [{ "title": "Investigate Service", "url": "/d/tanuh-service-ops?var-service=session_logger", "targetBlank": false }]
@@ -805,6 +787,39 @@
         "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
+      }
+    },
+
+    {
+      "id": 80,
+      "type": "row",
+      "title": "━━━━━━  PLATFORM HEALTH TREND  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 54, "w": 24, "h": 1 }
+    },
+    {
+      "id": 81,
+      "type": "timeseries",
+      "title": "Platform Health Score — Last 3h",
+      "description": "Composite 0–100 health score over time. A sustained dip below 80 signals a degradation event worth investigating — correlate with the panels above to find the cause.",
+      "gridPos": { "x": 0, "y": 55, "w": 24, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi:platform_health_score", "legendFormat": "Health Score", "refId": "A" }
+      ],
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "hidden" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "custom": { "fillOpacity": 20 },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 60, "color": "#FFA500" }, { "value": 80, "color": "#4299E1" }, { "value": 95, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
       }
     }
   ]

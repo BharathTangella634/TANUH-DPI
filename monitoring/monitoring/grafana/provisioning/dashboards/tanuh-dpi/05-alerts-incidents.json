@@ -37,7 +37,7 @@
       "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\",severity=\"critical\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -47,7 +47,7 @@
           "unit": "short",
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] },
           "color": { "mode": "thresholds" },
-          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — All Clear" } } }]
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ All Clear" } } }]
         }
       }
     },
@@ -61,7 +61,7 @@
       "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\",severity=\"warning\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -71,7 +71,7 @@
           "unit": "short",
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }] },
           "color": { "mode": "thresholds" },
-          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — All Clear" } } }]
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ All Clear" } } }]
         }
       }
     },
@@ -85,7 +85,7 @@
       "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -109,7 +109,7 @@
       "targets": [{ "expr": "dpi:platform_health_score", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -198,11 +198,13 @@
       "title": "Alert Firing History — Last 24 Hours",
       "description": "One row per alert rule. Red = firing, amber = pending, green = inactive. Color change marks exact firing time. Scan horizontally for patterns.",
       "gridPos": { "x": 0, "y": 15, "w": 24, "h": 10 },
+      "maxDataPoints": 720,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "ALERTS{alertstate=~\"firing|pending\"}",
           "legendFormat": "{{alertname}}",
+          "interval": "2m",
           "refId": "A"
         }
       ],
@@ -244,21 +246,21 @@
       "gridPos": { "x": 0, "y": 26, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "up{job=\"pdf2abdm\"}", "legendFormat": "pdf2abdm", "refId": "A" },
-        { "expr": "up{job=\"pdf2nhcx\"}", "legendFormat": "pdf2nhcx", "refId": "B" },
-        { "expr": "up{job=\"privacy_filter\"}", "legendFormat": "privacy_filter", "refId": "C" },
-        { "expr": "up{job=\"forgensic\"}", "legendFormat": "forgensic", "refId": "D" },
-        { "expr": "up{job=\"session_logger\"}", "legendFormat": "session_logger", "refId": "E" }
+        { "expr": "up{job=\"pdf2abdm\"}", "legendFormat": "Clinical Records", "refId": "A" },
+        { "expr": "up{job=\"pdf2nhcx\"}", "legendFormat": "Insurance Claims", "refId": "B" },
+        { "expr": "up{job=\"privacy_filter\"}", "legendFormat": "Privacy Filter", "refId": "C" },
+        { "expr": "up{job=\"forgensic\"}", "legendFormat": "Forensic Analysis", "refId": "D" },
+        { "expr": "up{job=\"session_logger\"}", "legendFormat": "Session Logger", "refId": "E" }
       ],
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
       "fieldConfig": {
         "defaults": { "unit": "short", "min": 0, "max": 1.1 },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "pdf2abdm" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "pdf2nhcx" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "privacy_filter" }, "properties": [{ "id": "color", "value": { "fixedColor": "#38A169", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "forgensic" }, "properties": [{ "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "session_logger" }, "properties": [{ "id": "color", "value": { "fixedColor": "#718096", "mode": "fixed" } }] }
+          { "matcher": { "id": "byName", "options": "Clinical Records" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Insurance Claims" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Privacy Filter" }, "properties": [{ "id": "color", "value": { "fixedColor": "#38A169", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Forensic Analysis" }, "properties": [{ "id": "color", "value": { "fixedColor": "#DD6B20", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Session Logger" }, "properties": [{ "id": "color", "value": { "fixedColor": "#718096", "mode": "fixed" } }] }
         ]
       }
     },

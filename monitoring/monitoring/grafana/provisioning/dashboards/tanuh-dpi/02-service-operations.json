@@ -37,14 +37,14 @@
         "name": "service",
         "type": "custom",
         "label": "Service",
-        "query": "pdf2abdm,pdf2nhcx,privacy.filter,forgensic,session.logger",
-        "current": { "selected": true, "text": "pdf2abdm", "value": "pdf2abdm" },
+        "query": "Clinical Records : pdf2abdm,Insurance Claims : pdf2nhcx,Privacy Filter : privacy.filter,Forensic Analysis : forgensic,Session Logger : session.logger",
+        "current": { "selected": true, "text": "Clinical Records", "value": "pdf2abdm" },
         "options": [
-          { "selected": true,  "text": "pdf2abdm",       "value": "pdf2abdm" },
-          { "selected": false, "text": "pdf2nhcx",       "value": "pdf2nhcx" },
-          { "selected": false, "text": "privacy_filter", "value": "privacy.filter" },
-          { "selected": false, "text": "forgensic",      "value": "forgensic" },
-          { "selected": false, "text": "session_logger", "value": "session.logger" }
+          { "selected": true,  "text": "Clinical Records",  "value": "pdf2abdm" },
+          { "selected": false, "text": "Insurance Claims",  "value": "pdf2nhcx" },
+          { "selected": false, "text": "Privacy Filter",    "value": "privacy.filter" },
+          { "selected": false, "text": "Forensic Analysis", "value": "forgensic" },
+          { "selected": false, "text": "Session Logger",    "value": "session.logger" }
         ],
         "hide": 0,
         "includeAll": false,
@@ -78,7 +78,7 @@
       "targets": [{ "expr": "up{job=\"$service\"}", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center"
@@ -101,7 +101,7 @@
       "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\"}[$interval]))", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center"
@@ -120,7 +120,7 @@
       "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"$service\"}[$interval])) by (le))", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -143,7 +143,7 @@
       "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\",status_code=~\"5..\"}[$interval])) / sum(rate(dpi_http_requests_total{service=\"$service\"}[$interval])) * 100 or vector(0)", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"

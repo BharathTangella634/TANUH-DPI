@@ -132,7 +132,7 @@
       "targets": [{ "expr": "node_time_seconds - node_boot_time_seconds", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "none",
         "graphMode": "none",
         "justifyMode": "center"
@@ -297,7 +297,7 @@
           "color": { "mode": "thresholds" },
           "custom": { "displayMode": "color-background" },
           "mappings": [
-            { "type": "value", "options": { "0": { "text": "0 — Stable" } } },
+            { "type": "value", "options": { "0": { "text": "✓ Stable" } } },
             { "type": "range", "options": { "from": 1, "to": 2, "result": { "text": "Monitor" } } },
             { "type": "range", "options": { "from": 3, "to": 999, "result": { "text": "CrashLoop" } } }
           ]

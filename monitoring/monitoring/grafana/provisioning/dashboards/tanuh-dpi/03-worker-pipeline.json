@@ -58,13 +58,14 @@
       "description": "Total documents currently queued across all pipelines.",
       "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(dpi_queue_depth)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "sum(dpi_queue_depth) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 10, "color": "#FFA500" }, { "value": 50, "color": "#E53E3E" }] },
-          "color": { "mode": "thresholds" }
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ Queue Empty" } } }]
         }
       }
     },
@@ -75,8 +76,8 @@
       "description": "Total tasks accepted by workers in the selected time range.",
       "gridPos": { "x": 4, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_tasks_started_total[$__range]))", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "sum(increase(dpi_tasks_started_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "none", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#4299E1", "mode": "fixed" } } }
     },
     {
@@ -86,8 +87,8 @@
       "description": "Total tasks successfully completed in the selected time range.",
       "gridPos": { "x": 8, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_tasks_completed_total[$__range]))", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "none", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "sum(increase(dpi_tasks_completed_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "none", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "fixedColor": "#3CB371", "mode": "fixed" } } }
     },
     {
@@ -98,13 +99,13 @@
       "gridPos": { "x": 12, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_tasks_failed_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 5, "color": "#E53E3E" }] },
           "color": { "mode": "thresholds" },
-          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — None Failed" } } }]
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ No Failures" } } }]
         }
       }
     },
@@ -116,12 +117,13 @@
       "gridPos": { "x": 16, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_task_retries_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" } ] },
-          "color": { "mode": "thresholds" }
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ No Retries Needed" } } }]
         }
       }
     },
@@ -133,13 +135,13 @@
       "gridPos": { "x": 20, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "sum(increase(dpi_task_retry_exhausted_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#E53E3E" }] },
           "color": { "mode": "thresholds" },
-          "mappings": [{ "type": "value", "options": { "0": { "text": "0 — None Lost" } } }]
+          "mappings": [{ "type": "value", "options": { "0": { "text": "✓ No Permanent Losses" } } }]
         }
       }
     },
@@ -159,9 +161,9 @@
       "gridPos": { "x": 0, "y": 6, "w": 16, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "sum(increase(dpi_http_requests_total{method=\"POST\",status_code=~\"2..\"}[1h]))", "legendFormat": "Received", "refId": "A" },
-        { "expr": "sum(increase(dpi_tasks_started_total[1h]))", "legendFormat": "Started", "refId": "B" },
-        { "expr": "sum(increase(dpi_tasks_completed_total[1h]))", "legendFormat": "Completed", "refId": "C" },
+        { "expr": "sum(increase(dpi_http_requests_total{method=\"POST\",status_code=~\"2..\"}[1h])) or vector(0)", "legendFormat": "Received", "refId": "A" },
+        { "expr": "sum(increase(dpi_tasks_started_total[1h])) or vector(0)", "legendFormat": "Started", "refId": "B" },
+        { "expr": "sum(increase(dpi_tasks_completed_total[1h])) or vector(0)", "legendFormat": "Completed", "refId": "C" },
         { "expr": "sum(increase(dpi_tasks_failed_total[1h])) or vector(0)", "legendFormat": "Failed", "refId": "D" }
       ],
       "options": {
