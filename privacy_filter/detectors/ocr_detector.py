@@ -79,7 +79,7 @@ def _find_bundled_tesseract() -> str | None:
             if tessdata.is_dir():
                 os.environ.setdefault(
                     "TESSDATA_PREFIX",
-                    str(tessdata.parent),
+                    str(tessdata),
                 )
             logger.debug(
                 "Using bundled tesseract: %s", p

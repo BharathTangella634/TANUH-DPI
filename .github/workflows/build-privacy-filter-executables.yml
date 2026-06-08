@@ -154,7 +154,7 @@ jobs:
           export PYTHONHOME="${APPDIR}/usr"
           export PYTHONPATH="${APPDIR}/usr/lib/python3/site-packages:${APPDIR}/usr/lib/${PYVER}"
           export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
-          export TESSDATA_PREFIX="${APPDIR}/usr/share"
+          export TESSDATA_PREFIX="${APPDIR}/usr/share/tessdata"
           export SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
           export REQUESTS_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
           exec "${APPDIR}/usr/bin/python3" -m privacy_filter.cli.main "$@"
