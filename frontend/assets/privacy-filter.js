@@ -2,8 +2,8 @@
  * Privacy Filter — namespaced JS for the NHCX inline tab.
  * All symbols prefixed with PF_ to avoid collisions with NHCX script.js.
  *
- * Backend: https://privacy-filter-147901050545.asia-south1.run.app
- * Routed via Apache reverse proxy: /privacy-filter/* → Cloud Run
+ * Backend: privacy-filter container (port 8003)
+ * Routed via Apache reverse proxy: /privacy-filter/* → http://privacy-filter:8003/
  *
  * API surface:
  *   GET  /api/health          — { status, model, device, model_loaded }
@@ -19,9 +19,7 @@
   "use strict";
 
   // ── Config ───────────────────────────────────────────────────────────────
-  // Primary: Apache proxy path (maps /privacy-filter/* → Cloud Run)
-  // Fallback: direct Cloud Run URL (used when proxy is unavailable)
-  const PF_CLOUD_RUN = "https://privacy-filter-147901050545.asia-south1.run.app";
+  // Apache proxy path: /privacy-filter/* → http://privacy-filter:8003/
   const PF_LOCAL     = "http://localhost:8003";
   const PF_BASE      = window.location.hostname === "localhost"
     ? PF_LOCAL        // dev: hit local privacy-filter service

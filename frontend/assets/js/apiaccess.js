@@ -171,8 +171,8 @@
             copyId:     'apiForgeryTokenCopy',
         });
 
-        // Privacy Filter is a standalone Cloud Run service with its own UI and token system.
-        // Token generation is handled at: https://privacy-filter-147901050545.asia-south1.run.app
+        // Privacy Filter runs as a local Docker container (port 8003) with its own UI and token system.
+        // Token generation is handled at: /privacy-filter/api/demo-token
     };
 
     window.API_downloadPostman = function() {

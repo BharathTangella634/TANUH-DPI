@@ -10,7 +10,6 @@ RUN sed -i 's/LogLevel warn/LogLevel debug/g' /usr/local/apache2/conf/httpd.conf
 RUN sed -i 's/Listen 80/Listen 8080/g' /usr/local/apache2/conf/httpd.conf
 
 # Enable proxy modules (needed for reverse-proxying API calls to backend containers)
-# Also enable ssl_module so SSLProxyEngine works for HTTPS backends (Cloud Run)
 RUN sed -i \
     -e 's/#LoadModule proxy_module/LoadModule proxy_module/' \
     -e 's/#LoadModule proxy_http_module/LoadModule proxy_http_module/' \
