@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     webhook_signing_secret: str | None = None
 
     # ── VertexAI Embedding ────────────────────────────────────────────────────
-    vertex_project_id: str = "tanuh-bcd-questionnaire"  # auto-detected from SA
+    vertex_project_id: str = "proj-dpi-shared"  # auto-detected from SA
     vertex_location: str = "us-central1"
     vertex_embedding_model: str = "publishers/google/models/gemini-embedding-001"
     vertex_credentials_json: str = "gcp-service-account.json"
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     vector_hnsw_ef_search: int = 50     # query-time recall vs speed
 
     # ── LLM Inference (Vertex AI MaaS) ────────────────────────────────────────
-    llm_project_id: str = "tanuh-bcd-questionnaire"
+    llm_project_id: str = "proj-dpi-shared"
     llm_location: str = "us-central1"
     llm_model: str = "publishers/google/models/gemma-4-26b-a4b-it-maas"
     llm_credentials_json: str = "gcp-service-account.json"
