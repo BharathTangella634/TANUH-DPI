@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
 
   pdf2abdm:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/pdf2abdm:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: pdf2abdm/Dockerfile
@@ -32,6 +33,7 @@ services:
       - session-logger
 
   pdf2nhcx:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/pdf2nhcx:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: pdf2nhcx/Dockerfile
@@ -57,6 +59,7 @@ services:
 
   # ── NHCX Insurance Workers (4 replicas × concurrency 2 = 8 slots) ───────────
   celery-nhcx-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/celery-nhcx-worker:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: worker/Dockerfile
@@ -81,6 +84,7 @@ services:
 
   # ── ABDM Clinical Workers (4 replicas × concurrency 2 = 8 slots) ─────────────
   celery-abdm-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/celery-abdm-worker:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: worker/Dockerfile
@@ -105,6 +109,7 @@ services:
 
 
   frontend:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/frontend:${IMAGE_TAG:-v1.0.0}
     build: 
       context: .
       dockerfile: frontend/Dockerfile
@@ -128,6 +133,7 @@ services:
     restart: unless-stopped
 
   session-logger:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/session-logger:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: session_logger/Dockerfile
@@ -150,6 +156,7 @@ services:
       - cloud-sql-proxy
 
   privacy-filter:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/privacy-filter:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: privacy_filter/Dockerfile
@@ -177,6 +184,7 @@ services:
 
   # ── Privacy Filter Workers (4 replicas × concurrency 2 = 8 parallel slots) ──
   celery-privacy-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/celery-privacy-worker:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: privacy_filter/Dockerfile
@@ -209,6 +217,7 @@ services:
       - redis
 
   forgensic:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/forgensic:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: forgensic/Dockerfile
@@ -240,6 +249,7 @@ services:
   # Scale up replicas for more throughput; scale concurrency for more parallelism
   # per machine (keep concurrency ≤ CPU cores to avoid context-switch overhead).
   celery-forgensic-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/celery-forgensic-worker:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: forgensic/Dockerfile

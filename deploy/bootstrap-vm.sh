@@ -77,12 +77,19 @@ curl -s -H "Metadata-Flavor: Google" \
   "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email" || true
 echo
 
-# ── 5. Start the stack ───────────────────────────────────────────────────────
-# The VM's docker-compose.yml is the keyless variant: no gcp-service-account.json
-# mounts, REDIS_URL -> Memorystore, cloud-sql-proxy connection name ->
-# ${SQL_CONNECTION_NAME}. (See deploy/DEPLOYMENT.md.)
+# ── 5. Start the stack (pull pre-built images from Artifact Registry) ────────
+# The compose declares image: refs in Artifact Registry (dpi-containers) plus a
+# build: fallback for local dev. In production we PULL the pre-built, versioned
+# images (no on-VM build) — boot drops from ~20 min to ~2-3 min. The VM's
+# attached SA needs roles/artifactregistry.reader.
+# Override the image tag with IMAGE_TAG=<tag> for pinned versions / rollbacks.
+log "configuring Artifact Registry auth (ADC)..."
+gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet || true
+
+log "pulling images..."
+docker compose pull
+
 log "starting stack..."
-docker compose pull || true
-docker compose up -d --build
+docker compose up -d
 
 log "done. services on :8000-8004 (APIs) and :8080 (frontend)."
