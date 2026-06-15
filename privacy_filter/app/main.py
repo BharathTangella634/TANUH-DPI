@@ -500,8 +500,31 @@ def _find_stored_file(kind: str, key: str, storage=None) -> Path | None:
     return None
 
 
-def _render_document_pages(file_path: Path, key: str) -> List[Dict[str, Any]]:
-    """Convert a document to page images. Returns [{page, url, width, height}]."""
+def _persist_pages_to_gcs(storage, key: str, out_dir: Path) -> None:
+    """Mirror locally-rendered page PNGs into GCS so any VM can serve them.
+
+    The MIG runs multiple VMs and the load balancer does not pin a client to a
+    single instance, so a page rendered on VM-A must be retrievable on VM-B.
+    Nothing preview-related is allowed to live only on one VM's local disk.
+    """
+    if os.getenv("STORAGE_BACKEND", "local").lower() != "gcs":
+        return
+    for png in sorted(out_dir.glob("page_*.png")):
+        try:
+            storage.save("pages", f"{key}/{png.name}", png.read_bytes())
+        except Exception:
+            logger.exception("failed to persist page %s to GCS", png.name)
+
+
+def _render_document_pages(file_path: Path, key: str, storage=None) -> List[Dict[str, Any]]:
+    """Convert a document to page images. Returns [{page, url, width, height}].
+
+    Rendered page PNGs are also persisted to GCS (when STORAGE_BACKEND=gcs) so
+    that /api/page-image can be served by any MIG VM — not just the one that ran
+    the render. Requests are not pinned to a single instance.
+    """
+    if storage is None:
+        storage = get_storage()
     out_dir = _PAGE_RENDER_DIR / key
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -563,6 +586,7 @@ def _render_document_pages(file_path: Path, key: str) -> List[Dict[str, Any]]:
         except Exception:
             logger.warning("NIfTI preview failed")
 
+    _persist_pages_to_gcs(storage, key, out_dir)
     return pages_info
 
 
@@ -577,16 +601,24 @@ async def render_pages(
     file_path = _find_stored_file(kind, key, storage)
     if file_path is None:
         raise HTTPException(status_code=404, detail="File not found")
-    pages = _render_document_pages(file_path, key)
+    pages = _render_document_pages(file_path, key, storage)
     return {"pages": pages, "text_only": False}
 
 
 @app.get("/api/page-image/{key}/{page_num}")
 async def page_image(key: str, page_num: int):
     img_path = _PAGE_RENDER_DIR / key / f"page_{page_num}.png"
-    if not img_path.exists():
-        raise HTTPException(status_code=404, detail="Page image not found")
-    return FileResponse(img_path, media_type="image/png")
+    if img_path.exists():
+        return FileResponse(img_path, media_type="image/png")
+    # MIG/multi-VM: the page may have been rendered on a different VM. The render
+    # step mirrors pages to GCS, so retrieve it from there rather than 404-ing.
+    if os.getenv("STORAGE_BACKEND", "local").lower() == "gcs":
+        try:
+            data = get_storage().open_read("pages", f"{key}/page_{page_num}.png")
+            return StreamingResponse(data, media_type="image/png")
+        except Exception:
+            logger.warning("page-image %s/%s not found in GCS", key, page_num)
+    raise HTTPException(status_code=404, detail="Page image not found")
 
 
 # ---------------------------------------------------------------------------
