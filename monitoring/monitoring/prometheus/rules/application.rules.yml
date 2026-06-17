@@ -1,0 +1,74 @@
+groups:
+  - name: application_availability
+    rules:
+
+      # Each alert fires when the Prometheus scrape target for the service
+      # transitions to up=0 (TCP refused, HTTP timeout, or non-200 response
+      # on /metrics). The `for: 1m` window absorbs single missed scrapes
+      # caused by container restarts or temporary network hiccups.
+
+      - alert: Pdf2AbdmDown
+        expr: up{job="pdf2abdm"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: pdf2abdm
+        annotations:
+          summary: "pdf2abdm service is down"
+          description: >
+            Prometheus cannot scrape pdf2abdm on port 8000.
+            The ABDM clinical document extraction API is unreachable.
+            Check: docker logs pdf2abdm
+
+      - alert: Pdf2NhcxDown
+        expr: up{job="pdf2nhcx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: pdf2nhcx
+        annotations:
+          summary: "pdf2nhcx service is down"
+          description: >
+            Prometheus cannot scrape pdf2nhcx on port 8001.
+            The NHCX insurance policy extraction API is unreachable.
+            Check: docker logs pdf2nhcx
+
+      - alert: PrivacyFilterDown
+        expr: up{job="privacy_filter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: privacy_filter
+        annotations:
+          summary: "privacy-filter service is down"
+          description: >
+            Prometheus cannot scrape privacy-filter on port 8003.
+            The MedDeID PII redaction API is unreachable.
+            Check: docker logs privacy-filter
+
+      - alert: ForgensicDown
+        expr: up{job="forgensic"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: forgensic
+        annotations:
+          summary: "forgensic service is down"
+          description: >
+            Prometheus cannot scrape forgensic on port 8004.
+            The forgery detection API is unreachable.
+            Check: docker logs forgensic
+
+      - alert: SessionLoggerDown
+        expr: up{job="session_logger"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: session_logger
+        annotations:
+          summary: "session-logger service is down"
+          description: >
+            Prometheus cannot scrape session-logger on port 8002.
+            The logging and analytics API is unreachable. All services
+            that fire-and-forget to /log will start silently failing.
+            Check: docker logs session-logger

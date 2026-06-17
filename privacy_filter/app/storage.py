@@ -181,6 +181,34 @@ class GCSStorage(Storage):  # pragma: no cover - exercised in cloud
         """
         return f"/api/files/{kind}/{key}"
 
+    def cleanup_expired(self, ttl_seconds: int) -> int:
+        """
+        Delete objects under the prefix whose age exceeds *ttl_seconds*.
+
+        Enforces the Privacy Filter's 30-minute edit window in GCS. A GCS bucket
+        lifecycle rule can't express sub-day TTLs, so the app sweeps instead.
+        Idempotent and safe to run from multiple instances. Returns count deleted.
+        """
+        from datetime import datetime, timedelta, timezone
+
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=ttl_seconds)
+        deleted = 0
+        try:
+            for blob in self.gcs_client.list_blobs(self.bucket, prefix=self.prefix):
+                created = blob.time_created
+                if created is not None and created < cutoff:
+                    try:
+                        blob.delete()
+                        deleted += 1
+                    except Exception as exc:
+                        logger.debug("cleanup_expired: skip %s (%s)", blob.name, exc)
+        except Exception:
+            logger.exception("cleanup_expired: list/delete pass failed")
+        if deleted:
+            logger.info("cleanup_expired: deleted %d expired object(s) under %r",
+                        deleted, self.prefix)
+        return deleted
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -217,7 +245,7 @@ def get_storage() -> Storage:
     """
     backend = os.getenv("STORAGE_BACKEND", "local").lower()
     if backend == "gcs":
-        bucket = os.getenv("GCS_BUCKET", "tanuh-bcd-bucket")
+        bucket = os.getenv("GCS_BUCKET") or os.getenv("PRIVACY_GCS_BUCKET", "dpi-privacy-temp")
         prefix = os.getenv("GCS_PREFIX", "privacy-app")
         logger.info(
             f"Storage backend: GCS  bucket={bucket}  prefix={prefix}"

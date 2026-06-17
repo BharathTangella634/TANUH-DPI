@@ -1,0 +1,353 @@
+{
+  "uid": "tanuh-service-ops",
+  "title": "Service Operations",
+  "description": "Per-service deep-dive. Use the service variable to filter. Covers request rates, latency, errors, and logs.",
+  "tags": ["service", "tanuh-dpi"],
+  "schemaVersion": 38,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "links": [
+    { "title": "Platform Overview", "url": "/d/tanuh-platform-overview", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Service Operations", "url": "/d/tanuh-service-ops", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Worker Pipeline", "url": "/d/tanuh-worker-pipeline", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Infrastructure", "url": "/d/tanuh-infra-reliability", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Alerts", "url": "/d/tanuh-alerts-incidents", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Log Explorer", "url": "/d/tanuh-log-explorer", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "expr": "ALERTS{alertstate=\"firing\"}",
+        "hide": false,
+        "iconColor": "#E53E3E",
+        "name": "Firing Alerts",
+        "step": "60s",
+        "titleFormat": "{{alertname}}"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "custom",
+        "label": "Service",
+        "query": "Clinical Records : pdf2abdm,Insurance Claims : pdf2nhcx,Privacy Filter : privacy.filter,Forensic Analysis : forgensic,Session Logger : session.logger",
+        "current": { "selected": true, "text": "Clinical Records", "value": "pdf2abdm" },
+        "options": [
+          { "selected": true,  "text": "Clinical Records",  "value": "pdf2abdm" },
+          { "selected": false, "text": "Insurance Claims",  "value": "pdf2nhcx" },
+          { "selected": false, "text": "Privacy Filter",    "value": "privacy.filter" },
+          { "selected": false, "text": "Forensic Analysis", "value": "forgensic" },
+          { "selected": false, "text": "Session Logger",    "value": "session.logger" }
+        ],
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "interval",
+        "type": "interval",
+        "label": "Interval",
+        "query": "1m,5m,15m",
+        "current": { "selected": true, "text": "5m", "value": "5m" },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "━━━━━━  SERVICE HEADER — $service  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Service Status",
+      "description": "Prometheus scrape target status. UP = service reachable and returning metrics.",
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "up{job=\"$service\"}", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#E53E3E" }, { "value": 1, "color": "#3CB371" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Request Rate",
+      "description": "Current HTTP request rate for $service over the selected interval.",
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\"}[$interval]))", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "fixedColor": "#4299E1", "mode": "fixed" } }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "P95 Latency",
+      "description": "95th percentile request duration for $service. SLO target: < 2s.",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"$service\"}[$interval])) by (le))", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 2, "color": "#FFA500" }, { "value": 5, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Error Rate",
+      "description": "5xx HTTP error rate for $service. Target: < 1%.",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\",status_code=~\"5..\"}[$interval])) / sum(rate(dpi_http_requests_total{service=\"$service\"}[$interval])) * 100 or vector(0)", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 5, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "━━━━━━  REQUEST ANALYSIS  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Request Rate by Method",
+      "description": "HTTP request rate broken down by HTTP method (GET, POST, PUT). Helps identify which operation is driving load.",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\"}[$interval])) by (method)", "legendFormat": "{{method}}", "refId": "A" }],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "HTTP Status Code Breakdown",
+      "description": "Request rate by HTTP status code family. Green=2xx, amber=4xx, red=5xx. 5xx spike requires immediate investigation.",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\"}[$interval])) by (status_code)", "legendFormat": "HTTP {{status_code}}", "refId": "A" }],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20 } },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": "HTTP 2.." }, "properties": [{ "id": "color", "value": { "fixedColor": "#3CB371", "mode": "fixed" } }] },
+          { "matcher": { "id": "byRegexp", "options": "HTTP 4.." }, "properties": [{ "id": "color", "value": { "fixedColor": "#FFA500", "mode": "fixed" } }] },
+          { "matcher": { "id": "byRegexp", "options": "HTTP 5.." }, "properties": [{ "id": "color", "value": { "fixedColor": "#E53E3E", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "row",
+      "title": "━━━━━━  LATENCY DISTRIBUTION  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Latency Percentiles — P50 / P95 / P99",
+      "description": "Request duration percentiles for $service. SLO threshold line at 2s. P99 approaching 5s signals outlier requests.",
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"$service\"}[$interval])) by (le))", "legendFormat": "P50", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"$service\"}[$interval])) by (le))", "legendFormat": "P95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, sum(rate(dpi_http_request_duration_seconds_bucket{service=\"$service\"}[$interval])) by (le))", "legendFormat": "P99", "refId": "C" }
+      ],
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "P50" }, "properties": [{ "id": "color", "value": { "fixedColor": "#3CB371", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "P95" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "P99" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E53E3E", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "type": "heatmap",
+      "title": "Latency Heatmap",
+      "description": "Distribution of request durations over time. Color intensity = request density. Bimodal bands reveal fast and slow request paths. Signature panel — reveals patterns invisible in percentile lines.",
+      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(dpi_http_request_duration_seconds_bucket{service=\"$service\"}[$interval])) by (le)",
+          "legendFormat": "{{le}}",
+          "refId": "A",
+          "format": "heatmap"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "yAxis": { "unit": "s", "decimals": 2 },
+        "color": { "scheme": "Oranges", "mode": "scheme", "fill": "dark-orange" },
+        "tooltip": { "show": true, "yHistogram": false }
+      }
+    },
+
+    {
+      "id": 30,
+      "type": "row",
+      "title": "━━━━━━  ERROR ANALYSIS  ━━━━━━",
+      "collapsed": true,
+      "gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 },
+      "panels": [
+        {
+          "id": 31,
+          "type": "timeseries",
+          "title": "4xx Client Errors",
+          "description": "Rate of 4xx responses for $service. High 4xx rate may indicate bad client requests, authentication failures, or API misuse.",
+          "gridPos": { "x": 0, "y": 24, "w": 12, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\",status_code=~\"4..\"}[$interval]))", "legendFormat": "4xx Rate", "refId": "A" }],
+          "options": { "tooltip": { "mode": "single" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "fieldConfig": {
+            "defaults": { "unit": "reqps", "color": { "fixedColor": "#FFA500", "mode": "fixed" }, "custom": { "fillOpacity": 15 } }
+          }
+        },
+        {
+          "id": 32,
+          "type": "timeseries",
+          "title": "5xx Server Errors",
+          "description": "Rate of 5xx responses for $service. Server errors indicate bugs, downstream failures, or resource exhaustion.",
+          "gridPos": { "x": 12, "y": 24, "w": 12, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [{ "expr": "sum(rate(dpi_http_requests_total{service=\"$service\",status_code=~\"5..\"}[$interval]))", "legendFormat": "5xx Rate", "refId": "A" }],
+          "options": { "tooltip": { "mode": "single" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "fieldConfig": {
+            "defaults": { "unit": "reqps", "color": { "fixedColor": "#E53E3E", "mode": "fixed" }, "custom": { "fillOpacity": 20 } }
+          }
+        }
+      ]
+    },
+
+    {
+      "id": 40,
+      "type": "row",
+      "title": "━━━━━━  DOCUMENT PROCESSING  ━━━━━━",
+      "collapsed": true,
+      "gridPos": { "x": 0, "y": 30, "w": 24, "h": 1 },
+      "panels": [
+        {
+          "id": 41,
+          "type": "timeseries",
+          "title": "Documents Processed",
+          "description": "Rate of documents successfully processed by $service.",
+          "gridPos": { "x": 0, "y": 31, "w": 12, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [{ "expr": "rate(dpi_documents_processed_total{service=\"$service\"}[$interval])", "legendFormat": "Processed/s", "refId": "A" }],
+          "options": { "tooltip": { "mode": "single" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "fieldConfig": { "defaults": { "unit": "ops", "color": { "fixedColor": "#3CB371", "mode": "fixed" } } }
+        },
+        {
+          "id": 42,
+          "type": "timeseries",
+          "title": "Document Failure Rate",
+          "description": "Rate of documents that failed processing in $service. Should remain near 0.",
+          "gridPos": { "x": 12, "y": 31, "w": 12, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [{ "expr": "rate(dpi_documents_failed_total{service=\"$service\"}[$interval])", "legendFormat": "Failed/s", "refId": "A" }],
+          "options": { "tooltip": { "mode": "single" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "fieldConfig": { "defaults": { "unit": "ops", "color": { "fixedColor": "#E53E3E", "mode": "fixed" }, "custom": { "fillOpacity": 20 } } }
+        }
+      ]
+    },
+
+    {
+      "id": 50,
+      "type": "row",
+      "title": "━━━━━━  SERVICE LOGS  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 37, "w": 24, "h": 1 }
+    },
+    {
+      "id": 51,
+      "type": "logs",
+      "title": "Service Logs — $service",
+      "description": "Live log stream for $service. Filter by level or search for specific error messages.",
+      "gridPos": { "x": 0, "y": 38, "w": 24, "h": 12 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{service=~\"$service\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    }
+  ]
+}

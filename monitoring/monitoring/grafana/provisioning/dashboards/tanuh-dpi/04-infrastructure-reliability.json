@@ -1,0 +1,308 @@
+{
+  "uid": "tanuh-infra-reliability",
+  "title": "Infrastructure & Reliability",
+  "description": "VM resource utilization, container crash history, and node health. Opened when performance is degraded or resources are suspected as root cause.",
+  "tags": ["infra", "tanuh-dpi"],
+  "schemaVersion": 38,
+  "version": 1,
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "links": [
+    { "title": "Platform Overview", "url": "/d/tanuh-platform-overview", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Service Operations", "url": "/d/tanuh-service-ops", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Worker Pipeline", "url": "/d/tanuh-worker-pipeline", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Infrastructure", "url": "/d/tanuh-infra-reliability", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Alerts", "url": "/d/tanuh-alerts-incidents", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] },
+    { "title": "Log Explorer", "url": "/d/tanuh-log-explorer", "type": "link", "icon": "dashboard", "targetBlank": false, "tags": [] }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "expr": "ALERTS{alertstate=\"firing\"}",
+        "hide": false,
+        "iconColor": "#E53E3E",
+        "name": "Firing Alerts",
+        "step": "60s",
+        "titleFormat": "{{alertname}}"
+      }
+    ]
+  },
+  "templating": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "━━━━━━  RESOURCE HEALTH  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "gauge",
+      "title": "CPU Usage",
+      "description": "Current CPU utilization across all cores. Warning at 70%, critical at 85%.",
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "(1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) * 100", "legendFormat": "CPU %", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 70, "color": "#FFA500" }, { "value": 85, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "Memory Usage",
+      "description": "Current RAM utilization. Warning at 80%, critical at 90%. High memory may cause OOM worker kills.",
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+        "legendFormat": "Memory %",
+        "refId": "A"
+      }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 80, "color": "#FFA500" }, { "value": 90, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "gauge",
+      "title": "Disk Usage",
+      "description": "Root filesystem utilization. Warning at 75%, critical at 90%. Full disk causes container crashes.",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"})) * 100",
+        "legendFormat": "Disk %",
+        "refId": "A"
+      }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 75, "color": "#FFA500" }, { "value": 90, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "System Uptime",
+      "description": "Time since last VM boot.",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "node_time_seconds - node_boot_time_seconds", "legendFormat": "", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value",
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": { "defaults": { "unit": "dtdurations", "color": { "fixedColor": "#3CB371", "mode": "fixed" } } }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "━━━━━━  CPU & MEMORY TIME SERIES  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "CPU Utilization — 6h",
+      "description": "CPU utilization breakdown by mode. iowait spike = disk or network bottleneck. system+user spike = compute load.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "avg(rate(node_cpu_seconds_total{mode=\"user\"}[5m])) * 100", "legendFormat": "User", "refId": "A" },
+        { "expr": "avg(rate(node_cpu_seconds_total{mode=\"system\"}[5m])) * 100", "legendFormat": "System", "refId": "B" },
+        { "expr": "avg(rate(node_cpu_seconds_total{mode=\"iowait\"}[5m])) * 100", "legendFormat": "IOWait", "refId": "C" }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "fillOpacity": 10, "stacking": { "mode": "normal" } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "User" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4299E1", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "System" }, "properties": [{ "id": "color", "value": { "fixedColor": "#805AD5", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "IOWait" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FFA500", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Memory Utilization — 6h",
+      "description": "Memory breakdown. Used (RSS) vs cached vs free. Cached memory is healthy and reclaimable. Watch for Used approaching total.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)", "legendFormat": "Used", "refId": "A" },
+        { "expr": "node_memory_Cached_bytes", "legendFormat": "Cached", "refId": "B" },
+        { "expr": "node_memory_MemFree_bytes", "legendFormat": "Free", "refId": "C" }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Used" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E53E3E", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Cached" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FFA500", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Free" }, "properties": [{ "id": "color", "value": { "fixedColor": "#3CB371", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "row",
+      "title": "━━━━━━  DISK & NETWORK  ━━━━━━",
+      "collapsed": true,
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 1 },
+      "panels": [
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "Disk I/O",
+          "description": "Read and write throughput for the root disk. High sustained write rates may fill disk faster than expected.",
+          "gridPos": { "x": 0, "y": 17, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "rate(node_disk_read_bytes_total[5m])", "legendFormat": "Read", "refId": "A" },
+            { "expr": "rate(node_disk_written_bytes_total[5m])", "legendFormat": "Write", "refId": "B" }
+          ],
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "fieldConfig": { "defaults": { "unit": "Bps" } }
+        },
+        {
+          "id": 22,
+          "type": "timeseries",
+          "title": "Network I/O",
+          "description": "Network receive and transmit rates. Sustained high TX can indicate heavy document upload traffic.",
+          "gridPos": { "x": 12, "y": 17, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[5m])", "legendFormat": "Receive — {{device}}", "refId": "A" },
+            { "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])", "legendFormat": "Transmit — {{device}}", "refId": "B" }
+          ],
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "fieldConfig": { "defaults": { "unit": "Bps" } }
+        }
+      ]
+    },
+
+    {
+      "id": 30,
+      "type": "row",
+      "title": "━━━━━━  CONTAINER CRASH HISTORY  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 1 }
+    },
+    {
+      "id": 31,
+      "type": "status-history",
+      "title": "Container Restart History",
+      "description": "One row per container. Color change = restart event. Scan for flashing rows — they identify crash-looping containers. Perfect green = no restarts.",
+      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi_container_restart_count", "legendFormat": "{{container}}", "refId": "A" }
+      ],
+      "options": {
+        "colWidth": 0.9,
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 3, "color": "#E53E3E" }] },
+          "custom": { "lineWidth": 1, "fillOpacity": 80, "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+        }
+      }
+    },
+
+    {
+      "id": 40,
+      "type": "row",
+      "title": "━━━━━━  CONTAINER RESTART TABLE  ━━━━━━",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 }
+    },
+    {
+      "id": 41,
+      "type": "table",
+      "title": "Container Restart Counts",
+      "description": "Total restart counts per container. Stable=0 restarts (green), Monitor=1-2 (amber), CrashLoop=3+ (red). Sort by restart count descending.",
+      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "dpi_container_restart_count", "legendFormat": "{{container}}", "refId": "A", "instant": true }
+      ],
+      "options": {
+        "sortBy": [{ "desc": true, "displayName": "Value" }],
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "#3CB371" }, { "value": 1, "color": "#FFA500" }, { "value": 3, "color": "#E53E3E" }] },
+          "color": { "mode": "thresholds" },
+          "custom": { "displayMode": "color-background" },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "✓ Stable" } } },
+            { "type": "range", "options": { "from": 1, "to": 2, "result": { "text": "Monitor" } } },
+            { "type": "range", "options": { "from": 3, "to": 999, "result": { "text": "CrashLoop" } } }
+          ]
+        }
+      }
+    }
+  ]
+}

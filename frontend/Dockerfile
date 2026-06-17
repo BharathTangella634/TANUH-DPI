@@ -10,7 +10,6 @@ RUN sed -i 's/LogLevel warn/LogLevel debug/g' /usr/local/apache2/conf/httpd.conf
 RUN sed -i 's/Listen 80/Listen 8080/g' /usr/local/apache2/conf/httpd.conf
 
 # Enable proxy modules (needed for reverse-proxying API calls to backend containers)
-# Also enable ssl_module so SSLProxyEngine works for HTTPS backends (Cloud Run)
 RUN sed -i \
     -e 's/#LoadModule proxy_module/LoadModule proxy_module/' \
     -e 's/#LoadModule proxy_http_module/LoadModule proxy_http_module/' \
@@ -26,12 +25,5 @@ COPY frontend/httpd.conf /usr/local/apache2/conf/extra/proxy-rules.conf
 RUN echo "Include conf/extra/proxy-rules.conf" >> /usr/local/apache2/conf/httpd.conf
 
 COPY frontend/ /usr/local/apache2/htdocs/
-COPY README_ProblemStatement_2.md /usr/local/apache2/htdocs/assets/
-COPY README_ProblemStatement_3.md /usr/local/apache2/htdocs/assets/
-COPY ABDM_problem_2_Architecture.png /usr/local/apache2/htdocs/assets/
-COPY NHCX_problem_3_Architecture.png /usr/local/apache2/htdocs/assets/
-COPY test_files/abdm_diagnostic_report.pdf /usr/local/apache2/htdocs/assets/
-COPY test_files/abdm_discharge_summary.pdf /usr/local/apache2/htdocs/assets/
-COPY test_files/nhcx_demo_doc.pdf /usr/local/apache2/htdocs/assets/
 
 EXPOSE 8080

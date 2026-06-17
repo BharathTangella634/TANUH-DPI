@@ -1,0 +1,64 @@
+global:
+  resolve_timeout: 5m
+
+  # SMTP settings — values injected via alertmanager.env at container startup.
+  # Values are substituted via sed in the Compose service entrypoint (see docker-compose.monitoring.yml).
+  smtp_smarthost: '${ALERTMANAGER_SMTP_HOST}'
+  smtp_from: '${ALERTMANAGER_SMTP_FROM}'
+  smtp_auth_username: '${ALERTMANAGER_SMTP_USERNAME}'
+  smtp_auth_password: '${ALERTMANAGER_SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+# ── Routing tree ──────────────────────────────────────────────────────────────
+route:
+  receiver: 'warning-email'
+  group_by: ['alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    # Critical alerts: fire faster, repeat hourly.
+    - matchers:
+        - severity="critical"
+      receiver: 'critical-email'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Warning alerts: batch and repeat every 4h.
+    - matchers:
+        - severity="warning"
+      receiver: 'warning-email'
+      group_wait: 60s
+      repeat_interval: 4h
+
+# ── Receivers ─────────────────────────────────────────────────────────────────
+receivers:
+  - name: 'warning-email'
+    email_configs:
+      - to: '${ALERTMANAGER_EMAIL_TO}'
+        send_resolved: true
+        headers:
+          Subject: '[WARNING] {{ .GroupLabels.alertname }} | DPI Platform'
+
+  - name: 'critical-email'
+    email_configs:
+      - to: '${ALERTMANAGER_EMAIL_TO}'
+        send_resolved: true
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }} | DPI Platform'
+    # Webhook receiver — uncomment and configure ALERTMANAGER_WEBHOOK_URL in alertmanager.env
+    # to enable generic webhook delivery (Slack incoming webhook, PagerDuty, custom endpoint).
+    # webhook_configs:
+    #   - url: '${ALERTMANAGER_WEBHOOK_URL}'
+    #     send_resolved: true
+
+# ── Inhibit rules ─────────────────────────────────────────────────────────────
+# When a critical alert is active for a service, suppress warning-level alerts
+# for the same service to prevent notification floods.
+inhibit_rules:
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['service']

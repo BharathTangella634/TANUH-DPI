@@ -24,8 +24,11 @@ from typing import Any, Dict, Optional
 import redis as redis_lib
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, EmailStr
+
+from common.secrets import load_secrets
+load_secrets()
 
 from .config import (
     CORS_ORIGINS,
@@ -50,6 +53,9 @@ if CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="forgensic")
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -222,9 +228,22 @@ async def create_job(
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
     job_id = uuid.uuid4().hex
-    job_dir = DATA_DIR / job_id
-    input_path = job_dir / "input" / file.filename
-    size = _save_upload(file, input_path)
+
+    # Upload the input to GCS instead of a shared disk so a worker on any MIG VM
+    # can fetch it. The worker downloads it, processes it, then deletes the object.
+    file_bytes = await file.read()
+    size = len(file_bytes)
+    if size > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File exceeds 25 MB limit")
+
+    from forgensic.app.gcs_storage import upload_bytes  # noqa: PLC0415
+    import mimetypes  # noqa: PLC0415
+    content_type, _ = mimetypes.guess_type(file.filename)
+    input_blob = f"forgensic/{job_id}/input/{file.filename}"
+    try:
+        input_gcs_uri = upload_bytes(file_bytes, input_blob, content_type)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to upload input to GCS: {exc}")
 
     resolved_ocr = OCR_ENABLED if ocr_enabled is None else bool(ocr_enabled)
 
@@ -248,11 +267,13 @@ async def create_job(
     # Enqueue the Celery task — import lazily so the API starts even if the
     # broker is temporarily unavailable (health check will report degraded).
     from forgensic.tasks import process_forgensic_job  # noqa: PLC0415
+    from common.metrics import DOCUMENTS_PROCESSED_TOTAL
     process_forgensic_job.apply_async(
-        args=[job_id, str(input_path), PIPELINE_PRESET, resolved_ocr],
+        args=[job_id, input_gcs_uri, PIPELINE_PRESET, resolved_ocr],
         task_id=job_id,          # use job_id as Celery task ID for easy lookup
         queue="forgensic",
     )
+    DOCUMENTS_PROCESSED_TOTAL.labels(service="forgensic").inc()
 
     return JobCreateResponse(job_id=job_id, status="queued", message="Job accepted")
 
@@ -300,17 +321,31 @@ async def get_job_file(
     file_name: str,
     _claims: Dict[str, Any] = Depends(require_bearer),
 ):
-    """Serve a pipeline output file directly from the shared volume."""
+    """Serve a pipeline output file from GCS or the local volume."""
     state = _read_job_state(job_id)
     if not state:
         raise HTTPException(status_code=404, detail="Job not found")
 
     file_map: Dict[str, str] = state.get("file_map", {})
-    disk_path_str = file_map.get(file_name)
-    if not disk_path_str:
+    location = file_map.get(file_name)
+    if not location:
         raise HTTPException(status_code=404, detail="File not found")
 
-    disk_path = Path(disk_path_str)
+    if location.startswith("gs://"):
+        from forgensic.app.gcs_storage import download_bytes  # noqa: PLC0415
+        try:
+            data, content_type = download_bytes(location)
+        except Exception:
+            raise HTTPException(status_code=404, detail="File no longer available")
+        if content_type is None:
+            content_type, _ = mimetypes.guess_type(file_name)
+        return Response(
+            content=data,
+            media_type=content_type or "application/octet-stream",
+            headers={"Content-Disposition": f'inline; filename="{file_name}"'},
+        )
+
+    disk_path = Path(location)
     if not disk_path.exists():
         raise HTTPException(status_code=404, detail="File no longer available")
 

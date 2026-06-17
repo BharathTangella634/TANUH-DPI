@@ -16,6 +16,9 @@ from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel, EmailStr
 from typing import Any, Dict
 
+from common.secrets import load_secrets
+load_secrets()
+
 from pdf2abdm.app.auth import require_bearer, issue_demo_token, log_token_to_session_logger
 
 # ── Session Logger integration ────────────────────────────────────────────────
@@ -54,6 +57,40 @@ def validate_pdf_upload(file_path: str):
     try:
         import pypdf
         reader = pypdf.PdfReader(file_path)
+        page_count = len(reader.pages)
+        if page_count > MAX_PAGE_COUNT:
+            raise HTTPException(
+                status_code=413,
+                detail={
+                    "title": "Too Many Pages",
+                    "message": f"The uploaded PDF has {page_count} pages. Maximum allowed is {MAX_PAGE_COUNT} pages."
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        pass  # If page counting fails, let the pipeline handle it
+
+
+def validate_pdf_bytes(file_bytes: bytes):
+    """In-memory equivalent of validate_pdf_upload (size / page limits).
+
+    Used by the async submit endpoint, which uploads straight to GCS and never
+    writes the PDF to a local/shared disk. Raises HTTPException 413 on violation.
+    """
+    size_mb = len(file_bytes) / (1024 * 1024)
+    if size_mb > MAX_FILE_SIZE_MB:
+        raise HTTPException(
+            status_code=413,
+            detail={
+                "title": "File Too Large",
+                "message": f"The uploaded PDF is {size_mb:.1f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB."
+            }
+        )
+    try:
+        import io
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
         page_count = len(reader.pages)
         if page_count > MAX_PAGE_COUNT:
             raise HTTPException(
@@ -226,6 +263,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="pdf2abdm")
+
 from pdf2abdm.tasks import process_abdm_task
 from celery.result import AsyncResult
 
@@ -354,6 +394,7 @@ async def convert_pdf_to_abdm(
         "city": city,
     }
     try:
+        from common.metrics import DOCUMENTS_PROCESSED_TOTAL, DOCUMENTS_FAILED_TOTAL
         validate_pdf_upload(tmp_path)
         start_time = time.perf_counter()
         result = await get_abdm_json(tmp_path, model=model)
@@ -361,7 +402,11 @@ async def convert_pdf_to_abdm(
         processing_time = round(time.perf_counter() - start_time, 2)
         if bundles and doc_types:
             log_payload["json_location"] = f"json_output/abdm/FHIR_BUNDLE_{doc_types[0]}_Patient_0.json"
+            DOCUMENTS_PROCESSED_TOTAL.labels(service="pdf2abdm").inc()
+        else:
+            DOCUMENTS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
     except Exception as exc:
+        DOCUMENTS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
         raise
     finally:
         os.unlink(tmp_path)
@@ -436,17 +481,25 @@ async def submit_abdm(
 
     file_bytes = await file.read()
 
-    # Write PDF to shared volume so the Celery worker (separate container) can read it.
-    # /tmp is local to this container; /app/pdf_uploads is mounted in both containers.
-    import uuid as _uuid
-    shared_tmp_dir = os.environ.get("PDF_UPLOAD_DIR", "/app/pdf_uploads/tmp")
-    os.makedirs(shared_tmp_dir, exist_ok=True)
-    tmp_path = os.path.join(shared_tmp_dir, f"{_uuid.uuid4().hex}_{filename}")
-    with open(tmp_path, "wb") as tmp:
-        tmp.write(file_bytes)
+    # Validate in-memory (size / page count) before touching GCS, so the 413
+    # guard still applies without writing to a shared volume.
+    validate_pdf_bytes(file_bytes)
 
-    validate_pdf_upload(tmp_path)
-    task = process_abdm_task.delay(tmp_path, model=model)
+    # Upload to GCS instead of a shared disk so a worker on any MIG VM can fetch
+    # it. The worker downloads it from the returned gs:// URI, then deletes it.
+    from utils.gcs_storage import upload_pdf_from_bytes
+    import uuid as _uuid
+
+    gcs_filename = f"{_uuid.uuid4().hex}_{filename}"
+    gcs_uri = upload_pdf_from_bytes(
+        file_bytes=file_bytes,
+        filename=gcs_filename,
+        gcs_folder="pdf_uploads/abdm",
+    )
+    if not gcs_uri:
+        raise HTTPException(status_code=500, detail="Failed to upload PDF to GCS")
+
+    task = process_abdm_task.delay(gcs_uri, model=model)
     logger.info(f"ABDM task queued: {task.id} for {filename}")
     return JSONResponse(status_code=202, content={
         "task_id": task.id,
@@ -622,6 +675,36 @@ async def validate_fhir(request: Request):
         # 6. Delete the temporary file
         if os.path.exists(temp_file):
             os.remove(temp_file)
+
+# ── Desktop executable downloads (served from local disk) ────────────────────
+
+@app.get("/downloads/{filename}", tags=["Downloads"],
+         summary="Download a desktop executable")
+async def download_executable(filename: str):
+    """Serve executable from local disk (mounted from /opt/downloads on host)."""
+    from common.downloads import get_local_path, ALLOWED_FILES
+    from fastapi.responses import FileResponse
+
+    if filename not in ALLOWED_FILES:
+        return JSONResponse(status_code=404, content={"detail": "File not found"})
+
+    path = get_local_path(filename)
+    if path is None:
+        return JSONResponse(status_code=404, content={"detail": "File not available — VM may still be downloading executables"})
+
+    return FileResponse(
+        path=str(path),
+        media_type="application/zip",
+        filename=filename,
+    )
+
+
+@app.get("/downloads", tags=["Downloads"],
+         summary="List available desktop executables")
+async def list_downloads():
+    from common.downloads import list_available_downloads
+    return {"downloads": list_available_downloads()}
+
 
 def main():
     parser = argparse.ArgumentParser(description="OCR PDF to ABDM FHIR Converter (Local)")

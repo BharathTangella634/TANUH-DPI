@@ -1,0 +1,70 @@
+# Build Docker images and push to Artifact Registry on merge to main.
+#
+# After this workflow completes, all MIG VMs (existing and new from autoscaler)
+# can pull the pre-built images with `docker compose pull` instead of building
+# from source (~2 min vs ~20 min).
+#
+# Uses the same Workload Identity Federation setup as deploy.yml.
+# One-time Artifact Registry setup:
+#   gcloud artifacts repositories create dpi-containers \
+#     --repository-format=docker --location=asia-south1 \
+#     --project=proj-dpi-shared
+
+name: Build & Push Images
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: build-images
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      REGISTRY: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
+
+      - name: Build and push all images
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_SHA::8}"
+
+          declare -A IMAGES=(
+            [pdf2abdm]="pdf2abdm/Dockerfile"
+            [pdf2nhcx]="pdf2nhcx/Dockerfile"
+            [worker]="worker/Dockerfile"
+            [frontend]="frontend/Dockerfile"
+            [session-logger]="session_logger/Dockerfile"
+            [privacy-filter]="privacy_filter/Dockerfile"
+            [forgensic]="forgensic/Dockerfile"
+          )
+
+          for NAME in "${!IMAGES[@]}"; do
+            DOCKERFILE="${IMAGES[$NAME]}"
+            echo "--- Building $NAME ---"
+            docker build -t "$REGISTRY/$NAME:$TAG" -t "$REGISTRY/$NAME:latest" -f "$DOCKERFILE" .
+            echo "--- Pushing $NAME ---"
+            docker push "$REGISTRY/$NAME:$TAG"
+            docker push "$REGISTRY/$NAME:latest"
+          done
+
+          echo "All images pushed with tags: $TAG, latest"

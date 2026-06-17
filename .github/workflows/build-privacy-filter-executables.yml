@@ -1,216 +1,767 @@
 name: Build Privacy Filter Executables
 
-# ─── Trigger ────────────────────────────────────────────────────────────────
-# Run manually from GitHub UI, or on tagged releases
 on:
-  workflow_dispatch:          # Manual trigger from Actions tab
+  workflow_dispatch:
   push:
     tags:
-      - 'pf-v*'              # Auto-trigger on privacy filter version tags
+      - 'pf-v*'
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
-  # Job 1: Linux -- AppImage (x86_64)
+  # Job 1: Linux x86_64 -- AppImage (venv + rsync, proven pattern)
   # ═══════════════════════════════════════════════════════════════════════════
   build-linux:
-    name: Linux (AppImage)
+    name: Linux x86_64 (AppImage)
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr5 -y
+          sudo apt-get update
+          sudo apt-get install -y fuse libfuse2 rsync wget tesseract-ocr \
+            libgl1 libglib2.0-0 libsm6 libxext6 libxrender1
+
+      - name: Create build workspace
+        run: |
+          mkdir -p pf-build
+          # Copy the privacy_filter package (the actual pipeline code)
+          cp -r privacy_filter pf-build/privacy_filter
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          cd pf-build
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --quiet --upgrade pip setuptools wheel
+          pip install --quiet \
+            opencv-python-headless==4.10.0.84 \
+            "numpy>=1.26,<3" \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            nibabel==5.3.2 \
+            pymupdf==1.24.13
+          echo "Dependencies installed:"
+          pip list | grep -iE "opencv|numpy|pillow|pytesseract|pydicom|nibabel|pymupdf"
+          deactivate
+
+      - name: Download appimagetool
+        run: |
+          cd pf-build
+          wget -q -O appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool
+
+      - name: Build AppDir
+        run: |
+          cd pf-build
+          source venv/bin/activate
+
+          APPDIR="pf-redact.AppDir"
+          mkdir -p "${APPDIR}/usr/bin"
+          mkdir -p "${APPDIR}/usr/lib/python3/site-packages"
+          mkdir -p "${APPDIR}/usr/share/applications"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+          mkdir -p "${APPDIR}/usr/share/tessdata"
+
+          # Copy Python interpreter
+          PYTHON_REAL="$(readlink -f "$(which python3)")"
+          cp "${PYTHON_REAL}" "${APPDIR}/usr/bin/python3"
+
+          # Copy Tesseract binary and data into the AppDir
+          cp "$(which tesseract)" "${APPDIR}/usr/bin/tesseract"
+          # tessdata files (language models)
+          for d in /usr/share/tesseract-ocr/*/tessdata /usr/share/tessdata; do
+            if [ -d "$d" ]; then
+              cp "$d"/*.traineddata "${APPDIR}/usr/share/tessdata/" 2>/dev/null || true
+            fi
+          done
+
+          # Copy Python stdlib
+          PYVER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+          STDLIB="$(python3 -c 'import sysconfig; print(sysconfig.get_path("stdlib"))')"
+          mkdir -p "${APPDIR}/usr/lib/python${PYVER}"
+          rsync -a --quiet \
+            --exclude='test/' --exclude='tests/' --exclude='__pycache__/' \
+            --exclude='*.pyc' --exclude='tkinter/' --exclude='idlelib/' \
+            --exclude='turtle*' --exclude='ensurepip/' --exclude='distutils/' \
+            "${STDLIB}/" "${APPDIR}/usr/lib/python${PYVER}/"
+
+          # Copy lib-dynload
+          DYNLOAD="$(python3 -c 'import sysconfig; print(sysconfig.get_path("platstdlib"))')/lib-dynload"
+          if [ -d "${DYNLOAD}" ]; then
+            mkdir -p "${APPDIR}/usr/lib/python${PYVER}/lib-dynload"
+            cp -a "${DYNLOAD}"/*.so "${APPDIR}/usr/lib/python${PYVER}/lib-dynload/" 2>/dev/null || true
+          fi
+
+          # Copy site-packages (all pip-installed packages)
+          SITE="$(python3 -c 'import site; print(site.getsitepackages()[0])')"
+          rsync -a --quiet \
+            --exclude='__pycache__/' --exclude='*.pyc' \
+            --exclude='pip/' --exclude='pip-*' \
+            --exclude='setuptools/' --exclude='setuptools-*' \
+            --exclude='wheel/' --exclude='wheel-*' \
+            --exclude='_distutils_hack/' --exclude='pkg_resources/' \
+            "${SITE}/" "${APPDIR}/usr/lib/python3/site-packages/"
+
+          # Copy the privacy_filter package into site-packages
+          rsync -a --quiet \
+            --exclude='__pycache__/' --exclude='*.pyc' \
+            --exclude='tests/' --exclude='app/' \
+            "privacy_filter/" "${APPDIR}/usr/lib/python3/site-packages/privacy_filter/"
+
+          # Copy shared libraries that Python interpreter, extensions, AND tesseract need
+          mkdir -p "${APPDIR}/usr/lib/x86_64-linux-gnu"
+          for elf_file in "${APPDIR}/usr/bin/python3" "${APPDIR}/usr/bin/tesseract" $(find "${APPDIR}" -name "*.so" -type f 2>/dev/null); do
+            ldd "${elf_file}" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read dep; do
+              dep_name="$(basename "${dep}")"
+              case "${dep_name}" in
+                libc.so*|libm.so*|libpthread.so*|libdl.so*|librt.so*|ld-linux*|libgcc_s*) continue ;;
+              esac
+              if [ ! -f "${APPDIR}/usr/lib/x86_64-linux-gnu/${dep_name}" ]; then
+                cp -L "${dep}" "${APPDIR}/usr/lib/x86_64-linux-gnu/" 2>/dev/null || true
+              fi
+            done || true
+          done
+
+          deactivate
+
+      - name: Create AppImage metadata
+        run: |
+          cd pf-build
+          APPDIR="pf-redact.AppDir"
+          PYVER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+
+          # AppRun entry point
+          cat > "${APPDIR}/AppRun" << 'APPRUN_EOF'
+          #!/bin/bash
+          set -e
+          APPDIR="$(dirname "$(readlink -f "$0")")"
+          export PYTHONNOUSERSITE=1
+          export PYTHONDONTWRITEBYTECODE=1
+          unset PYTHONPATH
+          PYVER=$(ls "${APPDIR}/usr/lib/" | grep -oE 'python3\.[0-9]+' | head -1)
+          export PATH="${APPDIR}/usr/bin:${PATH}"
+          export PYTHONHOME="${APPDIR}/usr"
+          export PYTHONPATH="${APPDIR}/usr/lib/python3/site-packages:${APPDIR}/usr/lib/${PYVER}"
+          export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+          export TESSDATA_PREFIX="${APPDIR}/usr/share/tessdata"
+          export SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
+          export REQUESTS_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
+          exec "${APPDIR}/usr/bin/python3" -m privacy_filter.cli.main "$@"
+          APPRUN_EOF
+          sed -i 's/^          //' "${APPDIR}/AppRun"
+          chmod +x "${APPDIR}/AppRun"
+
+          # Desktop file
+          cat > "${APPDIR}/pf-redact.desktop" << 'DESKTOP_EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=pf-redact
+          Exec=pf-redact
+          Icon=pf-redact
+          Categories=Utility;
+          Terminal=true
+          DESKTOP_EOF
+          sed -i 's/^          //' "${APPDIR}/pf-redact.desktop"
+          cp "${APPDIR}/pf-redact.desktop" "${APPDIR}/usr/share/applications/"
+
+          # Generate icon as SVG (no external Python libraries needed)
+          cat > "${APPDIR}/pf-redact.svg" << 'SVG_EOF'
+          <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+            <rect width="256" height="256" fill="#0078C8"/>
+            <rect x="40" y="40" width="176" height="176" fill="#fff"/>
+            <rect x="60" y="80" width="136" height="20" fill="#000"/>
+            <rect x="60" y="120" width="136" height="20" fill="#000"/>
+            <rect x="60" y="160" width="80" height="20" fill="#000"/>
+          </svg>
+          SVG_EOF
+          sed -i 's/^          //' "${APPDIR}/pf-redact.svg"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+          cp "${APPDIR}/pf-redact.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/"
+
+      - name: Build AppImage
+        run: |
+          cd pf-build
+          export ARCH=x86_64
+          APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool pf-redact.AppDir pf-redact-1.0.0-x86_64.AppImage 2>&1 | tail -5
+
+      - name: Verify AppImage
+        run: |
+          cd pf-build
+          chmod +x pf-redact-1.0.0-x86_64.AppImage
+          ./pf-redact-1.0.0-x86_64.AppImage --help
+          ./pf-redact-1.0.0-x86_64.AppImage check
+          echo "AppImage verification passed"
+
+      - name: Smoke test AppImage (end-to-end)
+        run: |
+          cd pf-build
+          source venv/bin/activate
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          deactivate
+          ./pf-redact-1.0.0-x86_64.AppImage test_input.png test_output.png --backend tesseract --json test_report.json
+          if [ ! -f test_output.png ]; then echo "FAIL: output image not created"; exit 1; fi
+          if [ ! -f test_report.json ]; then echo "FAIL: JSON report not created"; exit 1; fi
+          python3 -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "AppImage end-to-end smoke test passed"
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-linux-x86_64
+          path: pf-build/pf-redact-1.0.0-x86_64.AppImage
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: Linux ARM64 -- PyInstaller binary
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-linux-arm64:
+    name: Linux ARM64 (binary)
+    runs-on: ubuntu-22.04-arm
     timeout-minutes: 45
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install system dependencies
         run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr5 -y
           sudo apt-get update
-          sudo apt-get install -y fuse libfuse2 rsync wget tesseract-ocr
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-eng \
+            libgl1 libglib2.0-0 libsm6 libxext6 libxrender1
 
-      - name: Build AppImage
-        working-directory: privacy-filter-local
-        run: |
-          chmod +x build_appimage.sh
-          ./build_appimage.sh
-
-      - name: Verify AppImage
-        working-directory: privacy-filter-local
-        run: |
-          chmod +x pf-redact-1.0.0-x86_64.AppImage
-          ./pf-redact-1.0.0-x86_64.AppImage --version
-          ./pf-redact-1.0.0-x86_64.AppImage --help
-          ./pf-redact-1.0.0-x86_64.AppImage supported-types
-
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pf-redact-linux-x86_64
-          path: privacy-filter-local/pf-redact-1.0.0-x86_64.AppImage
-          retention-days: 30
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # Job 1b: Linux -- ARM64 (binary)
-  # ═══════════════════════════════════════════════════════════════════════════
-  build-linux-arm64:
-    name: Linux ARM64 (binary)
-    runs-on: ubuntu-22.04-arm
-    timeout-minutes: 60
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr
-
-      - name: Install dependencies
-        working-directory: privacy-filter-local
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # CPU-only torch; fall back to default index if no aarch64 wheel on cpu index
-          pip install torch --index-url https://download.pytorch.org/whl/cpu \
-            || pip install torch
-          pip install safetensors
-          pip install .
+          pip install \
+            opencv-python-headless==4.10.0.84 \
+            "numpy>=1.26,<3" \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            nibabel==5.3.2 \
+            pymupdf==1.24.13
           pip install pyinstaller
-          # Remove torchvision/torchaudio if pulled in as transitive deps
-          pip uninstall -y torchvision torchaudio 2>/dev/null || true
+
+      - name: Prepare Tesseract bundle
+        run: |
+          mkdir -p tesseract_bundle/tesseract/tessdata
+          cp "$(which tesseract)" tesseract_bundle/tesseract/
+          # Copy tessdata language files
+          TESSDATA=$(dpkg -L tesseract-ocr-eng | grep tessdata | head -1 | xargs dirname)
+          cp "${TESSDATA}"/*.traineddata tesseract_bundle/tesseract/tessdata/ 2>/dev/null || true
+          cp /usr/share/tesseract-ocr/*/tessdata/*.traineddata tesseract_bundle/tesseract/tessdata/ 2>/dev/null || true
+          # Bundle shared libraries tesseract needs
+          for lib in $(ldd "$(which tesseract)" | grep "=> /" | awk '{print $3}'); do
+            libname=$(basename "$lib")
+            case "$libname" in
+              libc.so*|libm.so*|libpthread.so*|libdl.so*|librt.so*|ld-linux*|libgcc_s*) continue ;;
+            esac
+            cp -L "$lib" tesseract_bundle/tesseract/ 2>/dev/null || true
+          done
+          echo "Tesseract bundle contents:"
+          ls -la tesseract_bundle/tesseract/
+
+      - name: Create PyInstaller entry point and spec
+        run: |
+          cat > pf_entry.py << 'ENTRY_EOF'
+          import sys, os
+          sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+          from privacy_filter.cli.main import main
+          main()
+          ENTRY_EOF
+
+          cat > pf-redact.spec << 'SPEC_EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          import os, glob
+          from PyInstaller.utils.hooks import collect_submodules
+
+          hidden_imports = (
+              collect_submodules('privacy_filter.cli') +
+              collect_submodules('privacy_filter.pipeline') +
+              collect_submodules('privacy_filter.registry') +
+              collect_submodules('privacy_filter.schemas') +
+              collect_submodules('privacy_filter.detectors') +
+              collect_submodules('privacy_filter.loaders') +
+              collect_submodules('privacy_filter.metadata') +
+              collect_submodules('privacy_filter.redactors') +
+              collect_submodules('privacy_filter.savers') +
+              collect_submodules('privacy_filter.utils') +
+              collect_submodules('privacy_filter.validators') +
+              collect_submodules('cv2') +
+              [
+                  'numpy', 'PIL', 'PIL.Image', 'PIL.ExifTags',
+                  'pytesseract', 'pydicom', 'nibabel',
+                  'fitz', 'pymupdf',
+                  'pydicom.encoders', 'pydicom.encoders.gdcm',
+                  'pydicom.encoders.pylibjpeg', 'pydicom.encoders.native',
+              ]
+          )
+
+          tess_bundle = 'tesseract_bundle/tesseract'
+          tess_binaries = [
+              (os.path.join(tess_bundle, 'tesseract'), 'tesseract'),
+          ]
+          for f in glob.glob(os.path.join(tess_bundle, '*.so*')):
+              tess_binaries.append((f, 'tesseract'))
+
+          tess_datas = [
+              (os.path.join(tess_bundle, 'tessdata'), 'tesseract/tessdata'),
+          ]
+
+          a = Analysis(
+              ['pf_entry.py'],
+              pathex=['.'],
+              binaries=tess_binaries,
+              datas=tess_datas,
+              hiddenimports=hidden_imports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[
+                  'tkinter', 'turtle', 'idlelib', 'test', 'unittest',
+                  'privacy_filter.app', 'privacy_filter.tests',
+                  'fastapi', 'uvicorn', 'pydantic', 'httpx', 'jose',
+                  'google.cloud', 'prometheus_client',
+              ],
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.datas,
+              [],
+              name='pf-redact',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=False,
+              runtime_tmpdir=None,
+              console=True,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          SPEC_EOF
 
       - name: Build binary with PyInstaller
-        working-directory: privacy-filter-local
         run: |
           pyinstaller --clean --noconfirm pf-redact.spec
 
-      - name: Verify binary
-        working-directory: privacy-filter-local
+      - name: Verify binary (bundled Tesseract, no system install needed)
         run: |
           chmod +x dist/pf-redact
-          ./dist/pf-redact --version
+          # Remove system tesseract from PATH to prove bundled version works
+          export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v tesseract | tr '\n' ':')
+          hash -r
           ./dist/pf-redact --help
-          ./dist/pf-redact supported-types
+          ./dist/pf-redact check
+          echo "ARM64 verification passed (bundled Tesseract)"
+
+      - name: Smoke test binary (end-to-end)
+        run: |
+          export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v tesseract | tr '\n' ':')
+          hash -r
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact test_input.png test_output.png --backend tesseract --json test_report.json
+          test -f test_output.png || { echo "FAIL: output image not created"; exit 1; }
+          test -f test_report.json || { echo "FAIL: JSON report not created"; exit 1; }
+          python3 -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "ARM64 end-to-end smoke test passed"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: pf-redact-linux-aarch64
-          path: privacy-filter-local/dist/pf-redact
+          path: dist/pf-redact
           retention-days: 30
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Job 2: Windows -- PyInstaller .exe
+  # Job 3: Windows -- PyInstaller .exe
   # ═══════════════════════════════════════════════════════════════════════════
   build-windows:
     name: Windows (exe)
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Tesseract OCR
         run: |
           choco install tesseract -y
+          echo "C:\Program Files\Tesseract-OCR" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      - name: Install dependencies
-        working-directory: privacy-filter-local
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install safetensors
-          pip install .
+          pip install `
+            opencv-python-headless==4.10.0.84 `
+            "numpy>=1.26,<3" `
+            Pillow==11.0.0 `
+            pytesseract==0.3.13 `
+            pydicom==3.0.1 `
+            nibabel==5.3.2 `
+            pymupdf==1.24.13
           pip install pyinstaller
-          pip uninstall -y torchvision torchaudio 2>$null; $true
+
+      - name: Create PyInstaller entry point and spec
+        shell: bash
+        run: |
+          cat > pf_entry.py << 'ENTRY_EOF'
+          import sys, os
+          sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+          from privacy_filter.cli.main import main
+          main()
+          ENTRY_EOF
+
+          # Locate Tesseract installation for bundling
+          TESS_DIR="/c/Program Files/Tesseract-OCR"
+          echo "Tesseract directory contents:"
+          ls -la "${TESS_DIR}/" || true
+          ls -la "${TESS_DIR}/tessdata/" || true
+
+          cat > pf-redact.spec << 'SPEC_EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          import os
+          from PyInstaller.utils.hooks import collect_submodules
+
+          hidden_imports = (
+              collect_submodules('privacy_filter.cli') +
+              collect_submodules('privacy_filter.pipeline') +
+              collect_submodules('privacy_filter.registry') +
+              collect_submodules('privacy_filter.schemas') +
+              collect_submodules('privacy_filter.detectors') +
+              collect_submodules('privacy_filter.loaders') +
+              collect_submodules('privacy_filter.metadata') +
+              collect_submodules('privacy_filter.redactors') +
+              collect_submodules('privacy_filter.savers') +
+              collect_submodules('privacy_filter.utils') +
+              collect_submodules('privacy_filter.validators') +
+              collect_submodules('cv2') +
+              [
+                  'numpy', 'PIL', 'PIL.Image', 'PIL.ExifTags',
+                  'pytesseract', 'pydicom', 'nibabel',
+                  'fitz', 'pymupdf',
+                  'pydicom.encoders', 'pydicom.encoders.gdcm',
+                  'pydicom.encoders.pylibjpeg', 'pydicom.encoders.native',
+              ]
+          )
+
+          tess_dir = r'C:\Program Files\Tesseract-OCR'
+          tess_binaries = [
+              (os.path.join(tess_dir, 'tesseract.exe'), 'tesseract'),
+          ]
+          for f in os.listdir(tess_dir):
+              if f.endswith('.dll'):
+                  tess_binaries.append(
+                      (os.path.join(tess_dir, f), 'tesseract')
+                  )
+
+          tess_datas = [
+              (os.path.join(tess_dir, 'tessdata'), 'tesseract/tessdata'),
+          ]
+
+          a = Analysis(
+              ['pf_entry.py'],
+              pathex=['.'],
+              binaries=tess_binaries,
+              datas=tess_datas,
+              hiddenimports=hidden_imports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[
+                  'tkinter', 'turtle', 'idlelib', 'test', 'unittest',
+                  'privacy_filter.app', 'privacy_filter.tests',
+                  'fastapi', 'uvicorn', 'pydantic', 'httpx', 'jose',
+                  'google.cloud', 'prometheus_client',
+              ],
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.datas,
+              [],
+              name='pf-redact',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=False,
+              runtime_tmpdir=None,
+              console=True,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          SPEC_EOF
 
       - name: Build exe with PyInstaller
-        working-directory: privacy-filter-local
         run: |
           pyinstaller --clean --noconfirm pf-redact.spec
 
-      - name: Verify exe
-        working-directory: privacy-filter-local
+      - name: Verify exe (bundled Tesseract, no system install needed)
         run: |
-          .\dist\pf-redact.exe --version
+          # Remove Tesseract from PATH to prove bundled version works
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notmatch 'Tesseract' }) -join ';'
           .\dist\pf-redact.exe --help
-          .\dist\pf-redact.exe supported-types
+          .\dist\pf-redact.exe check
+          echo "Windows verification passed (bundled Tesseract)"
+
+      - name: Smoke test exe (end-to-end)
+        shell: bash
+        run: |
+          # Remove Tesseract from PATH to prove bundled version works
+          export PATH=$(echo "$PATH" | tr ':' '\n' | grep -iv tesseract | tr '\n' ':')
+          python -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact.exe test_input.png test_output.png --backend tesseract --json test_report.json
+          test -f test_output.png || { echo "FAIL: output image not created"; exit 1; }
+          test -f test_report.json || { echo "FAIL: JSON report not created"; exit 1; }
+          python -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "Windows end-to-end smoke test passed"
 
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
         with:
           name: pf-redact-windows-x86_64
-          path: privacy-filter-local/dist/pf-redact.exe
+          path: dist/pf-redact.exe
           retention-days: 30
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Job 3: macOS -- PyInstaller binary
+  # Job 4: macOS -- PyInstaller binary
   # ═══════════════════════════════════════════════════════════════════════════
   build-macos:
     name: macOS (universal)
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Tesseract OCR
         run: |
           brew install tesseract
 
-      - name: Install dependencies
-        working-directory: privacy-filter-local
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install torch --index-url https://download.pytorch.org/whl/cpu \
-            || pip install torch
-          pip install safetensors
-          pip install .
+          pip install \
+            opencv-python-headless==4.10.0.84 \
+            "numpy>=1.26,<3" \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            nibabel==5.3.2 \
+            pymupdf==1.24.13
           pip install pyinstaller
-          pip uninstall -y torchvision torchaudio 2>/dev/null || true
+
+      - name: Prepare Tesseract bundle
+        run: |
+          mkdir -p tesseract_bundle/tesseract
+          TESS_BIN="$(brew --prefix tesseract)/bin/tesseract"
+          cp "${TESS_BIN}" tesseract_bundle/tesseract/
+          cp -r "$(brew --prefix tesseract)/share/tessdata" tesseract_bundle/tesseract/
+          # Bundle dylibs that tesseract links against
+          for lib in $(otool -L "${TESS_BIN}" | awk '/homebrew/{print $1}'); do
+            cp -L "${lib}" tesseract_bundle/tesseract/ 2>/dev/null || true
+          done
+          echo "Tesseract bundle contents:"
+          ls -la tesseract_bundle/tesseract/
+
+      - name: Create PyInstaller entry point and spec
+        run: |
+          cat > pf_entry.py << 'ENTRY_EOF'
+          import sys, os
+          sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+          from privacy_filter.cli.main import main
+          main()
+          ENTRY_EOF
+
+          cat > pf-redact.spec << 'SPEC_EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          import os, glob
+          from PyInstaller.utils.hooks import collect_submodules
+
+          hidden_imports = (
+              collect_submodules('privacy_filter.cli') +
+              collect_submodules('privacy_filter.pipeline') +
+              collect_submodules('privacy_filter.registry') +
+              collect_submodules('privacy_filter.schemas') +
+              collect_submodules('privacy_filter.detectors') +
+              collect_submodules('privacy_filter.loaders') +
+              collect_submodules('privacy_filter.metadata') +
+              collect_submodules('privacy_filter.redactors') +
+              collect_submodules('privacy_filter.savers') +
+              collect_submodules('privacy_filter.utils') +
+              collect_submodules('privacy_filter.validators') +
+              collect_submodules('cv2') +
+              [
+                  'numpy', 'PIL', 'PIL.Image', 'PIL.ExifTags',
+                  'pytesseract', 'pydicom', 'nibabel',
+                  'fitz', 'pymupdf',
+                  'pydicom.encoders', 'pydicom.encoders.gdcm',
+                  'pydicom.encoders.pylibjpeg', 'pydicom.encoders.native',
+              ]
+          )
+
+          tess_bundle = 'tesseract_bundle/tesseract'
+          tess_binaries = [
+              (os.path.join(tess_bundle, 'tesseract'), 'tesseract'),
+          ]
+          for f in glob.glob(os.path.join(tess_bundle, '*.dylib')):
+              tess_binaries.append((f, 'tesseract'))
+
+          tess_datas = [
+              (os.path.join(tess_bundle, 'tessdata'), 'tesseract/tessdata'),
+          ]
+
+          a = Analysis(
+              ['pf_entry.py'],
+              pathex=['.'],
+              binaries=tess_binaries,
+              datas=tess_datas,
+              hiddenimports=hidden_imports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[
+                  'tkinter', 'turtle', 'idlelib', 'test', 'unittest',
+                  'privacy_filter.app', 'privacy_filter.tests',
+                  'fastapi', 'uvicorn', 'pydantic', 'httpx', 'jose',
+                  'google.cloud', 'prometheus_client',
+              ],
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.datas,
+              [],
+              name='pf-redact',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=False,
+              runtime_tmpdir=None,
+              console=True,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          SPEC_EOF
 
       - name: Build binary with PyInstaller
-        working-directory: privacy-filter-local
         run: |
           pyinstaller --clean --noconfirm pf-redact.spec
 
-      - name: Verify binary
-        working-directory: privacy-filter-local
+      - name: Verify binary (bundled Tesseract, no system install needed)
         run: |
           chmod +x dist/pf-redact
-          ./dist/pf-redact --version
+          # Remove brew tesseract from PATH to prove bundled version works
+          export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$(brew --prefix tesseract)" | tr '\n' ':')
           ./dist/pf-redact --help
-          ./dist/pf-redact supported-types
+          ./dist/pf-redact check
+          echo "macOS verification passed (bundled Tesseract)"
+
+      - name: Smoke test binary (end-to-end)
+        run: |
+          export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$(brew --prefix tesseract)" | tr '\n' ':')
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact test_input.png test_output.png --backend tesseract --json test_report.json
+          test -f test_output.png || { echo "FAIL: output image not created"; exit 1; }
+          test -f test_report.json || { echo "FAIL: JSON report not created"; exit 1; }
+          python3 -c "import json; r=json.load(open('test_report.json')); print('Smoke test report:', r); assert 'phi_count' in r"
+          echo "macOS end-to-end smoke test passed"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: pf-redact-macos
-          path: privacy-filter-local/dist/pf-redact
+          path: dist/pf-redact
           retention-days: 30
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Job 4: Create GitHub Release (only on tags)
+  # Job 5: Create GitHub Release (only on tags)
   # ═══════════════════════════════════════════════════════════════════════════
   release:
     name: Create Release
@@ -243,7 +794,9 @@ jobs:
           body: |
             ## Privacy Filter ${{ github.ref_name }}
 
-            Single-file executables for redacting PII from documents locally using ML models.
+            MedDeID-powered medical de-identification executables.
+            Removes PHI from medical images, DICOM/NIfTI scans, and PDF documents
+            using CV-based detection + Safe Harbor rules (no ML model downloads needed).
 
             ### Downloads
             | Platform | File |
@@ -254,30 +807,34 @@ jobs:
             | macOS (Apple Silicon) | `pf-redact-macos` |
 
             ### Prerequisites
-            - **Tesseract OCR** must be installed on your system for image/scanned PDF support
-              - Linux: `sudo apt install tesseract-ocr`
-              - macOS: `brew install tesseract`
-              - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+            No external dependencies needed — Tesseract OCR is bundled.
 
             ### Usage
             ```bash
             # Make executable (Linux/Mac only)
             chmod +x pf-redact-*
 
-            # Check models (downloads ~3 GB on first run)
-            ./pf-redact check
+            # De-identify a medical image
+            ./pf-redact scan.png redacted.png
 
-            # Redact a document
-            ./pf-redact redact scan.png -o redacted.png
-            ./pf-redact redact report.pdf -o redacted.pdf
-            ./pf-redact redact notes.docx -o redacted.docx
+            # De-identify a DICOM file
+            ./pf-redact patient.dcm deidentified.dcm
+
+            # De-identify a PDF report
+            ./pf-redact report.pdf redacted.pdf
 
             # Save detection report as JSON
-            ./pf-redact redact scan.png -o redacted.png -j report.json
+            ./pf-redact scan.png redacted.png --json report.json
 
-            # List supported formats
-            ./pf-redact supported-types
+            # Choose OCR backend and redaction strategy
+            ./pf-redact scan.png redacted.png --backend tesseract --redactor mask
             ```
+
+            ### Supported Formats
+            - Images: `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp`
+            - DICOM: `.dcm`, `.dicom`
+            - NIfTI: `.nii`, `.nii.gz`
+            - PDF: `.pdf`
           files: release/*
           draft: false
           prerelease: false

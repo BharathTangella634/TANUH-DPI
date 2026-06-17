@@ -1,0 +1,37 @@
+groups:
+  - name: queue_depth
+    rules:
+
+      # Queue depth > 25 sustained for 10 minutes — workers are falling behind.
+      # Threshold rationale: each queue normally drains to 0 between bursts.
+      # A depth of 25 held for 10 minutes indicates worker throughput is insufficient
+      # for the current document submission rate. Investigate before backlog grows further.
+      - alert: QueueDepthHigh
+        expr: dpi_queue_depth > 25
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Queue '{{ $labels.queue }}' depth is high ({{ $value }} tasks)"
+          description: >
+            The {{ $labels.queue }} Celery queue has had more than 25 pending tasks
+            for 10 minutes. Workers may be overwhelmed, stalled, or crashed.
+            Check: docker ps | grep celery && docker logs <celery-worker-container>
+
+      # Queue depth > 100 sustained for 10 minutes — severe backlog.
+      # Threshold rationale: 100 queued tasks at typical processing time (~30s each)
+      # represents 50+ minutes of pending work per worker. At this level,
+      # documents submitted by users will face unacceptable latency.
+      # Immediate action: scale workers or investigate blocking errors.
+      - alert: QueueDepthCritical
+        expr: dpi_queue_depth > 100
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Queue '{{ $labels.queue }}' depth is critically high ({{ $value }} tasks)"
+          description: >
+            The {{ $labels.queue }} Celery queue has had more than 100 pending tasks
+            for 10 minutes. SLA breach is imminent for document processing requests.
+            Immediate investigation required.
+            Check: docker ps | grep celery && docker logs <celery-worker-container>

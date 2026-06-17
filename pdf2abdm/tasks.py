@@ -23,6 +23,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from common.celery_app import celery_app
+from common.metrics import (
+    TASKS_STARTED_TOTAL,
+    TASKS_COMPLETED_TOTAL,
+    TASKS_FAILED_TOTAL,
+    TASK_DURATION_SECONDS,
+    DOCUMENTS_PROCESSED_TOTAL,
+    DOCUMENTS_FAILED_TOTAL,
+    record_exception,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +64,22 @@ def process_abdm_task(self, pdf_path: str, model: str = "gemma4"):
     Async Celery task for ABDM FHIR bundle generation.
     Returns a result dict that is also cached in Redis for /task-result/{task_id}.
     """
+    from utils.gcs_storage import download_pdf_from_gcs, delete_gcs_object
+
     task_id = self.request.id
     session_id = str(uuid.uuid4())
+
+    # pdf_path may be a gs:// URI (async submit) or a local path (submit-url /
+    # legacy). Download GCS objects to a local temp file so the rest of the
+    # pipeline is unchanged. pdf_location keeps the original ref so the finally
+    # block can delete the GCS object after processing.
+    pdf_location = pdf_path
+    if pdf_location.startswith("gs://"):
+        pdf_path = download_pdf_from_gcs(pdf_location)
+
     task_filename = os.path.basename(pdf_path)
     start_time = time.perf_counter()
+    TASKS_STARTED_TOTAL.labels(service="pdf2abdm").inc()
 
     def update(step: str, progress: int):
         self.update_state(state="PROGRESS",
@@ -150,11 +171,23 @@ def process_abdm_task(self, pdf_path: str, model: str = "gemma4"):
         })
 
         update("Completed", 100)
+        elapsed = time.perf_counter() - start_time
+        TASKS_COMPLETED_TOTAL.labels(service="pdf2abdm").inc()
+        TASK_DURATION_SECONDS.labels(service="pdf2abdm").observe(elapsed)
+        DOCUMENTS_PROCESSED_TOTAL.labels(service="pdf2abdm").inc()
         logger.info(f"[{task_id}] ABDM task completed — {len(bundles)} bundle(s)")
         return result_payload
 
     except Exception as exc:
-        logger.exception(f"[{task_id}] ABDM task failed: {exc}")
+        logger.exception(
+            "[%s] ABDM task failed exception_type=%s severity=%s: %s",
+            task_id, type(exc).__name__,
+            "CRITICAL" if "connection" in type(exc).__name__.lower() or "timeout" in type(exc).__name__.lower() else "ERROR",
+            exc,
+        )
+        TASKS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
+        DOCUMENTS_FAILED_TOTAL.labels(service="pdf2abdm").inc()
+        record_exception("pdf2abdm", exc)
         error_payload = {"status": "failed", "task_id": task_id, "error": str(exc)}
         try:
             r = _get_redis()
@@ -168,9 +201,13 @@ def process_abdm_task(self, pdf_path: str, model: str = "gemma4"):
     finally:
         # Always attempt to log — success or failure
         _fire_log(log_payload)
-        # Clean up the shared-volume temp file (written by the API container)
+        # Clean up the local temp file (downloaded from GCS, or shared-volume
+        # temp for legacy/submit-url paths).
         try:
             if os.path.exists(pdf_path):
                 os.unlink(pdf_path)
         except Exception:
             pass
+        # Delete the transient GCS object so nothing persists in the bucket.
+        if pdf_location.startswith("gs://"):
+            delete_gcs_object(pdf_location)

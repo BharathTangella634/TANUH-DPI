@@ -1,0 +1,262 @@
+# docker-compose.prod.yml — Production config for proj-dpi-shared
+#
+# Key differences from docker-compose.yml (local dev):
+#   - No local redis container (uses Memorystore at REDIS_HOST)
+#   - No gcp-service-account.json mounts (uses VM's attached SA via ADC)
+#   - Cloud SQL Proxy: keyless, points to proj-dpi-shared instance
+#   - GCS storage for all services (no local volume mounts for uploads)
+#   - Secrets resolved from GCP Secret Manager via common/secrets.py
+#   - image: tags point to Artifact Registry — VMs just pull, never build
+#
+# Required .env vars (all non-secret):
+#   PROJECT_ID, MYSQL_USER, REDIS_HOST, IMAGE_TAG (default: latest),
+#   *_SECRET pointers (MYSQL_PASSWORD_SECRET, ABDM_SECRET_KEY_SECRET, etc.)
+#
+# One-time Artifact Registry setup:
+#   gcloud artifacts repositories create dpi-containers \
+#     --repository-format=docker --location=asia-south1 \
+#     --project=proj-dpi-shared
+
+services:
+  pdf2abdm:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/pdf2abdm:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: pdf2abdm/Dockerfile
+    container_name: pdf2abdm
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+      - SESSION_LOGGER_URL=http://session-logger:8002
+      - GCS_BUCKET=dpi-transient-processing
+      - STORAGE_BACKEND=gcs
+      - VALIDATOR_GCS_BUCKET=dpi-transient-processing
+      - ABDM_AUTH_ENABLED=${ABDM_AUTH_ENABLED:-true}
+      - ABDM_TOKEN_EXPIRY_DAYS=${ABDM_TOKEN_EXPIRY_DAYS:-7}
+      - DOWNLOADS_LOCAL_DIR=/app/downloads
+    volumes:
+      - /opt/downloads:/app/downloads:ro
+    depends_on:
+      - session-logger
+
+  pdf2nhcx:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/pdf2nhcx:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: pdf2nhcx/Dockerfile
+    container_name: pdf2nhcx
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+      - SESSION_LOGGER_URL=http://session-logger:8002
+      - GCS_BUCKET=dpi-transient-processing
+      - STORAGE_BACKEND=gcs
+      - VALIDATOR_GCS_BUCKET=dpi-transient-processing
+      - NHCX_AUTH_ENABLED=${NHCX_AUTH_ENABLED:-true}
+      - NHCX_TOKEN_EXPIRY_DAYS=${NHCX_TOKEN_EXPIRY_DAYS:-7}
+    depends_on:
+      - session-logger
+
+  # ── NHCX Insurance Workers (4 replicas x concurrency 2 = 8 slots) ───────────
+  celery-nhcx-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/worker:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    deploy:
+      replicas: 4
+    command: celery -A common.celery_app worker --loglevel=info --concurrency=2 -Q nhcx -I pdf2nhcx.tasks -n nhcx-worker@%h
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+      - GCS_BUCKET=dpi-transient-processing
+      - STORAGE_BACKEND=gcs
+      - PYTHONPATH=/app
+      - WORKER_METRICS_PORT=9200
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+
+  # ── ABDM Clinical Workers (4 replicas x concurrency 2 = 8 slots) ─────────────
+  celery-abdm-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/worker:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    deploy:
+      replicas: 4
+    command: celery -A common.celery_app worker --loglevel=info --concurrency=2 -Q abdm -I pdf2abdm.tasks -n abdm-worker@%h
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+      - GCS_BUCKET=dpi-transient-processing
+      - STORAGE_BACKEND=gcs
+      - PYTHONPATH=/app
+      - WORKER_METRICS_PORT=9200
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+
+  frontend:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/frontend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: frontend-service
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - pdf2abdm
+      - pdf2nhcx
+
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
+    container_name: cloud-sql-proxy
+    command:
+      - "proj-dpi-shared:asia-south1:tanuh-dpi-mysql"
+      - "--address=0.0.0.0"
+      - "--port=3306"
+    restart: unless-stopped
+
+  session-logger:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/session-logger:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: session_logger/Dockerfile
+    container_name: session-logger
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MYSQL_USER=${MYSQL_USER:-dpi_logger}
+      - MYSQL_HOST=cloud-sql-proxy
+      - MYSQL_DB=dpi_session_logger
+      - SQLITE_DATA_DIR=/app/data
+    volumes:
+      - ./session_logger_data:/app/data
+    depends_on:
+      - cloud-sql-proxy
+
+  privacy-filter:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/privacy-filter:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: privacy_filter/Dockerfile
+    container_name: privacy-filter
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - STORAGE_BACKEND=gcs
+      - GCS_BUCKET=dpi-privacy-temp
+      - PF_FILE_TTL_SECONDS=1800
+      - TASK_RESULT_TTL=1800
+      - LOCAL_DATA_DIR=/tmp/data
+      - KEYCLOAK_AUTH_ENABLED=false
+      - SESSION_LOGGER_URL=http://session-logger:8002
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+    depends_on:
+      - session-logger
+
+  # ── Privacy Filter Workers (4 replicas x concurrency 2 = 8 parallel slots) ──
+  celery-privacy-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/privacy-filter:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: privacy_filter/Dockerfile
+    deploy:
+      replicas: 4
+    command: >
+      celery -A privacy_filter.celery_app worker
+      --loglevel=info
+      --concurrency=2
+      -Q privacy_filter
+      -n privacy-worker@%h
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+      - STORAGE_BACKEND=gcs
+      - GCS_BUCKET=dpi-privacy-temp
+      - PF_FILE_TTL_SECONDS=1800
+      - TASK_RESULT_TTL=1800
+      - LOCAL_DATA_DIR=/tmp/data
+      - SESSION_LOGGER_URL=http://session-logger:8002
+      - WORKER_METRICS_PORT=9200
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+
+  forgensic:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/forgensic:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: forgensic/Dockerfile
+    container_name: forgensic
+    ports:
+      - "8004:8004"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - DATA_DIR=/tmp/forgensic_data
+      - MAX_UPLOAD_BYTES=26214400
+      - GCS_BUCKET=dpi-transient-processing
+      - STORAGE_BACKEND=gcs
+      - OCR_ENABLED=true
+      - PIPELINE_PRESET=super_loose
+      - FORGENSIC_AUTH_ENABLED=${FORGENSIC_AUTH_ENABLED:-true}
+      - FORGENSIC_TOKEN_EXPIRY_DAYS=${FORGENSIC_TOKEN_EXPIRY_DAYS:-1}
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+
+  # ── Forgensic CV Workers (4 replicas x concurrency 2 = 8 parallel job slots) ──
+  celery-forgensic-worker:
+    image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/forgensic:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: forgensic/Dockerfile
+    deploy:
+      replicas: 4
+    command: >
+      celery -A forgensic.celery_app worker
+      --loglevel=info
+      --concurrency=2
+      -Q forgensic
+      -n forgensic-worker@%h
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - DATA_DIR=/tmp/forgensic_data
+      - GCS_BUCKET=dpi-transient-processing
+      - STORAGE_BACKEND=gcs
+      - OCR_ENABLED=true
+      - PIPELINE_PRESET=super_loose
+      - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
+      - JOB_TTL_SECONDS=3600
+      - WORKER_METRICS_PORT=9200
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc

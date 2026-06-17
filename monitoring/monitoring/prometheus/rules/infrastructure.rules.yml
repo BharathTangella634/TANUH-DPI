@@ -1,0 +1,89 @@
+groups:
+  - name: infrastructure
+    rules:
+
+      # VM CPU usage > 90% sustained for 10 minutes.
+      # Calculated as: 100% minus the average idle fraction across all CPU cores.
+      - alert: VMCpuHigh
+        expr: >
+          100
+          - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+          > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VM CPU usage is high ({{ $value | printf \"%.1f\" }}%)"
+          description: >
+            CPU usage on {{ $labels.instance }} has been above 90% for 10 minutes.
+            This may indicate a runaway process, unusually high document load,
+            or a worker scaling problem.
+
+      # VM memory usage > 90% sustained for 10 minutes.
+      # Uses MemAvailable (includes reclaimable cache) to avoid false positives from
+      # normal Linux page-cache growth.
+      - alert: VMMemoryHigh
+        expr: >
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+          > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VM memory usage is high ({{ $value | printf \"%.1f\" }}%)"
+          description: >
+            Available memory on {{ $labels.instance }} has been below 10% for 10 minutes.
+            The privacy-filter NER model and Celery workers are the largest consumers.
+            Check for OOM risk or worker memory leaks.
+
+      # Root filesystem usage > 85% sustained for 15 minutes.
+      # Excludes tmpfs mounts (ephemeral) to focus on persistent storage only.
+      - alert: VMDiskHigh
+        expr: >
+          (
+            1 - (
+              node_filesystem_free_bytes{mountpoint="/", fstype!="tmpfs"}
+              / node_filesystem_size_bytes{mountpoint="/", fstype!="tmpfs"}
+            )
+          ) * 100
+          > 85
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "VM disk usage is critically high ({{ $value | printf \"%.1f\" }}%)"
+          description: >
+            Disk usage on {{ $labels.instance }} has exceeded 85% for 15 minutes.
+            Disk-full will crash all containers. Check /tmp/data (upload artifacts),
+            Docker image cache, and log volumes immediately.
+
+      # Node Exporter scrape target is unreachable.
+      # When node-exporter is down all infrastructure metrics (CPU, memory, disk)
+      # are unavailable, so other infrastructure alerts will silently stop firing.
+      - alert: NodeExporterDown
+        expr: up{job="node_exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node Exporter is unreachable"
+          description: >
+            Prometheus cannot scrape node-exporter. Host-level metrics (CPU, memory,
+            disk, network) are unavailable. Restart the monitoring stack:
+            docker compose -f monitoring/monitoring/docker-compose.monitoring.yml up -d
+
+      # Prometheus self-scrape target has disappeared.
+      # Note: if Prometheus crashes completely it cannot evaluate this rule itself.
+      # This alert fires for partial degradation (evaluation loop stalled, OOM, config errors)
+      # that still allow the container to respond on :9090 but fail self-scraping.
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus self-scrape is failing"
+          description: >
+            Prometheus cannot scrape its own metrics endpoint. The evaluation
+            engine may be degraded. Check prometheus container logs:
+            docker logs prometheus

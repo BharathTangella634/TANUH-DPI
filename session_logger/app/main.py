@@ -25,16 +25,19 @@ import uuid
 import logging
 from typing import Optional, Literal
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 
+from common.secrets import load_secrets
+load_secrets()
+
 from .core.config import settings
 from .db.session import Base, engine, get_db, USE_SQLITE
-from .models.models import SessionLog, AuthToken
+from .models.models import SessionLog, AuthToken, Feedback, User, OTPVerification
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -46,8 +49,16 @@ logger.info("session_logger started — tables created/verified (%s).",
             "SQLite" if USE_SQLITE else "MySQL")
 
 import hashlib
-from datetime import datetime, timedelta
+import os
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal, List
+
+import bcrypt
+from jose import jwt as jose_jwt, JWTError
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -66,6 +77,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from common.metrics import instrument_fastapi
+instrument_fastapi(app, service="session_logger")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -512,4 +526,393 @@ def visit_stats(db: Session = Depends(get_db)):
     except Exception as exc:
         logger.warning("[visit-stats] query failed: %s", exc)
         return {"nhcx_page_visits": 0, "states": [], "cities": []}
+
+
+# ── Feedback ─────────────────────────────────────────────────────────────────
+
+class FeedbackCreate(BaseModel):
+    service:    str
+    name:       Optional[str] = "Anonymous"
+    place:      Optional[str] = "Anonymous place"
+    feedback:   str
+    ip_address: Optional[str] = None
+
+
+@app.post("/logs/feedback", tags=["Feedback"],
+          summary="Submit user feedback for a service",
+          status_code=201)
+def submit_feedback(payload: FeedbackCreate, request: Request, db: Session = Depends(get_db)):
+    client_ip = (
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or (request.client.host if request.client else None)
+        or payload.ip_address
+    )
+    try:
+        record = Feedback(
+            service=payload.service,
+            name=payload.name or "Anonymous",
+            place=payload.place or "Anonymous place",
+            feedback=payload.feedback,
+            ip_address=client_ip,
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        logger.info("[feedback] id=%d service=%s name=%s", record.id, record.service, record.name)
+        return {"status": "recorded", "id": record.id}
+    except Exception as exc:
+        db.rollback()
+        logger.error("[feedback] DB write failed: %s", exc)
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+@app.get("/logs/feedback", tags=["Feedback"],
+         summary="List all feedback entries")
+def list_feedback(
+    skip: int = 0, limit: int = 50,
+    service: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Feedback)
+    if service:
+        query = query.filter(Feedback.service == service)
+    total = query.count()
+    rows = query.order_by(Feedback.id.desc()).offset(skip).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {"id": r.id, "service": r.service, "name": r.name, "place": r.place,
+             "feedback": r.feedback, "ip_address": r.ip_address,
+             "created_at": str(r.created_at) if r.created_at else None}
+            for r in rows
+        ],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# User Authentication — Register / Login / OTP / Google OAuth
+# ══════════════════════════════════════════════════════════════════════════════
+
+_AUTH_SECRET = os.getenv("DPI_AUTH_SECRET_KEY", "dpi-dev-secret-change-me")
+_AUTH_ALGORITHM = "HS256"
+_AUTH_TOKEN_DAYS = int(os.getenv("DPI_AUTH_TOKEN_DAYS", "7"))
+
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER or "noreply@tanuh.ai")
+
+
+def _hash_password(plain: str) -> str:
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
+
+
+def _check_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
+
+
+def _issue_auth_jwt(user_id: int, email: str, name: str) -> str:
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(user_id),
+        "email": email,
+        "name": name,
+        "type": "dpi_user",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(days=_AUTH_TOKEN_DAYS)).timestamp()),
+    }
+    return jose_jwt.encode(payload, _AUTH_SECRET, algorithm=_AUTH_ALGORITHM)
+
+
+def _decode_auth_jwt(token: str) -> dict:
+    return jose_jwt.decode(token, _AUTH_SECRET, algorithms=[_AUTH_ALGORITHM])
+
+
+def _generate_otp() -> str:
+    return f"{random.SystemRandom().randint(0, 999999):06d}"
+
+
+def _send_otp_email(email: str, otp: str, name: str) -> bool:
+    if not SMTP_HOST:
+        logger.info("[auth] SMTP not configured — OTP for %s: %s (dev mode)", email, otp)
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "TANUH DPI — Your Verification Code"
+    msg["From"] = SMTP_FROM
+    msg["To"] = email
+
+    html = f"""\
+    <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;">
+            <h2 style="color:#14868C;margin:0;">TANUH DPI</h2>
+            <p style="color:#6b7280;font-size:14px;">AI Centre of Excellence in Healthcare</p>
+        </div>
+        <p>Hi {name},</p>
+        <p>Your verification code is:</p>
+        <div style="text-align:center;margin:24px 0;">
+            <span style="display:inline-block;font-size:32px;font-weight:700;letter-spacing:8px;
+                         color:#14868C;background:#f0fdfa;padding:16px 32px;border-radius:12px;
+                         border:2px solid #d8eeee;">{otp}</span>
+        </div>
+        <p style="color:#6b7280;font-size:14px;">This code expires in 10 minutes. If you didn't request this, please ignore this email.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+        <p style="color:#9ca3af;font-size:12px;text-align:center;">TANUH &middot; AI Centre of Excellence &middot; IISc Bangalore</p>
+    </div>"""
+
+    msg.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            if SMTP_USER and SMTP_PASSWORD:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_FROM, email, msg.as_string())
+        logger.info("[auth] OTP email sent to %s", email)
+        return True
+    except Exception as exc:
+        logger.error("[auth] Failed to send OTP email to %s: %s", email, exc)
+        return False
+
+
+# ── Schemas ──────────────────────────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class OTPVerifyRequest(BaseModel):
+    email: str
+    otp: str
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
+# ── Endpoints ────────────────────────────────────────────────────────────────
+
+@app.post("/auth/register", tags=["User Auth"],
+          summary="Register a new user with email",
+          status_code=201)
+def auth_register(body: RegisterRequest, db: Session = Depends(get_db)):
+    body.email = body.email.strip().lower()
+    body.name = body.name.strip()
+
+    if not body.name or not body.email or not body.password:
+        raise HTTPException(400, "Name, email, and password are required.")
+    if len(body.password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters.")
+
+    existing = db.query(User).filter(User.email == body.email).first()
+    if existing and existing.is_verified:
+        raise HTTPException(409, "An account with this email already exists.")
+
+    if existing and not existing.is_verified:
+        existing.name = body.name
+        existing.password_hash = _hash_password(body.password)
+        db.commit()
+    else:
+        user = User(
+            name=body.name,
+            email=body.email,
+            password_hash=_hash_password(body.password),
+            provider="email",
+            is_verified=False,
+        )
+        db.add(user)
+        db.commit()
+
+    otp = _generate_otp()
+    otp_record = OTPVerification(
+        email=body.email,
+        otp_hash=hashlib.sha256(otp.encode()).hexdigest(),
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+    )
+    db.add(otp_record)
+    db.commit()
+
+    email_sent = _send_otp_email(body.email, otp, body.name)
+
+    response_data = {
+        "status": "otp_sent",
+        "email": body.email,
+        "message": "A verification code has been sent to your email.",
+    }
+    if not email_sent:
+        response_data["dev_otp"] = otp
+
+    return response_data
+
+
+@app.post("/auth/verify-otp", tags=["User Auth"],
+          summary="Verify email with OTP code")
+def auth_verify_otp(body: OTPVerifyRequest, db: Session = Depends(get_db)):
+    body.email = body.email.strip().lower()
+    otp_hash = hashlib.sha256(body.otp.strip().encode()).hexdigest()
+
+    record = (
+        db.query(OTPVerification)
+        .filter(
+            OTPVerification.email == body.email,
+            OTPVerification.otp_hash == otp_hash,
+        )
+        .order_by(OTPVerification.id.desc())
+        .first()
+    )
+
+    if not record:
+        raise HTTPException(400, "Invalid verification code.")
+
+    if record.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(400, "Verification code has expired. Please request a new one.")
+
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user:
+        raise HTTPException(404, "User not found.")
+
+    user.is_verified = True
+    db.query(OTPVerification).filter(OTPVerification.email == body.email).delete()
+    db.commit()
+
+    token = _issue_auth_jwt(user.id, user.email, user.name)
+    return {
+        "status": "verified",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": user.id, "name": user.name, "email": user.email, "provider": user.provider},
+    }
+
+
+@app.post("/auth/login", tags=["User Auth"],
+          summary="Login with email and password")
+def auth_login(body: LoginRequest, db: Session = Depends(get_db)):
+    body.email = body.email.strip().lower()
+
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user or not user.password_hash:
+        raise HTTPException(401, "Invalid email or password.")
+    if not user.is_verified:
+        raise HTTPException(403, "Email not verified. Please complete registration first.")
+    if not _check_password(body.password, user.password_hash):
+        raise HTTPException(401, "Invalid email or password.")
+
+    token = _issue_auth_jwt(user.id, user.email, user.name)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": user.id, "name": user.name, "email": user.email, "provider": user.provider},
+    }
+
+
+@app.post("/auth/google", tags=["User Auth"],
+          summary="Authenticate with Google OAuth credential")
+def auth_google(body: GoogleAuthRequest, db: Session = Depends(get_db)):
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
+        google_client_id = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+        if not google_client_id:
+            raise HTTPException(501, "Google OAuth is not configured on this server.")
+
+        idinfo = id_token.verify_oauth2_token(
+            body.credential, google_requests.Request(), google_client_id
+        )
+        email = idinfo["email"].lower()
+        name = idinfo.get("name", email.split("@")[0])
+        google_sub = idinfo["sub"]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("[auth] Google token verification failed: %s", exc)
+        raise HTTPException(401, "Invalid Google credential.")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(
+            name=name,
+            email=email,
+            provider="google",
+            google_id=google_sub,
+            is_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif not user.google_id:
+        user.google_id = google_sub
+        if not user.is_verified:
+            user.is_verified = True
+        db.commit()
+
+    token = _issue_auth_jwt(user.id, user.email, user.name)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": user.id, "name": user.name, "email": user.email, "provider": user.provider},
+    }
+
+
+@app.get("/auth/me", tags=["User Auth"],
+         summary="Get current user profile from JWT")
+def auth_me(request: Request, db: Session = Depends(get_db)):
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(401, "Missing or invalid Authorization header.")
+
+    token = auth_header[7:]
+    try:
+        claims = _decode_auth_jwt(token)
+    except JWTError as exc:
+        raise HTTPException(401, f"Invalid or expired token: {exc}")
+
+    user = db.query(User).filter(User.id == int(claims["sub"])).first()
+    if not user:
+        raise HTTPException(404, "User not found.")
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "provider": user.provider,
+        "is_verified": user.is_verified,
+        "created_at": str(user.created_at) if user.created_at else None,
+    }
+
+
+@app.post("/auth/resend-otp", tags=["User Auth"],
+          summary="Resend OTP to email")
+def auth_resend_otp(body: OTPVerifyRequest, db: Session = Depends(get_db)):
+    body.email = body.email.strip().lower()
+
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user:
+        raise HTTPException(404, "No account found with this email.")
+    if user.is_verified:
+        raise HTTPException(400, "Email is already verified.")
+
+    db.query(OTPVerification).filter(OTPVerification.email == body.email).delete()
+    db.commit()
+
+    otp = _generate_otp()
+    otp_record = OTPVerification(
+        email=body.email,
+        otp_hash=hashlib.sha256(otp.encode()).hexdigest(),
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+    )
+    db.add(otp_record)
+    db.commit()
+
+    email_sent = _send_otp_email(body.email, otp, user.name)
+
+    response_data = {"status": "otp_sent", "email": body.email}
+    if not email_sent:
+        response_data["dev_otp"] = otp
+    return response_data
 

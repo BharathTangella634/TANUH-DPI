@@ -2,7 +2,7 @@ name: Build Desktop Forgensic App
 
 on:
   push:
-    branches: [ "desktop-gui-final", "main" ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 jobs:

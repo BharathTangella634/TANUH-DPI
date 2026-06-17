@@ -18,10 +18,11 @@ Failures are non-fatal — main FHIR pipeline always completes.
 
 import os
 import logging
+import tempfile
 
 logger = logging.getLogger(__name__)
 
-GCS_BUCKET           = os.getenv("GCS_BUCKET", "tanuh-bcd-bucket")
+GCS_BUCKET           = os.getenv("GCS_BUCKET", "dpi-transient-processing")
 GCS_CREDENTIALS_JSON = os.getenv("GCS_CREDENTIALS_JSON", "")   # dedicated GCS SA
 GOOGLE_CREDENTIALS   = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 
@@ -135,3 +136,42 @@ def upload_json_to_gcs(json_data: dict, gcs_folder: str, filename: str) -> str |
     except Exception as e:
         logger.warning(f"GCS JSON upload failed (non-fatal): {e}")
         return None
+
+
+# ── GCS download / delete (worker side) ───────────────────────────────────────
+
+def parse_gcs_uri(gcs_uri: str):
+    """Split a gs://bucket/path/to/blob URI into (bucket, blob_name)."""
+    if not gcs_uri.startswith("gs://"):
+        raise ValueError(f"Invalid GCS URI: {gcs_uri}")
+    path = gcs_uri[5:]
+    bucket, blob = path.split("/", 1)
+    return bucket, blob
+
+
+def download_pdf_from_gcs(gcs_uri: str) -> str:
+    """
+    Download a GCS object to a local temp file and return the temp path.
+
+    Raises on failure — unlike the upload helpers, a download failure must fail
+    the task because there is nothing to process without the input PDF.
+    """
+    client = _get_gcs_client()
+    bucket_name, blob_name = parse_gcs_uri(gcs_uri)
+    blob = client.bucket(bucket_name).blob(blob_name)
+    fd, temp_path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    blob.download_to_filename(temp_path)
+    logger.info(f"GCS PDF downloaded: {gcs_uri}")
+    return temp_path
+
+
+def delete_gcs_object(gcs_uri: str) -> None:
+    """Delete a GCS object. Non-fatal — logs and swallows any error."""
+    try:
+        client = _get_gcs_client()
+        bucket_name, blob_name = parse_gcs_uri(gcs_uri)
+        client.bucket(bucket_name).blob(blob_name).delete()
+        logger.info(f"GCS object deleted: {gcs_uri}")
+    except Exception as e:
+        logger.warning(f"Failed deleting GCS object {gcs_uri}: {e}")

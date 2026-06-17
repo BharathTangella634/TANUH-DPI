@@ -1,415 +1,801 @@
-<!-- Sub Navigation -->
-<div class="sub-nav-bar">
-    <button class="sub-tab-btn active" onclick="openSubTab('ForgeryDetection','fg-sub-main',this)">
-        <i class="fas fa-search-plus"></i> Forgery Detection
-    </button>
-    <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-api',this)">
-        <i class="fas fa-code"></i> API Access
-    </button>
-    <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-runlocally',this)">
-        <i class="fas fa-download"></i> Run Locally
-    </button>
-    <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-docs',this)">
-        <i class="fas fa-book"></i> User Guide
-    </button>
-    <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-team',this)">
-        <i class="fas fa-users"></i> Team
-    </button>
-</div>
+<style>
+/* ── Premium Forgensic UI Overrides ────────────────────────────────────────── */
+.fg-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Redesigned Drag & Dropzone */
+.fg-dropzone-modern {
+    border: 2px dashed rgba(20, 134, 140, 0.25);
+    background: #fcfefe;
+    border-radius: 10px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 250ms ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.fg-dropzone-modern:hover {
+    border-color: var(--primary);
+    background: #f0fafb;
+    box-shadow: 0 0 0 4px rgba(20, 134, 140, 0.06);
+}
+
+.fg-upload-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(20, 134, 140, 0.06);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.fg-dropzone-modern:hover .fg-upload-icon-wrap {
+    transform: translateY(-2px);
+    background: rgba(20, 134, 140, 0.1);
+}
+
+.fg-dropzone-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.fg-dropzone-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* File selected card style */
+.fg-selected-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+}
+
+.fg-file-icon {
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+
+.fg-file-details {
+    flex: 1;
+}
+
+.fg-file-name {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #0f172a;
+    word-break: break-all;
+}
+
+.fg-file-size {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.fg-remove-file-btn {
+    border: none;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.fg-remove-file-btn:hover {
+    background: #fee2e2;
+}
+
+/* Premium Primary Buttons */
+.fg-btn-modern {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 14px rgba(20, 134, 140, 0.25) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    transition: all 200ms ease !important;
+}
+
+.fg-btn-modern:hover {
+    background: var(--brand-dark) !important;
+    box-shadow: 0 6px 20px rgba(20, 134, 140, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+
+.fg-btn-modern:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Modern Dashboard Grid Layout & Panel Overrides */
+.fg-results-grid {
+    gap: 16px !important;
+}
+
+.fg-panel {
+    border: 1px solid rgba(20, 134, 140, 0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.015) !important;
+    box-sizing: border-box !important;
+    padding: 16px !important;
+}
+
+.fg-panel-header {
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 12px !important;
+}
+
+.fg-panel-header-dark {
+    border-bottom: 1px solid #334155 !important;
+}
+
+.fg-findings-list {
+    font-size: 0.82rem !important;
+    padding: 8px 0 !important;
+}
+
+.fg-finding-card {
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+}
+
+.fg-finding-title {
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+}
+
+.fg-finding-desc {
+    font-size: 0.76rem !important;
+    color: #64748b !important;
+    margin-top: 2px !important;
+}
+
+/* Sub Navigation Typography Hierarchy Overrides */
+#fg-interactive-view .tab-header h2 {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 6px 0 !important;
+    color: #0f172a !important;
+}
+
+#fg-interactive-view .tab-header p {
+    font-size: 0.82rem !important;
+    color: #64748b !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* Info and warnings alert styling */
+.fg-info-notes p {
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+}
+
+/* Table styling override */
+.fg-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fg-table th {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1.5px solid #e2e8f0;
+    text-align: left;
+}
+
+.fg-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.78rem;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.fg-table tr:hover {
+    background: #fcfefe;
+}
+
+.fg-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Run Locally Overrides */
+.fg-runlocally-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.fg-runlocally-card {
+    text-decoration: none;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.fg-runlocally-card i {
+    font-size: 2rem !important;
+    margin-bottom: 8px !important;
+}
+
+.fg-runlocally-card h3 {
+    margin: 0 0 4px 0 !important;
+    color: #0f172a !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+}
+
+.fg-runlocally-card p {
+    font-size: 0.78rem !important;
+    margin: 0 !important;
+    color: #64748b !important;
+}
+
+.fg-runlocally-card p.fg-meta {
+    font-size: 0.7rem !important;
+    margin-top: 2px !important;
+    color: #94a3b8 !important;
+}
+
+@media (min-width: 1024px) {
+    .key-capabilities-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+@media (max-width: 1023px) and (min-width: 768px) {
+    .key-capabilities-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 767px) {
+    .key-capabilities-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Forgery Detection (main) -->
+<!-- VIEW: LANDING PAGE (General Overview without sub-nav) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="fg-sub-main" class="sub-content">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-search-plus" style="color:var(--primary)"></i> Forgensic: Document Forgery Detection</h2>
-        <p>Classical forensic analysis to detect tampering, splicing, and manipulation in clinical documents.</p>
+<div id="fg-landing-view" class="fg-container">
+    <!-- Hero / Intro -->
+    <div style="display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 32px; align-items: center; margin-bottom: 40px; padding: 20px 0;">
+        <div>
+            <span style="display: inline-block; background: rgba(20, 134, 140, 0.08); color: var(--primary); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;">
+                Classical CV &amp; Explainable
+            </span>
+            <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
+                Document Tampering &amp; Forgery Detection
+            </h2>
+            <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
+                Forgensic is a high-speed, local computer vision engine built to detect copy-paste modifications, overwriting, erasures, and page merges in clinical documents. No unpredictable ML models; operates with complete mathematical explainability fully offline.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+                <button onclick="FG_launchService()" class="process-btn" style="padding: 12px 24px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600;">
+                    <i class="fas fa-rocket"></i> Launch Interactive Service
+                </button>
+                <button onclick="openTab(null, 'ForgeryDocs'); return false;" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fas fa-book"></i> Read User Guide
+                </button>
+            </div>
+        </div>
         
-    </div>
-    <!-- <div class="tab-header-logos">
-        <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
-        <img src="assets/MoE_Logo.svg" alt="Ministry of Education Logo" class="logo">
-        <img src="assets/IISc_Logo.png" alt="IISc Logo" class="logo">
-    </div> -->
-</div>
-
-<div style="background:#f0fdfa; border-left:4px solid var(--primary); border-radius:0 6px 6px 0; padding:12px 16px; margin-bottom:20px;">
-    <p style="margin:0 0 6px; font-size:14px; color:#0f766e;"><strong><i class="fas fa-clock"></i> Note:</strong> Processing time is typically below <strong>2 seconds per page</strong>, depending on file size.</p>
-    <p style="margin:0 0 6px; font-size:14px; color:#0f766e;"><strong><i class="fas fa-user-shield"></i> Privacy:</strong> Non-persistent service. Data is processed in real-time and purged automatically. No data is stored.</p>
-    <p style="margin:0; font-size:14px; color:#0f766e;"><strong><i class="fas fa-file"></i> Limit:</strong> Maximum file size <strong>25 MB</strong>. Supported: PDF, JPG, PNG, BMP, TIFF, WebP.</p>
-</div>
-
-
-<!-- Upload Section -->
-<div class="controls" id="fg-controls">
-    <div class="file-input-wrapper">
-        <input type="file" id="fileForgery" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp" onchange="window.FG_fileChanged()">
-        <label for="fileForgery" id="labelForgery">
-            <i class="fas fa-file-upload"></i>
-            <span class="file-text">Choose document (PDF / Image)...</span>
-        </label>
-    </div>
-    <button class="process-btn" id="fgProcessBtn" onclick="window.FG_process()">
-        <!-- <i class="fas fa-search"></i> -->
-        <span>Process</span>
-        <div class="loader" id="fgLoader"></div>
-    </button>
-</div>
-
-<!-- Progress -->
-<div id="fgProgressSection" style="display:none; margin-bottom:20px;">
-    <div style="background:#e2e8f0; border-radius:6px; height:8px; overflow:hidden; margin-bottom:8px;">
-        <div id="fgProgressBar" style="height:100%; background:var(--primary); border-radius:6px; width:0%; transition: width 0.3s;"></div>
-    </div>
-    <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-light);">
-        <span id="fgProgressLabel">Idle</span>
-        <span id="fgInferenceTime"></span>
-    </div>
-</div>
-
-<!-- Tampered Flag -->
-<div id="fgTamperedFlag" class="fg-tampered-flag fg-tampered-neutral">
-    <i class="fas fa-hourglass-half"></i> Tampered: <strong>—</strong> Awaiting analysis.
-</div>
-
-<!-- Results Grid -->
-<div id="fgResultsGrid" class="fg-results-grid">
-
-    <!-- Findings Panel (dark) -->
-    <div class="fg-panel fg-panel-findings">
-        <div class="fg-panel-header fg-panel-header-dark">
-            <div class="fg-panel-title-row">
-                <span class="fg-panel-title fg-panel-title-dark"><i class="fas fa-list"></i> Findings</span>
-                <div class="fg-panel-actions">
-                    <button class="fg-action-btn fg-action-btn-dark" onclick="window.FG_copyFindings()" title="Copy findings"><i class="fas fa-copy"></i> Copy</button>
-                    <button class="fg-action-btn fg-action-btn-dark" onclick="window.FG_downloadFindings()" title="Download findings"><i class="fas fa-download"></i> Download</button>
-                    <button id="fgToggleFindings" class="fg-action-btn fg-action-btn-dark" onclick="window.FG_toggleFindings()" style="display:none;">View all</button>
+        <!-- Mockup Visual Forensic Graphic -->
+        <div style="position: relative; border-radius: 16px; overflow: hidden; border: 1.5px dashed rgba(20, 134, 140, 0.25); background: #ffffff; padding: 24px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02); height: 260px; display: flex; flex-direction: column; justify-content: center; gap: 16px; box-sizing: border-box;">
+            <div style="display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 4px; opacity: 0.8;">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+                <span style="font-size: 0.7rem; font-weight: 600; color: #64748b; font-family: monospace; margin-left: auto;">discharge_summary_scan.png</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; font-family: monospace; font-size: 0.72rem; color: #334155; line-height: 1.4;">
+                <div style="border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.03); padding: 4px 8px; border-radius: 4px; position: relative;">
+                    <span>SIGNATURE: [IMAGE CLONED]</span>
+                    <span style="position: absolute; right: 4px; top: 4px; background: #ef4444; color: white; font-size: 0.55rem; padding: 1px 4px; border-radius: 2px; font-weight: bold;">C1: COPY-PASTE (98%)</span>
+                </div>
+                <div style="border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.03); padding: 4px 8px; border-radius: 4px; position: relative;">
+                    <span>DISCHARGE DATE: <span style="text-decoration: line-through; color: #94a3b8;">10-05-2026</span> 18-05-2026</span>
+                    <span style="position: absolute; right: 4px; top: 4px; background: #f59e0b; color: white; font-size: 0.55rem; padding: 1px 4px; border-radius: 2px; font-weight: bold;">C2: OVERWRITING</span>
+                </div>
+                <div style="border: 1px solid #3b82f6; background: rgba(59, 130, 246, 0.03); padding: 4px 8px; border-radius: 4px; position: relative;">
+                    <span>HOSPITAL BILL AMOUNT: [ALTERED TEXT EDGES]</span>
+                    <span style="position: absolute; right: 4px; top: 4px; background: #3b82f6; color: white; font-size: 0.55rem; padding: 1px 4px; border-radius: 2px; font-weight: bold;">C4: ERASURE DETECTED</span>
                 </div>
             </div>
-            <div id="fgFindingsMeta" class="fg-panel-meta">No document processed yet.</div>
-        </div>
-        <div id="fgFindingsList" class="fg-findings-list">
-            Upload a file and click "Process" to see forensic findings.
+            
+            <div style="position: absolute; bottom: 12px; right: 12px; font-size: 0.65rem; color: var(--primary); background: #e6f7f8; border-radius: 20px; padding: 3px 10px; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-shield-alt"></i> DETERMINISTIC FORENSICS
+            </div>
         </div>
     </div>
 
-    <!-- Preview Panel (light) -->
-    <div class="fg-panel fg-panel-preview">
-        <div class="fg-panel-header">
-            <div class="fg-panel-title-row">
-                <span class="fg-panel-title"><i class="fas fa-file-image"></i> Annotated Document</span>
+    <!-- ── Key Capabilities (Grid Cards) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 24px; letter-spacing: -0.01em;">
+            Key Capabilities
+        </h3>
+        <div class="key-capabilities-grid" style="display: grid; gap: 20px;">
+            <!-- Card 1 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(20, 134, 140, 0.08); color: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-laptop-code"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Classical CV Engine</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Employs edge density analysis, stroke inconsistency checks, and template matching for transparent, deterministic results without black-box ML model deviations.
+                </p>
             </div>
-            <div class="fg-panel-subtitle">Overlays appear after processing completes.</div>
-            <div class="fg-panel-actions">
-                <button id="fgTogglePreview" class="fg-action-btn fg-action-btn-primary" onclick="window.FG_togglePreview()">Hide annotated document</button>
-                <button id="fgShowAllOverlays" class="fg-action-btn fg-action-btn-ghost" onclick="window.FG_showAllOverlays()" disabled>Show all overlays</button>
+            
+            <!-- Card 2 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); color: #10b981; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">10 Detection Categories</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Pinpoints copy-paste splicing, erasures, overwriting, watermarks edits, irregular line spacing, document merging, and digital alterations.
+                </p>
+            </div>
+            
+            <!-- Card 3 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(139, 92, 246, 0.08); color: #8b5cf6; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Interactive Zoom Viewer</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Click dynamic bounding boxes to instantly pop up high-magnification cropped forensic previews, letting investigators verify tiny alterations.
+                </p>
+            </div>
+            
+            <!-- Card 4 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(14, 165, 233, 0.08); color: #0ea5e9; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-download"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">100% Offline CLI &amp; GUI</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Run locally using standalone zero-dependency executables for Windows, Mac, or Linux. Complete command-line interface for batch claims parsing.
+                </p>
             </div>
         </div>
-        <div id="fgPreviewViewer" class="fg-preview-viewer">
-            <div id="fgPreviewArea" class="fg-preview-area">
-                <div id="fgPreviewEmpty" class="fg-preview-empty">No annotated preview yet.</div>
-                <img id="fgPreviewImage" class="fg-preview-image" alt="Annotated document"/>
-                <div id="fgPreviewOverlay" class="fg-preview-overlay"></div>
+    </div>
+
+    <!-- ── How It Works (Pipeline Steps) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Three forensic computation steps running locally on CPU</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative;">
+            <!-- Phase 1 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">01</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Multi-Scale Conversion</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Ingested PDFs are converted to high-resolution images. OpenCV generates edge contour mappings, binarized matrices, and normalizes colorspaces.
+                </p>
             </div>
+            <!-- Phase 2 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">02</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Forensic Check Routine</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Parallel CV algorithms scan for duplicate template segments, stroke inconsistencies, erasure blur coefficients, and horizontal noise mismatches.
+                </p>
+            </div>
+            <!-- Phase 3 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">03</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Overlay &amp; Report Output</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Aggregates findings, renders colored bounding boxes, highlights anomalies in preview layers, and issues local validation results and structured JSON logs.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── On-Premises Security Banner ──────────────────────────────────────── -->
+    <div style="display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg, rgba(20, 134, 140, 0.05) 0%, rgba(20, 134, 140, 0.01) 100%); border: 1.5px solid rgba(20, 134, 140, 0.15); border-radius: 12px; padding: 24px; margin-bottom: 20px; box-sizing: border-box;">
+        <div style="font-size: 2rem; color: var(--primary); flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px;">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 4px;">100% Confidential On-Premises Analysis</h4>
+            <p style="font-size: 0.85rem; line-height: 1.5; color: #475569; margin: 0;">
+                All file parsing, edge calculations, and pixel-level checks execute locally on your host environment. No document bytes are transmitted externally, no files are stored permanently, and all active memory buffers are purged immediately after job completion.
+            </p>
         </div>
     </div>
 </div>
-
-<!-- Crop Modal -->
-<div class="modal fg-crop-modal" id="fgCropModal" style="display:none;">
-    <div class="modal-content fg-crop-content">
-        <div class="fg-crop-header">
-            <div class="fg-crop-title">
-                <h3>Highlighted Region</h3>
-                <div id="fgCropMeta" class="fg-crop-meta"></div>
-            </div>
-            <div class="fg-crop-actions">
-                <button id="fgShowInDoc" class="fg-action-btn fg-action-btn-primary" onclick="window.FG_showInDocument()" disabled>Show in document</button>
-                <button class="close-modal fg-close-btn" onclick="window.FG_closeCropModal()" aria-label="Close">&times;</button>
-            </div>
-        </div>
-        <div class="fg-crop-body">
-            <img id="fgCropImage" class="fg-crop-image" alt="Cropped region"/>
-        </div>
-    </div>
-</div>
-
-</div><!-- /fg-sub-main -->
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Team (Forgery Detection) -->
+<!-- VIEW: INTERACTIVE VIEW (Includes sub-nav & inference tabs) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="fg-sub-team" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-users" style="color:var(--primary)"></i> Forgery Detection Team</h2>
-        <p>The team behind the Forgensic document forgery detection system.</p>
-    </div>
-</div>
-
-<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0;">
-    <div class="fg-team-grid">
-        <a href="https://www.linkedin.com/in/nikhileswara-rao-sulake/" target="_blank" style="text-decoration:none;">
-            <div class="fg-team-card">
-                <img src="assets/nikhil.png" alt="Nikhileswara Rao Sulake">
-                <div class="team-name">Nikhileswara Rao Sulake</div>
-                <div class="team-role">Engineering Intern</div>
-                <div class="team-org">TANUH AI-CoE</div>
-            </div>
-        </a>
-        <a href="https://www.linkedin.com/in/sai-manikanta-eswar-machara/" target="_blank" style="text-decoration:none;">
-            <div class="fg-team-card">
-                <img src="assets/eswar.png" alt="Sai Manikanta Eswar Machara">
-                <div class="team-name">Sai Manikanta Eswar Machara</div>
-                <div class="team-role">Engineering Intern</div>
-                <div class="team-org">TANUH AI-CoE</div>
-            </div>
-        </a>
-        <a href="https://www.linkedin.com/in/sivalal-kethavath-9b568a235/" target="_blank" style="text-decoration:none;">
-            <div class="fg-team-card">
-                <img src="assets/sivalal.png" alt="Sivalal Kethavath">
-                <div class="team-name">Sivalal Kethavath</div>
-                <div class="team-role">Assistant Professor</div>
-                <div class="team-org">RGUKT Nuzvid</div>
-            </div>
-        </a>
-        <a href="https://www.linkedin.com/in/ashwin-rajkumar/" target="_blank" style="text-decoration:none;">
-            <div class="fg-team-card">
-                <img src="assets/ashwin.png" alt="Dr. Ashwin RajKumar">
-                <div class="team-name">Dr. Ashwin RajKumar</div>
-                <div class="team-role">(Breast Cancer Detection)<br>Program Manager</div>
-                <div class="team-org">TANUH AI-CoE</div>
-            </div>
-        </a>
-        <a href="https://www.linkedin.com/in/s-hema-priyadarshini-ph-d-64246314/" target="_blank" style="text-decoration:none;">
-            <div class="fg-team-card">
-                <img src="assets/hema.png" alt="Dr. Hema Priyadarshini">
-                <div class="team-name">Dr. Hema Priyadarshini</div>
-                <div class="team-role">(Chronic Kidney Disease)<br>Program Manager</div>
-                <div class="team-org">TANUH AI-CoE</div>
-            </div>
-        </a>
-        <a href="https://cds.iisc.ac.in/faculty/yalavarthy/" target="_blank" style="text-decoration:none;">
-            <div class="fg-team-card">
-                <img src="assets/Prof_PKY.png" alt="Dr. Phaneendra K. Yalavarthy">
-                <div class="team-name">Dr. Phaneendra K. Yalavarthy</div>
-                <div class="team-role">Chief Project Manager</div>
-                <div class="team-org">TANUH AI-CoE</div>
-            </div>
-        </a>
-    </div>
-</div>
-
-</div><!-- /fg-sub-team -->
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Run Locally (Forgery Detection) -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="fg-sub-runlocally" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-download" style="color:var(--primary)"></i> Run Locally (Offline Mode)</h2>
-        <p>Download a single executable for your OS. No Python, no pip, no cloud APIs. All data stays on your machine.</p>
-    </div>
-</div>
-
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;">
-    <a href="/downloads/ForgensicApp-ubuntu-latest.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-linux" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">Linux x86_64</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Binary (~143 MB)</p>
-    </a>
-    <a href="/downloads/ForgensicApp-ubuntu-24.04-arm.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-linux" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">Linux ARM64</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Binary (~114 MB)</p>
-    </a>
-    <a href="/downloads/ForgensicApp-windows-latest.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-windows" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">Windows</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Portable EXE (~95 MB)</p>
-    </a>
-    <a href="/downloads/ForgensicApp-macos-latest.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-apple" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">macOS</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Binary (~189 MB)</p>
-    </a>
-</div>
-
-<div style="background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); padding:25px; margin:20px 0;">
-    <h3 style="margin-bottom:20px;">Setup Steps (All Platforms)</h3>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">1. Download Executable</h4>
-        <p style="margin:0; color:#0f766e; font-size:14px;">
-            Download the standalone binary for your OS from the links above.
-        </p>
-    </div>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">2. Unzip &amp; Make Executable</h4>
-        <p style="margin:0; color:#0f766e; font-size:14px;">
-            Extract the ZIP file. On Linux/Mac run: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">chmod +x ForgensicApp*</code>
-        </p>
-    </div>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Run GUI</h4>
-        <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
-            Simply double-click the executable to launch the beautiful offline Graphical User Interface.
-        </p>
-    </div>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">4. Run CLI (Optional)</h4>
-        <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
-            Or run via terminal: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./ForgensicApp -i document.pdf -o ./output</code>
-        </p>
-    </div>
-
-    <div style="padding:12px 15px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0;">
-        <p style="margin:0; color:#92400e; font-size:14px;">
-            <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. Zero cloud API calls.
-        </p>
-    </div>
-</div>
-
-<div style="text-align:center; margin:20px 0;">
-    <a href="javascript:void(0)" onclick="openSubTab('ForgeryDetection','fg-sub-docs',document.querySelector('#ForgeryDetection .sub-tab-btn:nth-child(4)')); setTimeout(function(){ guideNav('fg-guide-container','fgg-runlocally',document.querySelector('#fg-guide-container .guide-sidebar a[onclick*=fgg-runlocally]')); },100);" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; background:#14868C; color:#fff; border-radius:8px; text-decoration:none; font-size:14px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#0E6C71'" onmouseout="this.style.background='#14868C'">
-        <i class="fas fa-book-open"></i> More Details in User Guide
-    </a>
-</div>
-
-</div><!-- /fg-sub-runlocally -->
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: API Access (Forgery Detection) -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="fg-sub-api" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-code" style="color:var(--primary)"></i> Forgery Detection API</h2>
-        <p>Submit documents, poll status, and retrieve forensic analysis results. Built with Python, FastAPI, OpenCV, and PyMuPDF (OCR optional).</p>
-    </div>
-</div>
-
-<div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:20px;">
-    <p style="margin:0; font-size:0.92rem; color:#0e6a6f; line-height:1.5;">
-        <strong><i class="fas fa-info-circle"></i> Authentication:</strong> Uses JWT bearer tokens. Request a 1-day demo token via the form below, then pass it as <code>Authorization: Bearer &lt;token&gt;</code>.
-        <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Forgery Detection tab, tokens are fetched automatically.
-    </p>
-</div>
-
-<!-- Token Request -->
-<div class="pf-demo-token-card" style="margin-bottom:24px;">
-    <div class="pf-demo-token-header">
-        <i class="fas fa-search-plus" style="color:#14868C;"></i>
-        <span>Forgery Detection API Token&nbsp;<small style="font-weight:400;color:#64748b;">(forgensic)</small></span>
-        <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-    </div>
-    <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">Classical forensic analysis for tampering and manipulation detection.</p>
-    <form id="apiForgeryTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-        <div class="pf-demo-token-fields">
-            <div class="pf-demo-token-field">
-                <label for="apiForgeryTokenName">Full Name</label>
-                <input type="text" id="apiForgeryTokenName" placeholder="Your name" required />
-            </div>
-            <div class="pf-demo-token-field">
-                <label for="apiForgeryTokenEmail">Email Address</label>
-                <input type="email" id="apiForgeryTokenEmail" placeholder="you@example.com" required />
-            </div>
-        </div>
-        <button type="submit" class="pf-btn pf-btn-primary" id="apiForgeryTokenSubmit">
-            <i class="fas fa-bolt"></i> Request Forgery Token
+<div id="fg-interactive-view" class="fg-container" style="display:none;">
+    <!-- Sub Navigation inside tool page -->
+    <div class="sub-nav-bar">
+        <button class="sub-tab-btn active" id="btn-fg-launch" onclick="openSubTab('ForgeryDetection','fg-sub-main',this)">
+            <i class="fas fa-search-plus"></i> Forgery Detection
         </button>
-    </form>
-    <div id="apiForgeryTokenResult" class="pf-demo-token-result hidden">
-        <div class="pf-demo-token-result-header">
-            <span id="apiForgeryTokenGreeting"></span>
-            <span id="apiForgeryTokenExpiry" class="pf-demo-token-expiry"></span>
-        </div>
-        <div class="pf-demo-token-output-wrap">
-            <pre class="pf-demo-token-output" id="apiForgeryTokenOutput"></pre>
-            <button class="pf-demo-token-copy pf-btn" id="apiForgeryTokenCopy"><i class="fas fa-copy"></i> Copy</button>
-        </div>
+        <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-api',this)">
+            <i class="fas fa-code"></i> API Access
+        </button>
+        <button class="sub-tab-btn" onclick="openSubTab('ForgeryDetection','fg-sub-runlocally',this)">
+            <i class="fas fa-download"></i> Run Locally
+        </button>
     </div>
-    <div id="apiForgeryTokenError" class="pf-demo-token-error hidden"></div>
-</div>
 
-<div class="api-badge-row" style="margin-bottom:20px;">
-    <span class="api-badge-chip">
-        <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="Python">
-        Python
-    </span>
-    <span class="api-badge-chip">
-        <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/fastapi/fastapi-original.svg" alt="FastAPI">
-        FastAPI
-    </span>
-    <span class="api-badge-chip">
-        <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/opencv/opencv-original.svg" alt="OpenCV">
-        OpenCV
-    </span>
-</div>
+    <!-- ── SUB: Forgery Detection (main) ── -->
+    <div id="fg-sub-main" class="sub-content">
+        <div class="tab-header" style="margin-bottom: 16px;">
+            <div class="tab-header-text">
+                <h2><i class="fas fa-search-plus" style="color:var(--primary)"></i> Forgensic: Document Forgery Detection</h2>
+                <p>Classical forensic analysis to detect tampering, splicing, and manipulation in clinical documents.</p>
+            </div>
+        </div>
 
-<!-- Endpoints -->
-<h3 style="margin:0 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-list-ul"></i> Endpoint Reference</h3>
-<div class="api-section-box">
-    <table class="api-endpoint-table">
-        <thead>
-            <tr>
-                <th style="width:70px;">Method</th>
-                <th>Path</th>
-                <th style="width:100px;">Auth</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td><span class="api-method post">POST</span></td><td><code>/forgensic/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT for the Forgery API</td></tr>
-            <tr><td><span class="api-method post">POST</span></td><td><code>/forgensic/jobs</code></td><td>Bearer</td><td>Upload a document and create a processing job</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}</code></td><td>Bearer</td><td>Poll job status and progress (0.0 to 1.0)</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}/results</code></td><td>Bearer</td><td>Fetch complete forgery analysis results</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}/files/{file_name}</code></td><td>Bearer</td><td>Fetch cached annotated preview or page image for this job</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/health</code></td><td>Open</td><td>Service health check</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/stats</code></td><td>Open</td><td>Usage counters for the dashboard</td></tr>
-        </tbody>
-    </table>
-</div>
+        <div class="fg-info-notes" style="margin-bottom: 16px; padding: 10px 14px; border-left: 4px solid #14868C; background-color: #f0fdfa; border-radius: 6px;">
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-clock"></i> Note:</strong> Processing time is typically below <strong>2 seconds per page</strong>, depending on file size.
+            </p>
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-user-shield"></i> Privacy:</strong> Non-persistent service. Data is processed in real-time and purged automatically. No data is stored.
+            </p>
+            <p style="margin: 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-file"></i> Limit:</strong> Maximum file size <strong>25 MB</strong>. Supported: PDF, JPG, PNG, BMP, TIFF, WebP.
+            </p>
+        </div>
 
-<!-- Code Examples -->
-<h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-terminal"></i> Usage Examples</h3>
+        <!-- Hidden inputs & label elements required by forgery.js -->
+        <div id="labelForgery" style="display:none;"><span class="file-text"></span></div>
 
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-    <div class="api-section-box">
-        <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">1. Request a token</h4>
-        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Returns an <code>access_token</code> valid for 24 hours.</p>
-        <div class="api-code-block">
-            <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/api/token" \
+        <!-- Redesigned Drag & Dropzone Workspace -->
+        <div class="fg-workspace-card">
+            <div class="fg-dropzone-modern" id="fgDropzone" onclick="document.getElementById('fileForgery').click()">
+                <div class="fg-upload-icon-wrap">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div>
+                    <p class="fg-dropzone-title">Drag &amp; drop document here, or <span style="color:var(--primary); text-decoration:underline; font-weight:700;">browse files</span></p>
+                    <p class="fg-dropzone-subtitle" style="margin-top: 4px;">Supports PDF, PNG, JPG, BMP, TIFF, WebP (Max 25 MB)</p>
+                </div>
+            </div>
+            
+            <input type="file" id="fileForgery" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp" style="display:none;" onchange="window.FG_handleFileChange()">
+            
+            <!-- Selected File Card (hidden by default) -->
+            <div class="fg-selected-card" id="fgFileCard" style="display:none;">
+                <div class="fg-file-icon">
+                    <i class="far fa-file-pdf" id="fgFileIcon"></i>
+                </div>
+                <div class="fg-file-details">
+                    <div class="fg-file-name" id="fgCardFileName">Selected_document.pdf</div>
+                    <div class="fg-file-size" id="fgCardFileSize">0.0 MB</div>
+                </div>
+                <button class="fg-remove-file-btn" onclick="window.FG_removeFile(event)" title="Remove selected file">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+            
+            <!-- Process Button area -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 14px;">
+                <button onclick="window.FG_process()" id="fgProcessBtn" class="fg-btn-modern" disabled>
+                    <span>Process Document</span>
+                    <div class="loader" id="fgLoader" style="display:none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div id="fgProgressSection" style="display:none; margin-bottom:20px;">
+            <div style="background:#e2e8f0; border-radius:6px; height:8px; overflow:hidden; margin-bottom:8px;">
+                <div id="fgProgressBar" style="height:100%; background:var(--primary); border-radius:6px; width:0%; transition: width 0.3s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-light);">
+                <span id="fgProgressLabel">Idle</span>
+                <span id="fgInferenceTime"></span>
+            </div>
+        </div>
+
+        <!-- Tampered Flag -->
+        <div id="fgTamperedFlag" class="fg-tampered-flag fg-tampered-neutral">
+            <i class="fas fa-hourglass-half"></i> Tampered: <strong>-</strong> Awaiting analysis.
+        </div>
+
+        <!-- Results Grid -->
+        <div id="fgResultsGrid" class="fg-results-grid">
+            <!-- Findings Panel (dark) -->
+            <div class="fg-panel fg-panel-findings">
+                <div class="fg-panel-header fg-panel-header-dark">
+                    <div class="fg-panel-title-row">
+                        <span class="fg-panel-title fg-panel-title-dark"><i class="fas fa-list"></i> Findings</span>
+                        <div class="fg-panel-actions">
+                            <button class="fg-action-btn fg-action-btn-dark" onclick="window.FG_copyFindings()" title="Copy findings"><i class="fas fa-copy"></i> Copy</button>
+                            <button class="fg-action-btn fg-action-btn-dark" onclick="window.FG_downloadFindings()" title="Download findings"><i class="fas fa-download"></i> Download</button>
+                            <button id="fgToggleFindings" class="fg-action-btn fg-action-btn-dark" onclick="window.FG_toggleFindings()" style="display:none;">View all</button>
+                        </div>
+                    </div>
+                    <div id="fgFindingsMeta" class="fg-panel-meta">No document processed yet.</div>
+                </div>
+                <div id="fgFindingsList" class="fg-findings-list">
+                    Upload a file and click "Process" to see forensic findings.
+                </div>
+            </div>
+
+            <!-- Preview Panel (light) -->
+            <div class="fg-panel fg-panel-preview">
+                <div class="fg-panel-header">
+                    <div class="fg-panel-title-row">
+                        <span class="fg-panel-title"><i class="fas fa-file-image"></i> Annotated Document</span>
+                    </div>
+                    <div class="fg-panel-subtitle">Overlays appear after processing completes.</div>
+                    <div class="fg-panel-actions">
+                        <button id="fgTogglePreview" class="fg-action-btn fg-action-btn-primary" onclick="window.FG_togglePreview()">Hide annotated document</button>
+                        <button id="fgShowAllOverlays" class="fg-action-btn fg-action-btn-ghost" onclick="window.FG_showAllOverlays()" disabled>Show all overlays</button>
+                    </div>
+                </div>
+                <div id="fgPreviewViewer" class="fg-preview-viewer">
+                    <div id="fgPreviewArea" class="fg-preview-area">
+                        <div id="fgPreviewEmpty" class="fg-preview-empty">No annotated preview yet.</div>
+                        <img id="fgPreviewImage" class="fg-preview-image" alt="Annotated document"/>
+                        <div id="fgPreviewOverlay" class="fg-preview-overlay"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crop Modal -->
+        <div class="modal fg-crop-modal" id="fgCropModal" style="display:none;">
+            <div class="modal-content fg-crop-content">
+                <div class="fg-crop-header">
+                    <div class="fg-crop-title">
+                        <h3>Highlighted Region</h3>
+                        <div id="fgCropMeta" class="fg-crop-meta"></div>
+                    </div>
+                    <div class="fg-crop-actions">
+                        <button id="fgShowInDoc" class="fg-action-btn fg-action-btn-primary" onclick="window.FG_showInDocument()" disabled>Show in document</button>
+                        <button class="close-modal fg-close-btn" onclick="window.FG_closeCropModal()" aria-label="Close">&times;</button>
+                    </div>
+                </div>
+                <div class="fg-crop-body">
+                    <img id="fgCropImage" class="fg-crop-image" alt="Cropped region"/>
+                </div>
+            </div>
+        </div>
+    </div><!-- /fg-sub-main -->
+
+    <!-- ── SUB: Run Locally (Forgery Detection) ── -->
+    <div id="fg-sub-runlocally" class="sub-content" style="display:none">
+        <div class="tab-header">
+            <div class="tab-header-text">
+                <h2><i class="fas fa-download" style="color:var(--primary)"></i> Run Locally (Offline Mode)</h2>
+                <p>Download a single executable for your OS. No Python, no pip, no cloud APIs. All data stays on your machine.</p>
+            </div>
+        </div>
+
+        <div class="fg-runlocally-grid">
+            <a href="/downloads/ForgensicApp-ubuntu-latest.zip" download class="fg-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-linux" style="color:#14868C;"></i>
+                <h3>Linux x86_64</h3>
+                <p>Binary (~143 MB)</p>
+                <p class="fg-meta">Ubuntu 20.04+, Fedora 33+</p>
+            </a>
+            <a href="/downloads/ForgensicApp-ubuntu-24.04-arm.zip" download class="fg-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-linux" style="color:#14868C;"></i>
+                <h3>Linux ARM64</h3>
+                <p>Binary (~114 MB)</p>
+                <p class="fg-meta">aarch64 / AWS Graviton</p>
+            </a>
+            <a href="/downloads/ForgensicApp-windows-latest.zip" download class="fg-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-windows" style="color:#14868C;"></i>
+                <h3>Windows</h3>
+                <p>Portable EXE (~95 MB)</p>
+                <p class="fg-meta">Windows 10 / 11</p>
+            </a>
+            <a href="/downloads/ForgensicApp-macos-latest.zip" download class="fg-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-apple" style="color:#14868C;"></i>
+                <h3>macOS</h3>
+                <p>Binary (~189 MB)</p>
+                <p class="fg-meta">macOS 13+ (Apple Silicon / Intel)</p>
+            </a>
+        </div>
+
+        <div style="background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); padding:25px; margin:20px 0;">
+            <h3 style="margin-bottom:20px;">Setup Steps (All Platforms)</h3>
+
+            <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 8px 0; color:#0f766e;">1. Download Executable</h4>
+                <p style="margin:0; color:#0f766e; font-size:14px;">
+                    Download the standalone binary for your OS from the links above.
+                </p>
+            </div>
+
+            <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 8px 0; color:#0f766e;">2. Unzip &amp; Make Executable</h4>
+                <p style="margin:0; color:#0f766e; font-size:14px;">
+                    Extract the ZIP file. On Linux/Mac run: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">chmod +x ForgensicApp*</code>
+                </p>
+            </div>
+
+            <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Run GUI</h4>
+                <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
+                    Simply double-click the executable to launch the beautiful offline Graphical User Interface.
+                </p>
+            </div>
+
+            <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 8px 0; color:#0f766e;">4. Run CLI (Optional)</h4>
+                <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
+                    Or run via terminal: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./ForgensicApp -i document.pdf -o ./output</code>
+                </p>
+            </div>
+
+            <div style="padding:12px 15px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0;">
+                <p style="margin:0; color:#92400e; font-size:14px;">
+                    <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. Zero cloud API calls.
+                </p>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin:20px 0;">
+            <a href="javascript:void(0)" onclick="openTab(null, 'ForgeryDocs'); return false;" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; background:#14868C; color:#fff; border-radius:8px; text-decoration:none; font-size:14px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#0E6C71'" onmouseout="this.style.background='#14868C'">
+                <i class="fas fa-book-open"></i> More Details in User Guide
+            </a>
+        </div>
+    </div><!-- /fg-sub-runlocally -->
+
+    <!-- ── SUB: API Access (Forgery Detection) ── -->
+    <div id="fg-sub-api" class="sub-content" style="display:none">
+        <div class="tab-header">
+            <div class="tab-header-text">
+                <h2><i class="fas fa-code" style="color:var(--primary)"></i> Forgery Detection API</h2>
+                <p>Submit documents, poll status, and retrieve forensic analysis results. Built with Python, FastAPI, OpenCV, and PyMuPDF (OCR optional).</p>
+            </div>
+        </div>
+
+        <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:20px;">
+            <p style="margin:0; font-size:0.92rem; color:#0e6a6f; line-height:1.5;">
+                <strong><i class="fas fa-info-circle"></i> Authentication:</strong> Uses JWT bearer tokens. Request a 1-day demo token via the form below, then pass it as <code>Authorization: Bearer &lt;token&gt;</code>.
+                <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Forgery Detection tab, tokens are fetched automatically.
+            </p>
+        </div>
+
+        <!-- Token Request -->
+        <div class="pf-demo-token-card" style="margin-bottom:24px;">
+            <div class="pf-demo-token-header">
+                <i class="fas fa-search-plus" style="color:#14868C;"></i>
+                <span>Forgery Detection API Token&nbsp;<small style="font-weight:400;color:#64748b;">(forgensic)</small></span>
+                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
+            </div>
+            <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">Classical forensic analysis for tampering and manipulation detection.</p>
+            <form id="apiForgeryTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
+                <div class="pf-demo-token-fields">
+                    <div class="pf-demo-token-field">
+                        <label for="apiForgeryTokenName">Full Name</label>
+                        <input type="text" id="apiForgeryTokenName" placeholder="Your name" required />
+                    </div>
+                    <div class="pf-demo-token-field">
+                        <label for="apiForgeryTokenEmail">Email Address</label>
+                        <input type="email" id="apiForgeryTokenEmail" placeholder="you@example.com" required />
+                    </div>
+                </div>
+                <button type="submit" class="pf-btn pf-btn-primary" id="apiForgeryTokenSubmit">
+                    <i class="fas fa-bolt"></i> Request Forgery Token
+                </button>
+            </form>
+            <div id="apiForgeryTokenResult" class="pf-demo-token-result hidden">
+                <div class="pf-demo-token-result-header">
+                    <span id="apiForgeryTokenGreeting"></span>
+                    <span id="apiForgeryTokenExpiry" class="pf-demo-token-expiry"></span>
+                </div>
+                <div class="pf-demo-token-output-wrap">
+                    <pre class="pf-demo-token-output" id="apiForgeryTokenOutput"></pre>
+                    <button class="pf-demo-token-copy pf-btn" id="apiForgeryTokenCopy"><i class="fas fa-copy"></i> Copy</button>
+                </div>
+            </div>
+            <div id="apiForgeryTokenError" class="pf-demo-token-error hidden"></div>
+        </div>
+
+        <!-- Endpoints -->
+        <h3 style="margin:0 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-list-ul"></i> Endpoint Reference</h3>
+        <div class="api-section-box">
+            <table class="fg-table">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">Method</th>
+                        <th>Path</th>
+                        <th style="width:100px;">Auth</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="api-method post">POST</span></td><td><code>/forgensic/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT for the Forgery API</td></tr>
+                    <tr><td><span class="api-method post">POST</span></td><td><code>/forgensic/jobs</code></td><td>Bearer</td><td>Upload a document and create a processing job</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}</code></td><td>Bearer</td><td>Poll job status and progress (0.0 to 1.0)</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}/results</code></td><td>Bearer</td><td>Fetch complete forgery analysis results</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}/files/{file_name}</code></td><td>Bearer</td><td>Fetch cached annotated preview or page image for this job</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/health</code></td><td>Open</td><td>Service health check</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/stats</code></td><td>Open</td><td>Usage counters for the dashboard</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Code Examples -->
+        <h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-terminal"></i> Usage Examples</h3>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="api-section-box">
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">1. Request a token</h4>
+                <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Returns an <code>access_token</code> valid for 24 hours.</p>
+                <div class="api-code-block">
+                    <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/api/token" \
   -H "Content-Type: application/json" \
   -d '{"name": "Your Name", "email": "you@example.com"}'</pre>
-            <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
-        </div>
-    </div>
-    <div class="api-section-box">
-        <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">2. Upload a document</h4>
-        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Send as <code>multipart/form-data</code>. Returns a <code>job_id</code>.</p>
-        <div class="api-code-block">
-            <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/jobs" \
+                    <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                </div>
+            </div>
+            <div class="api-section-box">
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">2. Upload a document</h4>
+                <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Send as <code>multipart/form-data</code>. Returns a <code>job_id</code>.</p>
+                <div class="api-code-block">
+                    <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/jobs" \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@/path/to/document.pdf" \
   -F "ocr_enabled=true"</pre>
-            <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
-        </div>
-    </div>
-    <div class="api-section-box">
-        <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">3. Poll job status</h4>
-        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Poll until <code>status</code> is <code>"complete"</code> or <code>"error"</code>.</p>
-        <div class="api-code-block">
-            <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
+                    <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                </div>
+            </div>
+            <div class="api-section-box">
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">3. Poll job status</h4>
+                <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Poll until <code>status</code> is <code>"complete"</code> or <code>"error"</code>.</p>
+                <div class="api-code-block">
+                    <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
   "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID"
 
 # Response:
@@ -418,29 +804,29 @@
   "status": "processing",
   "progress": 0.42
 }</pre>
-            <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
-        </div>
-    </div>
-    <div class="api-section-box">
-        <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">4. Fetch results + preview</h4>
-        <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Results include preview URLs; fetch them with the same token.</p>
-        <div class="api-code-block">
-            <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
+                    <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                </div>
+            </div>
+            <div class="api-section-box">
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">4. Fetch results + preview</h4>
+                <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Results include preview URLs; fetch them with the same token.</p>
+                <div class="api-code-block">
+                    <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
   "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID/results"
 
 curl -L -H "Authorization: Bearer $TOKEN" \
   "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID/files/preview_document_page_1.jpg" \
   -o preview.png</pre>
-            <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                    <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- Python example -->
-<div class="api-section-box" style="margin-top:16px;">
-    <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Python: End-to-end flow</h4>
-    <div class="api-code-block">
-        <pre style="margin:0; white-space:pre-wrap;">import time, requests
+        <!-- Python example -->
+        <div class="api-section-box" style="margin-top:16px;">
+            <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Python: End-to-end flow</h4>
+            <div class="api-code-block">
+                <pre style="margin:0; white-space:pre-wrap;">import time, requests
 
 BASE = "https://dpi-dev.tanuh.ai/forgensic"
 
@@ -477,14 +863,14 @@ preview_url = first_page.get("preview_url") or first_page.get("image_url")
 if preview_url:
     img = requests.get(f"{BASE}{preview_url}", headers=headers)
     open("preview.jpg", "wb").write(img.content)</pre>
-        <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
-    </div>
-</div>
+                <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+            </div>
+        </div>
 
-<!-- Response Example -->
-<h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-reply"></i> Response Example</h3>
-<div class="api-section-box">
-        <div class="api-code-block">
+        <!-- Response Example -->
+        <h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-reply"></i> Response Example</h3>
+        <div class="api-section-box">
+            <div class="api-code-block">
                 <pre style="margin:0; white-space:pre-wrap;">{
     "job_id": "abc123",
     "status": "complete",
@@ -515,478 +901,21 @@ if preview_url:
         "notes": {}
     }]
 }</pre>
-        </div>
-</div>
-
-<!-- Privacy -->
-<div class="api-section-box">
-    <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);"><i class="fas fa-shield-alt" style="color:var(--primary)"></i> Privacy &amp; Data Handling</h4>
-    <p style="font-size:0.86rem; color:#334155; line-height:1.6; margin:0;">
-        Uploads are written to a temporary job folder while processing and then cleaned up. Annotated preview files are cached in memory for the job and cleared on server restart. Jobs are also purged after the TTL window configured on the server.
-    </p>
-</div>
-
-<div style="margin-top:16px; text-align:center;">
-    <a href="https://github.com/tanuh-bcd/TANUH-DPI/blob/main/README_Terminal_Instructins.md" target="_blank" style="font-size:0.82rem; color:#64748b; text-decoration:none;">
-        <i class="fas fa-terminal"></i> DPI Terminal Instructions (GitHub)
-    </a>
-</div>
-
-</div><!-- /fg-sub-api -->
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: User Guide (Forgery Detection) -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="fg-sub-docs" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-book" style="color:var(--primary)"></i> Forgery Detection User Guide</h2>
-        <p>Complete guide for Forgensic — classical forensic analysis, detection pipeline, finding categories, and API integration.</p>
-    </div>
-</div>
-
-<div id="fg-guide-container">
-<div class="guide-layout">
-
-    <nav class="guide-sidebar">
-        <div class="guide-sidebar-title">Getting Started</div>
-        <a class="active" onclick="guideNav('fg-guide-container','fgg-video',this)"><i class="fas fa-play-circle"></i> Video Demo</a>
-        <a onclick="guideNav('fg-guide-container','fgg-overview',this)"><i class="fas fa-info-circle"></i> Overview</a>
-        <a onclick="guideNav('fg-guide-container','fgg-howto',this)"><i class="fas fa-list-ol"></i> How to Use</a>
-        <div class="guide-sidebar-title">Technical</div>
-        <a onclick="guideNav('fg-guide-container','fgg-pipeline',this)"><i class="fas fa-project-diagram"></i> Detection Pipeline</a>
-        <a onclick="guideNav('fg-guide-container','fgg-categories',this)"><i class="fas fa-tags"></i> Finding Categories</a>
-        <a onclick="guideNav('fg-guide-container','fgg-formats',this)"><i class="fas fa-file-alt"></i> Supported Formats</a>
-        <a onclick="guideNav('fg-guide-container','fgg-privacy',this)"><i class="fas fa-shield-alt"></i> Privacy &amp; Data</a>
-        <div class="guide-sidebar-title">Integrate</div>
-        <a onclick="guideNav('fg-guide-container','fgg-runlocally',this)"><i class="fas fa-download"></i> Run Locally</a>
-        <a onclick="guideNav('fg-guide-container','fgg-api',this)"><i class="fas fa-code"></i> API Reference</a>
-        <a onclick="guideNav('fg-guide-container','fgg-config',this)"><i class="fas fa-cog"></i> Configuration</a>
-        <a onclick="guideNav('fg-guide-container','fgg-source',this)"><i class="fab fa-github"></i> Source Code</a>
-    </nav>
-
-    <div class="guide-content">
-
-        <!-- Video Demo -->
-        <div id="fgg-video" class="guide-section active">
-            <h2>Video Demonstration</h2>
-            <p>Watch a walkthrough of the Forgensic document forgery detection system — upload a document, run forensic analysis, and review annotated findings.</p>
-            <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
-                <iframe src="https://www.youtube.com/embed/1XzeHiMFjwc" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-            </div>
-            <div class="guide-callout guide-callout-info">
-                <strong>What you will see</strong>
-                Upload a document (PDF or image), watch the classical CV pipeline analyze each page for tampering indicators, and review color-coded bounding-box overlays on suspicious regions.
             </div>
         </div>
 
-        <!-- Overview -->
-        <div id="fgg-overview" class="guide-section">
-            <div class="guide-hero">
-                <span style="display:inline-block;background:var(--primary);color:#fff;font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:20px;margin-bottom:10px;">CPU Only &mdash; No GPU Required</span>
-                <h2>Forgensic: Document Forgery Detection</h2>
-                <p>Classical computer vision and forensic analysis to detect tampering, splicing, and manipulation in clinical and administrative documents. Deterministic, explainable results with bounding-box overlays.</p>
-            </div>
-
-            <h3>Key Capabilities</h3>
-            <table>
-                <thead><tr><th>Feature</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td>Classical CV Pipeline</td><td>No ML models required &mdash; pure deterministic computer vision (OpenCV)</td></tr>
-                    <tr><td>CPU Only</td><td>No GPU needed &mdash; runs on CPU with minimal dependencies</td></tr>
-                    <tr><td>Explainable Results</td><td>Bounding-box overlays highlight exact suspicious regions</td></tr>
-                    <tr><td>10 Detection Categories</td><td>Copy-paste, overwriting, erasure, added content, document merge, and more</td></tr>
-                    <tr><td>Fast Processing</td><td>Typically under 2 seconds per page</td></tr>
-                    <tr><td>Async Job Queue</td><td>Celery + Redis for concurrent document processing</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- How to Use -->
-        <div id="fgg-howto" class="guide-section">
-    <h2>How to Use</h2>
-    <p>Follow these three steps to analyze a document for potential forgery.</p>
-
-    <div class="guide-pipeline">
-
-        <!-- Step 1 -->
-        <div class="guide-pipeline-step">
-            <h4>1. Upload Document</h4>
-
-            <p>
-                Click <strong>"Choose document (PDF / Image)..."</strong> and select
-                a file for analysis. Supported formats include PDF, JPG, PNG, BMP,
-                TIFF, and WebP. Maximum file size is 25 MB.
-            </p>
-
-            <p style="margin-top: 10px;">
-                Sample files are provided below and can be directly uploaded in the
-                upload area for testing.
-            </p>
-
-            <div style="
-                display: flex;
-                flex-wrap: wrap;
-                gap: 14px;
-                margin-top: 12px;
-                align-items: center;
-            ">
-
-                <a href="forgensic-samples/forgery_image.jpeg"
-                   download
-                   style="
-                        text-decoration: none;
-                        color: #14868C;
-                        font-weight: 600;
-                        font-size: 14px;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 6px;
-                   ">
-                    <i class="fas fa-file-download"></i>
-                    Sample Image 1
-                </a>
-
-                <a href="forgensic-samples/no_foregery_image.png"
-                   download
-                   style="
-                        text-decoration: none;
-                        color: #14868C;
-                        font-weight: 600;
-                        font-size: 14px;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 6px;
-                   ">
-                    <i class="fas fa-file-download"></i>
-                    Sample Image 2
-                </a>
-
-                <a href="forgensic-samples/sample_document.pdf"
-                   download
-                   style="
-                        text-decoration: none;
-                        color: #14868C;
-                        font-weight: 600;
-                        font-size: 14px;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 6px;
-                   ">
-                    <i class="fas fa-file-download"></i>
-                    Sample PDF
-                </a>
-
-            </div>
-        </div>
-
-        <!-- Step 2 -->
-        <div class="guide-pipeline-step">
-            <h4>2. Analyze Document</h4>
-
-            <p>
-                Click <strong>"Process"</strong>. The progress bar shows
-                real-time status. Processing is typically under 2 seconds per page.
-                Multiple classical CV checks run on each page.
+        <!-- Privacy -->
+        <div class="api-section-box">
+            <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);"><i class="fas fa-shield-alt" style="color:var(--primary)"></i> Privacy &amp; Data Handling</h4>
+            <p style="font-size:0.86rem; color:#334155; line-height:1.6; margin:0;">
+                Uploads are written to a temporary job folder while processing and then cleaned up. Annotated preview files are cached in memory for the job and cleared on server restart. Jobs are also purged after the TTL window configured on the server.
             </p>
         </div>
 
-        <!-- Step 3 -->
-        <div class="guide-pipeline-step">
-            <h4>3. Review Findings</h4>
-
-            <p>
-                The <strong>Findings panel</strong> shows forensic results with
-                color-coded categories. The
-                <strong>Annotated Document</strong> panel shows bounding-box
-                overlays on suspicious regions. Click any finding to zoom in.
-                Use Copy/Download to export results.
-            </p>
+        <div style="margin-top:16px; text-align:center;">
+            <a href="https://github.com/TRANSLATIONAL-FOUNDATION/TANUH-DPI/blob/main/README_Terminal_Instructins.md" target="_blank" style="font-size:0.82rem; color:#64748b; text-decoration:none;">
+                <i class="fas fa-terminal"></i> DPI Terminal Instructions (GitHub)
+            </a>
         </div>
-
-    </div>
-
-    <div class="guide-callout guide-callout-warning">
-        <strong>Important</strong>
-        Forensic analysis provides indicators of potential tampering, not definitive proof.
-        Results should be reviewed by domain experts. False positives may occur with
-        legitimately complex document layouts.
-    </div>
+    </div><!-- /fg-sub-api -->
 </div>
-        <!-- Detection Pipeline -->
-        <div id="fgg-pipeline" class="guide-section">
-            <h2>Detection Pipeline</h2>
-            <p>The Forgensic system runs multiple classical computer vision analyses on each page of the document. Each check produces localized findings with bounding-box coordinates.</p>
-
-            <div class="guide-pipeline">
-                <div class="guide-pipeline-step"><h4>1. Document Ingestion</h4><p>PDF pages converted to images at high resolution. Direct image uploads used as-is.</p></div>
-                <div class="guide-pipeline-step"><h4>2. Copy-Paste Detection</h4><p>Duplicate region matching using template matching to find moved or duplicated content within the same document.</p></div>
-                <div class="guide-pipeline-step"><h4>3. Overwrite Detection</h4><p>Edge density and stroke inconsistency analysis to identify text or content written over existing marks.</p></div>
-                <div class="guide-pipeline-step"><h4>4. Added Content Detection</h4><p>Stamp and signature heuristics with color and shape cues to detect pasted or overlaid elements.</p></div>
-                <div class="guide-pipeline-step"><h4>5. Erasure Detection</h4><p>Low-noise gap analysis and unnatural smoothness detection in text lines indicating removed content.</p></div>
-                <div class="guide-pipeline-step"><h4>6. Document Merge Detection</h4><p>Noise fingerprint analysis across horizontal bands to detect pages assembled from different source documents.</p></div>
-                <div class="guide-pipeline-step"><h4>7. Watermark &amp; Spacing Analysis</h4><p>Residual frequency artifacts from watermark removal, plus spacing anomalies in lines and token gaps.</p></div>
-                <div class="guide-pipeline-step"><h4>8. Result Assembly</h4><p>All findings aggregated with categories, confidence scores, and annotated preview images generated.</p></div>
-            </div>
-        </div>
-
-        <!-- Finding Categories -->
-        <div id="fgg-categories" class="guide-section">
-            <h2>Finding Categories</h2>
-            <p>Each detection finding is classified into one of the following categories:</p>
-
-            <table>
-                <thead><tr><th>ID</th><th>Label</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><code>C1</code></td><td>Copy-paste</td><td>Duplicate regions within the same document</td></tr>
-                    <tr><td><code>C2</code></td><td>Overwriting</td><td>Edits over existing text or ink</td></tr>
-                    <tr><td><code>C3</code></td><td>Added content</td><td>Stamps, signatures, or pasted content</td></tr>
-                    <tr><td><code>C4</code></td><td>Erasure</td><td>Removed text or image regions</td></tr>
-                    <tr><td><code>C5</code></td><td>Document merge</td><td>Header/body from different source documents</td></tr>
-                    <tr><td><code>C6</code></td><td>Watermark removal</td><td>Ghost artifacts from watermark edits</td></tr>
-                    <tr><td><code>C7</code></td><td>Irregular spacing</td><td>Spacing inconsistencies in lines or tokens</td></tr>
-                    <tr><td><code>C8</code></td><td>AI-generated</td><td>Entire document appears AI-generated</td></tr>
-                    <tr><td><code>C9</code></td><td>AI-edited</td><td>Partial AI edits detected in regions</td></tr>
-                    <tr><td><code>C10</code></td><td>No discrepancy</td><td>No editing or anomalies found</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Supported Formats -->
-        <div id="fgg-formats" class="guide-section">
-            <h2>Supported File Formats</h2>
-            <p>The Forgensic system accepts documents and images for forensic analysis.</p>
-
-            <table>
-                <thead><tr><th>Format</th><th>Extensions</th><th>Notes</th></tr></thead>
-                <tbody>
-                    <tr><td>PDF</td><td><code>.pdf</code></td><td>Multi-page supported. Each page analyzed independently.</td></tr>
-                    <tr><td>JPEG</td><td><code>.jpg</code>, <code>.jpeg</code></td><td>Single-page image analysis</td></tr>
-                    <tr><td>PNG</td><td><code>.png</code></td><td>Single-page image analysis</td></tr>
-                    <tr><td>BMP</td><td><code>.bmp</code></td><td>Bitmap image analysis</td></tr>
-                    <tr><td>TIFF</td><td><code>.tif</code>, <code>.tiff</code></td><td>Multi-page TIFF supported</td></tr>
-                    <tr><td>WebP</td><td><code>.webp</code></td><td>Modern image format</td></tr>
-                </tbody>
-            </table>
-
-            <div class="guide-callout guide-callout-info">
-                <strong>Maximum file size: 25 MB</strong>
-                For large documents, consider splitting into individual page images for faster processing.
-            </div>
-        </div>
-
-        <!-- Privacy & Data -->
-        <div id="fgg-privacy" class="guide-section">
-            <h2>Privacy &amp; Data Handling</h2>
-            <p>The Forgensic system is designed for secure, non-persistent document analysis.</p>
-
-            <ul>
-                <li><strong>No external calls</strong> &mdash; all processing happens locally using OpenCV, no cloud APIs</li>
-                <li><strong>Temporary storage</strong> &mdash; uploaded files deleted immediately after processing</li>
-                <li><strong>In-memory previews</strong> &mdash; annotated preview images cached in-memory only, cleared on restart</li>
-                <li><strong>No persistence</strong> &mdash; no document content is written to disk or database</li>
-                <li><strong>Job TTL</strong> &mdash; jobs automatically purged after configurable TTL window</li>
-            </ul>
-        </div>
-
-        <!-- Run Locally -->
-        <div id="fgg-runlocally" class="guide-section">
-            <h2>Run Locally (Offline Mode)</h2>
-            <p>Download a single executable file for your operating system. No Python, no pip, no cloud APIs needed. All processing happens entirely on your machine with full patient data confidentiality.</p>
-
-            <div class="guide-callout guide-callout-info">
-                <strong>Zero Setup</strong>
-                Unlike the LLM models, Forgensic runs purely on CPU and requires zero installation. Simply download and double-click to start!
-            </div>
-
-            <h3>Download</h3>
-            <div class="guide-card-grid">
-                <a href="/downloads/ForgensicApp-ubuntu-latest.zip" download class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-linux"></i></div>
-                    <h4>Linux x86_64</h4>
-                    <p>Binary (~143 MB)</p>
-                </a>
-                <a href="/downloads/ForgensicApp-ubuntu-24.04-arm.zip" download class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-linux"></i></div>
-                    <h4>Linux ARM64</h4>
-                    <p>Binary (~114 MB)</p>
-                </a>
-                <a href="/downloads/ForgensicApp-windows-latest.zip" download class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-windows"></i></div>
-                    <h4>Windows</h4>
-                    <p>Portable EXE (~95 MB)</p>
-                </a>
-                <a href="/downloads/ForgensicApp-macos-latest.zip" download class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-apple"></i></div>
-                    <h4>macOS</h4>
-                    <p>Binary (~189 MB)</p>
-                </a>
-            </div>
-
-            <h3>Setup Steps</h3>
-            <div class="guide-pipeline">
-                <div class="guide-pipeline-step"><h4>1. Download Executable</h4><p>Download the standalone binary for your OS from the links above.</p></div>
-                <div class="guide-pipeline-step"><h4>2. Unzip &amp; Make Executable</h4><p>Extract the ZIP file. On Linux/Mac: <code>chmod +x ForgensicApp*</code></p></div>
-                <div class="guide-pipeline-step"><h4>3. Run GUI</h4><p>Double-click the executable to launch the beautiful offline Graphical User Interface.</p></div>
-                <div class="guide-pipeline-step"><h4>4. Run CLI (Optional)</h4><p>Or use terminal: <code>./ForgensicApp -i document.pdf -o ./output</code></p></div>
-            </div>
-
-            <div class="guide-callout guide-callout-warning" style="background:#fffbeb; border-left:4px solid #f59e0b;">
-                <strong><i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-right:6px;"></i> OS Security Warnings</strong>
-                <p style="margin-top:8px; font-size:0.95rem;">Because this open-source tool is distributed without a paid code signing certificate, your operating system may flag it as an "Unverified Publisher". You can safely bypass this:</p>
-                <ul style="margin-top:8px; font-size:0.9rem; margin-bottom:0; padding-left:20px;">
-                    <li><strong>Windows:</strong> Click <em>More Info</em> &rarr; <em>Run Anyway</em> on the blue SmartScreen prompt.</li>
-                    <li><strong>macOS:</strong> Right-click the app and click <em>Open</em>, or go to System Settings > Privacy & Security and click <em>Open Anyway</em>.</li>
-                </ul>
-            </div>
-
-            <div class="guide-callout guide-callout-success">
-                <strong>About Run Locally — Secure Local Execution</strong>
-                This feature enables running the service completely locally with only the file. All processing occurs within your local environment using classical computer vision (no cloud APIs, no LLM), ensuring data privacy and security. The service operates independently without requiring external connections, making it ideal for confidential or sensitive data handling. For those interested in contributing, the source code is publicly available and contributions are welcome.
-            </div>
-        </div>
-
-        <!-- API Reference -->
-        <div id="fgg-api" class="guide-section">
-            <h2>API Reference</h2>
-            <p>Integrate Forgensic into your document verification pipeline using the REST API.</p>
-
-            <div class="guide-callout guide-callout-info">
-                <strong>Authentication</strong>
-                Uses JWT bearer tokens. Request a 1-day demo token via <code>POST /forgensic/api/token</code>, then pass as <code>Authorization: Bearer &lt;token&gt;</code>. UI uploads handle tokens automatically.
-            </div>
-
-            <h3>Endpoints</h3>
-            <table>
-                <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>POST</strong></td><td><code>/forgensic/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT</td></tr>
-                    <tr><td><strong>POST</strong></td><td><code>/forgensic/jobs</code></td><td>Bearer</td><td>Upload document and create processing job</td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/forgensic/jobs/{job_id}</code></td><td>Bearer</td><td>Poll job status and progress (0.0 to 1.0)</td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/forgensic/jobs/{job_id}/results</code></td><td>Bearer</td><td>Fetch complete forgery analysis results</td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/forgensic/jobs/{job_id}/files/{name}</code></td><td>Bearer</td><td>Fetch annotated preview or page image</td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/forgensic/health</code></td><td>Open</td><td>Service health check</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Quick Start (curl)</h3>
-            <pre><code># 1. Get a token
-TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/forgensic/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Your Name","email":"you@example.com"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-# 2. Upload document
-JOB=$(curl -s -X POST https://dpi-dev.tanuh.ai/forgensic/jobs \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@document.pdf" -F "ocr_enabled=true" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['job_id'])")
-
-# 3. Poll until complete
-curl -H "Authorization: Bearer $TOKEN" \
-  https://dpi-dev.tanuh.ai/forgensic/jobs/$JOB
-
-# 4. Get results
-curl -H "Authorization: Bearer $TOKEN" \
-  https://dpi-dev.tanuh.ai/forgensic/jobs/$JOB/results</code></pre>
-
-            <h3>Python Example</h3>
-            <pre><code>import time, requests
-
-BASE = "https://dpi-dev.tanuh.ai/forgensic"
-
-token = requests.post(
-    f"{BASE}/api/token",
-    json={"name": "Your Name", "email": "you@example.com"},
-).json()["access_token"]
-
-headers = {"Authorization": f"Bearer {token}"}
-
-with open("document.pdf", "rb") as f:
-    r = requests.post(f"{BASE}/jobs", files={"file": f},
-                      data={"ocr_enabled": "true"}, headers=headers)
-job_id = r.json()["job_id"]
-
-for _ in range(30):
-    s = requests.get(f"{BASE}/jobs/{job_id}", headers=headers).json()
-    if s["status"] in ("complete", "error"):
-        break
-    time.sleep(2)
-
-results = requests.get(
-    f"{BASE}/jobs/{job_id}/results", headers=headers
-).json()
-print(results["category_summary"])</code></pre>
-
-            <h3>Response Format</h3>
-            <pre><code>{
-  "job_id": "abc123",
-  "status": "complete",
-  "category_summary": { "C1": 2, "C3": 1 },
-  "findings_summary": {
-    "findings": [{
-      "page": 1,
-      "category_id": "C3",
-      "category_label": "Added content",
-      "summary": "Added content near SIGNATURE",
-      "box": {"x":120,"y":80,"w":200,"h":60}
-    }]
-  },
-  "pages": [{
-    "page_number": 1,
-    "preview_url": "/jobs/abc123/files/preview_page_1.jpg",
-    "categories": ["C3"],
-    "regions": [{"x":120,"y":80,"w":200,"h":60,"category_id":"C3"}]
-  }]
-}</code></pre>
-        </div>
-
-        <!-- Configuration -->
-        <div id="fgg-config" class="guide-section">
-            <h2>Configuration</h2>
-            <p>Environment variables for deploying the Forgensic service.</p>
-
-            <table>
-                <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><code>DATA_DIR</code></td><td>/app/forgensic_data</td><td>Temporary directory for processing files</td></tr>
-                    <tr><td><code>MAX_UPLOAD_BYTES</code></td><td>26214400</td><td>Maximum upload size (25 MB)</td></tr>
-                    <tr><td><code>OCR_ENABLED</code></td><td>true</td><td>Enable OCR for scanned PDFs</td></tr>
-                    <tr><td><code>PIPELINE_PRESET</code></td><td>super_loose</td><td>Analysis sensitivity preset</td></tr>
-                    <tr><td><code>REDIS_URL</code></td><td>redis://redis:6379/0</td><td>Redis connection for job queue</td></tr>
-                    <tr><td><code>JOB_TTL_SECONDS</code></td><td>3600</td><td>Job result cache lifetime</td></tr>
-                    <tr><td><code>FORGENSIC_AUTH_ENABLED</code></td><td>true</td><td>Enable/disable JWT authentication</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Docker Deployment</h3>
-            <pre><code># API server + worker
-docker compose up -d forgensic celery-forgensic-worker
-
-# Scale workers for throughput
-docker compose up -d --scale celery-forgensic-worker=4</code></pre>
-        </div>
-
-        <!-- Source Code -->
-        <div id="fgg-source" class="guide-section">
-            <h2>Source Code</h2>
-            <p>The Forgensic system is open-source and available on GitHub. Contributions are welcome — whether it is bug fixes, new detection algorithms, or documentation improvements.</p>
-            <div class="guide-card-grid">
-                <a href="https://github.com/tanuh-bcd/Forgensic-v1" target="_blank" class="guide-card" style="text-decoration:none;">
-                    <div class="card-icon"><i class="fab fa-github"></i></div>
-                    <h4>Forgensic-v1</h4>
-                    <p>Classical CV forensic analysis engine with OpenCV pipeline</p>
-                </a>
-                <a href="https://github.com/tanuh-bcd/TANUH-DPI" target="_blank" class="guide-card" style="text-decoration:none;">
-                    <div class="card-icon"><i class="fab fa-github"></i></div>
-                    <h4>DPI Portal</h4>
-                    <p>Frontend application and Docker orchestration</p>
-                </a>
-            </div>
-        </div>
-
-    </div>
-</div>
-</div>
-</div><!-- /fg-sub-docs -->

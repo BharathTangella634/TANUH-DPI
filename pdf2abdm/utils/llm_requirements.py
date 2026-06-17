@@ -99,7 +99,7 @@ for _candidate in [
 else:
     load_dotenv()
 
-_PROJECT_ID = os.getenv("PROJECT_ID", "bcd-prototypes")
+_PROJECT_ID = os.getenv("PROJECT_ID", "proj-dpi-shared")
 _REGION     = os.getenv("REGION", "global")
 _ENDPOINT   = os.getenv("ENDPOINT", "aiplatform.googleapis.com")
 

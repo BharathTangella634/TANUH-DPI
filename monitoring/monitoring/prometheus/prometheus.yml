@@ -2,7 +2,19 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# ── Alertmanager integration (Phase 4) ───────────────────────────────────────
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# ── Alert rule files (Phase 4) ────────────────────────────────────────────────
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
 scrape_configs:
+  # ── Monitoring infrastructure ─────────────────────────────────────────────
   - job_name: prometheus
     static_configs:
       - targets:
@@ -12,3 +24,77 @@ scrape_configs:
     static_configs:
       - targets:
           - node-exporter:9100
+
+  # ── Queue exporter (Redis queue depths) ──────────────────────────────────
+  - job_name: queue_exporter
+    static_configs:
+      - targets:
+          - queue-exporter:9101
+
+  # ── DPI Application APIs ──────────────────────────────────────────────────
+  # Each FastAPI service exposes GET /metrics via the common.metrics middleware.
+  # The host.docker.internal address reaches the VM host from within the
+  # monitoring_internal network (extra_hosts: host.docker.internal:host-gateway).
+  # Prometheus scrapes over the published host ports since the API containers
+  # are on the separate tanuh-dpi_default network.
+  - job_name: pdf2abdm
+    static_configs:
+      - targets:
+          - host.docker.internal:8000
+    metrics_path: /metrics
+
+  - job_name: pdf2nhcx
+    static_configs:
+      - targets:
+          - host.docker.internal:8001
+    metrics_path: /metrics
+
+  - job_name: session_logger
+    static_configs:
+      - targets:
+          - host.docker.internal:8002
+    metrics_path: /metrics
+
+  - job_name: privacy_filter
+    static_configs:
+      - targets:
+          - host.docker.internal:8003
+    metrics_path: /metrics
+
+  - job_name: forgensic
+    static_configs:
+      - targets:
+          - host.docker.internal:8004
+    metrics_path: /metrics
+
+  # ── Celery worker metrics (Phase 5.8) ─────────────────────────────────────
+  # Each worker container starts a prometheus_client HTTP server on port 9200.
+  # Prometheus reaches them directly via the shared app_network (tanuh-dpi_default).
+  # Container names are stable: docker-compose names replicas <project>-<service>-<n>.
+
+  - job_name: celery_abdm_workers
+    static_configs:
+      - targets:
+          - tanuh-dpi-celery-abdm-worker-1:9200
+          - tanuh-dpi-celery-abdm-worker-2:9200
+          - tanuh-dpi-celery-abdm-worker-3:9200
+          - tanuh-dpi-celery-abdm-worker-4:9200
+    metrics_path: /metrics
+
+  - job_name: celery_nhcx_workers
+    static_configs:
+      - targets:
+          - tanuh-dpi-celery-nhcx-worker-1:9200
+          - tanuh-dpi-celery-nhcx-worker-2:9200
+          - tanuh-dpi-celery-nhcx-worker-3:9200
+          - tanuh-dpi-celery-nhcx-worker-4:9200
+    metrics_path: /metrics
+
+  - job_name: celery_forgensic_workers
+    static_configs:
+      - targets:
+          - tanuh-dpi-celery-forgensic-worker-1:9200
+          - tanuh-dpi-celery-forgensic-worker-2:9200
+          - tanuh-dpi-celery-forgensic-worker-3:9200
+          - tanuh-dpi-celery-forgensic-worker-4:9200
+    metrics_path: /metrics

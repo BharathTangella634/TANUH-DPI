@@ -10,9 +10,9 @@
     const FG_MAX_UPLOAD = 25 * 1024 * 1024;
     const FG_LOCAL = "http://localhost:8004";
     const FG_IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const FG_BASE = FG_IS_LOCAL
-        ? FG_LOCAL
-        : `${window.location.origin}/forgensic`;
+    const FG_BASE = (window.DPI_API_CONFIG && window.DPI_API_CONFIG.forgensic)
+        ? window.DPI_API_CONFIG.forgensic
+        : (FG_IS_LOCAL ? FG_LOCAL : `${window.location.origin}/forgensic`);
 
     let fgFile = null;
     let fgJobId = null;
@@ -432,7 +432,11 @@
 
     window.FG_fileChanged = function () {
         var input = $("fileForgery");
-        if (!input || !input.files.length) return;
+        if (!input) return;
+        if (!input.files.length) {
+            fgFile = null;
+            return;
+        }
         fgFile = input.files[0];
         var label = $("labelForgery");
         if (label) {
@@ -571,6 +575,89 @@
         if (cropImg) cropImg.removeAttribute("src");
         fgSelectedFinding = null;
         updateShowInDocBtn();
+    };
+
+    window.FG_init = function () {
+        const landing = document.getElementById('fg-landing-view');
+        const interactive = document.getElementById('fg-interactive-view');
+        if (landing) landing.style.display = 'block';
+        if (interactive) interactive.style.display = 'none';
+    };
+
+    window.FG_launchService = function () {
+        const landing = document.getElementById('fg-landing-view');
+        const interactive = document.getElementById('fg-interactive-view');
+        if (landing) landing.style.display = 'none';
+        if (interactive) {
+            interactive.style.display = 'block';
+            const firstBtn = interactive.querySelector('.sub-tab-btn');
+            if (firstBtn) {
+                firstBtn.click();
+            }
+        }
+    };
+
+    window.FG_handleFileChange = function () {
+        if (window.FG_fileChanged) {
+            window.FG_fileChanged();
+        }
+        const input = document.getElementById('fileForgery');
+        const dropzone = document.getElementById('fgDropzone');
+        const card = document.getElementById('fgFileCard');
+        const nameEl = document.getElementById('fgCardFileName');
+        const sizeEl = document.getElementById('fgCardFileSize');
+        const btn = document.getElementById('fgProcessBtn');
+        const fileIcon = document.getElementById('fgFileIcon');
+        
+        if (input && input.files && input.files.length > 0) {
+            const file = input.files[0];
+            if (nameEl) nameEl.textContent = file.name;
+            if (sizeEl) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                sizeEl.textContent = sizeMB + " MB";
+            }
+            if (fileIcon) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'pdf') {
+                    fileIcon.className = 'far fa-file-pdf fg-file-icon';
+                } else if (['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'webp'].includes(ext)) {
+                    fileIcon.className = 'far fa-file-image fg-file-icon';
+                } else {
+                    fileIcon.className = 'far fa-file fg-file-icon';
+                }
+            }
+            if (dropzone) dropzone.style.display = 'none';
+            if (card) card.style.display = 'flex';
+            if (btn) btn.removeAttribute('disabled');
+        }
+    };
+
+    window.FG_removeFile = function (e) {
+        if (e) e.stopPropagation();
+        const input = document.getElementById('fileForgery');
+        const dropzone = document.getElementById('fgDropzone');
+        const card = document.getElementById('fgFileCard');
+        const btn = document.getElementById('fgProcessBtn');
+        
+        if (input) {
+            input.value = '';
+            if (window.FG_fileChanged) {
+                window.FG_fileChanged();
+            }
+        }
+        if (dropzone) dropzone.style.display = 'flex';
+        if (card) card.style.display = 'none';
+        if (btn) btn.setAttribute('disabled', 'true');
+        
+        const resultsSec = document.getElementById('fgResultsGrid');
+        if (resultsSec) resultsSec.style.display = 'none';
+        const tamperedFlag = document.getElementById('fgTamperedFlag');
+        if (tamperedFlag) {
+            tamperedFlag.className = 'fg-tampered-flag fg-tampered-neutral';
+            tamperedFlag.innerHTML = '<i class="fas fa-hourglass-half"></i> Tampered: <strong>-</strong> Awaiting analysis.';
+        }
+        const progressSection = document.getElementById('fgProgressSection');
+        if (progressSection) progressSection.style.display = 'none';
     };
 
 })();

@@ -1,121 +1,75 @@
-name: Deploy to VM
+# Pull pre-built images and restart Docker on all MIG VMs.
+#
+# Manually triggered only — go to GitHub Actions → "Deploy to GCP" → "Run workflow".
+# Does NOT destroy/recreate VMs. Just SSHs into each running VM via IAP,
+# pulls the latest images from Artifact Registry, and restarts containers.
+#
+# Prerequisites (one-time GCP setup — same as build.yml):
+#   1. Workload Identity Federation pool + GitHub OIDC provider
+#   2. sa-dpi-app-prod granted workloadIdentityUser for this repo
+#   3. GitHub secrets: GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT
+#   4. sa-dpi-app-prod needs roles/iap.tunnelResourceAccessor + roles/compute.instanceAdmin.v1
+
+name: Deploy to GCP
 
 on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-production
+  group: deploy-prod
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy → Production VM
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      - name: Pull latest code on VM
-        uses: appleboy/ssh-action@v1.2.1
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          command_timeout: 5m
-          script: |
-            set -e
-            cd ~/TANUH-DPI
-            git stash
-            git pull origin main
-            git stash pop || echo "Stash pop had conflicts — local overrides preserved"
-            echo "Code updated to: $(git rev-parse --short HEAD)"
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Write .env from secrets
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          envs: ABDM_KEY,NHCX_KEY,FORGENSIC_KEY,DB_USER,DB_PASS
-          script: |
-            cd ~/TANUH-DPI
-            cat > .env <<EOF
-            ABDM_AUTH_ENABLED=false
-            NHCX_AUTH_ENABLED=false
-            ABDM_SECRET_KEY=${ABDM_KEY}
-            NHCX_SECRET_KEY=${NHCX_KEY}
-            ABDM_TOKEN_EXPIRY_DAYS=1
-            NHCX_TOKEN_EXPIRY_DAYS=1
-            FORGENSIC_SECRET_KEY=${FORGENSIC_KEY}
-            FORGENSIC_AUTH_ENABLED=false
-            FORGENSIC_TOKEN_EXPIRY_DAYS=1
-            MYSQL_USER=${DB_USER}
-            MYSQL_PASSWORD=${DB_PASS}
-            EOF
-            sed -i 's/^[[:space:]]*//' .env
-            chmod 600 .env
-            echo ".env written"
-        env:
-          ABDM_KEY: ${{ secrets.ABDM_SECRET_KEY }}
-          NHCX_KEY: ${{ secrets.NHCX_SECRET_KEY }}
-          FORGENSIC_KEY: ${{ secrets.FORGENSIC_SECRET_KEY }}
-          DB_USER: ${{ secrets.MYSQL_USER }}
-          DB_PASS: ${{ secrets.MYSQL_PASSWORD }}
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Write GCP service account from secret
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          envs: GCP_SA_B64
-          script: |
-            cd ~/TANUH-DPI
-            echo "${GCP_SA_B64}" | base64 -d > gcp-service-account.json
-            chmod 644 gcp-service-account.json
-            echo "gcp-service-account.json written"
-        env:
-          GCP_SA_B64: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON_B64 }}
+      - name: Pull and restart on all MIG instances
+        run: |
+          set -euo pipefail
 
-      - name: Rebuild & restart containers
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          command_timeout: 20m
-          script: |
-            set -e
-            cd ~/TANUH-DPI
-            docker compose build --parallel
-            docker compose up -d --remove-orphans
-            docker image prune -f
-            echo "Deployment complete!"
-            docker compose ps
+          INSTANCES=$(gcloud compute instance-groups managed list-instances dpi-mig \
+            --region=asia-south1 \
+            --project=proj-dpi-shared \
+            --format='csv[no-heading](instance,zone)')
 
-      - name: Health check
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          command_timeout: 5m
-          script: |
-            echo "Waiting 60s for containers to initialize (Privacy Filter NER model needs ~40s)..."
-            sleep 60
-            PASS=true
-            for svc in "ABDM API|http://localhost:8000/health" \
-                       "NHCX API|http://localhost:8001/health" \
-                       "Frontend|http://localhost:8080" \
-                       "Session Logger|http://localhost:8002/health" \
-                       "Privacy Filter|http://localhost:8003/api/health" \
-                       "Forgensic|http://localhost:8004/health"; do
-              NAME="${svc%%|*}"
-              URL="${svc##*|}"
-              if curl -sf --max-time 10 "$URL" > /dev/null; then
-                echo "  $NAME healthy"
-              else
-                echo "  $NAME FAILED at $URL"
-                PASS=false
-              fi
-            done
-            $PASS || exit 1
+          if [ -z "$INSTANCES" ]; then
+            echo "No instances found in MIG dpi-mig"
+            exit 1
+          fi
+
+          DEPLOY_CMD="sudo bash -c 'cd /opt/tanuh-dpi && gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet && docker compose pull && docker compose up -d --remove-orphans && echo Deploy_complete'"
+
+          FAILED=0
+          while IFS=',' read -r NAME ZONE; do
+            ZONE_SHORT=$(basename "$ZONE")
+            echo "--- Deploying to $NAME ($ZONE_SHORT) ---"
+            if gcloud compute ssh "$NAME" \
+              --zone="$ZONE_SHORT" \
+              --project=proj-dpi-shared \
+              --tunnel-through-iap \
+              --command="$DEPLOY_CMD"; then
+              echo "Done: $NAME"
+            else
+              echo "FAILED: $NAME"
+              FAILED=1
+            fi
+          done <<< "$INSTANCES"
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "Some instances failed to deploy"
+            exit 1
+          fi
+          echo "All instances updated successfully"

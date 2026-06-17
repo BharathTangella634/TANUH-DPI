@@ -10,9 +10,43 @@ services:
       - --storage.tsdb.retention.size=4GB
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     ports:
       - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring_internal
+      - app_network
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sed \
+          -e "s|\$${ALERTMANAGER_SMTP_HOST}|$${ALERTMANAGER_SMTP_HOST}|g" \
+          -e "s|\$${ALERTMANAGER_SMTP_FROM}|$${ALERTMANAGER_SMTP_FROM}|g" \
+          -e "s|\$${ALERTMANAGER_SMTP_USERNAME}|$${ALERTMANAGER_SMTP_USERNAME}|g" \
+          -e "s|\$${ALERTMANAGER_SMTP_PASSWORD}|$${ALERTMANAGER_SMTP_PASSWORD}|g" \
+          -e "s|\$${ALERTMANAGER_EMAIL_TO}|$${ALERTMANAGER_EMAIL_TO}|g" \
+          /etc/alertmanager/alertmanager.yml > /tmp/alertmanager-resolved.yml && \
+        exec /bin/alertmanager \
+          --config.file=/tmp/alertmanager-resolved.yml \
+          --storage.path=/alertmanager \
+          --web.listen-address=:9093
+    env_file:
+      - ./secrets/alertmanager.env
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    depends_on:
+      - prometheus
     networks:
       - monitoring_internal
 
@@ -28,6 +62,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
@@ -82,12 +117,36 @@ services:
     networks:
       - monitoring_internal
 
+  queue-exporter:
+    build:
+      context: ../../monitoring/queue-exporter
+      dockerfile: Dockerfile
+    container_name: queue-exporter
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - POLL_INTERVAL_SECONDS=15
+      - METRICS_PORT=9101
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring_internal
+      - app_network
+    depends_on:
+      - prometheus
+
 volumes:
   prometheus_data:
   grafana_data:
   loki_data:
   promtail_positions:
+  alertmanager_data:
 
 networks:
   monitoring_internal:
     driver: bridge
+  app_network:
+    external: true
+    name: tanuh-dpi_default
