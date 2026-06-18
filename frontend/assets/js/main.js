@@ -188,7 +188,7 @@
             else if (fileName === 'forgerydocs') { isDoc = true; docUrl = 'docs/forgery.html'; }
 
             if (isDoc) {
-                const response = await fetch(docUrl);
+                const response = await fetch(docUrl, { cache: 'no-store' });
                 if (response.ok) {
                     const text = await response.text();
                     const parser = new DOMParser();
@@ -306,7 +306,7 @@
                     console.error(`Failed to load doc tab ${tabId}: ${response.status}`);
                 }
             } else {
-                const response = await fetch(`tabs/${fileName}.html`);
+                const response = await fetch(`tabs/${fileName}.html`, { cache: 'no-store' });
                 if (response.ok) {
                     el.innerHTML = await response.text();
                 } else {

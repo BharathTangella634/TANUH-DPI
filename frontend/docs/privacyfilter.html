@@ -27,11 +27,11 @@
             <div class="docs-content-inner">
             <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Privacy Filter Documentation</span>
             <h1 style="margin-top:0.25rem;">Privacy Filter Service</h1>
-            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Medical Document De-identification & PII/PHI Redaction
-Complete Technical & User Documentation</p>
+            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Medical Document Anonymization & PII/PHI Masking Engine — Complete Technical & User Documentation</p>
+<!-- Complete Technical & User Documentation</p> -->
             
-            <h1>1. Executive Summary</h1>
-<p>The Privacy Filter service is a comprehensive medical document de-identification engine that detects and removes Personally Identifiable Information (PII) and Protected Health Information (PHI) from a wide range of file formats including DICOM medical images, NIfTI volumes, standard images (PNG, JPG, TIFF, BMP), PDFs, and text documents.</p>
+            <h1>1. Summary</h1>
+<p>The Privacy Filter service is a comprehensive medical document anonymization engine that detects and removes Personally Identifiable Information (PII) and Protected Health Information (PHI) from a wide range of file formats including DICOM medical images, NIfTI volumes, standard images (PNG, JPG, TIFF, BMP), PDFs, and text documents.</p>
 <p>The service employs a multi-layered detection strategy combining metadata analysis, connected-component text region detection, OCR (Tesseract/PaddleOCR), regex-based PHI classification, and Safe Harbor pattern matching. It supports three redaction methods: masking (black rectangles), cropping (border removal), and inpainting (appearance-preserving fill). Post-redaction validation ensures no residual PHI remains.</p>
 <p>It runs as a FastAPI application on port 8003, with asynchronous task processing via Celery workers on the dedicated 'privacy_filter' queue.</p>
 <h1>2. Service Overview</h1>
@@ -39,8 +39,8 @@ Complete Technical & User Documentation</p>
 <div class="table-responsive"><table><thead><tr><th>Format</th><th>Extensions</th><th>Redaction Method</th></tr></thead><tbody><tr><td>DICOM</td><td>.dcm</td><td>Metadata tag stripping + UID regeneration + pixel redaction</td></tr><tr><td>NIfTI</td><td>.nii, .nii.gz</td><td>Header field clearing + per-slice pixel redaction</td></tr><tr><td>Images</td><td>.png, .jpg, .jpeg, .tiff, .bmp</td><td>EXIF stripping + pixel redaction</td></tr><tr><td>PDF</td><td>.pdf</td><td>Native text redaction (PyMuPDF) + metadata scrubbing</td></tr><tr><td>Documents</td><td>.docx, .txt, .md, .csv</td><td>Text span replacement with [REDACTED:LABEL]</td></tr></tbody></table></div>
 <h2>2.2 PHI Categories Detected</h2>
 <div class="table-responsive"><table><thead><tr><th>Category</th><th>Examples</th><th>Detection Method</th></tr></thead><tbody><tr><td>PERSON_NAME</td><td>Patient names, doctor names</td><td>Regex + keyword patterns</td></tr><tr><td>DATE</td><td>Birth dates, admission dates</td><td>Date format regex patterns</td></tr><tr><td>IDENTIFIER</td><td>Patient IDs, accession numbers</td><td>Numeric/alphanumeric patterns</td></tr><tr><td>AADHAAR</td><td>12-digit Aadhaar numbers</td><td>Aadhaar-specific regex</td></tr><tr><td>PAN</td><td>Indian PAN card numbers</td><td>PAN format regex (XXXXX0000X)</td></tr><tr><td>SSN</td><td>Social Security Numbers</td><td>SSN format regex</td></tr><tr><td>EMAIL</td><td>Email addresses</td><td>Email regex pattern</td></tr><tr><td>LABELED_PHI</td><td>Key-value labeled data (Age:, DOB:)</td><td>Label-value regex</td></tr><tr><td>BARCODE / QR Code</td><td>Barcodes and QR codes in documents</td><td>Aspect ratio heuristics</td></tr></tbody></table></div>
-<h2>2.3 Technology Stack</h2>
-<div class="table-responsive"><table><thead><tr><th>Component</th><th>Technology</th></tr></thead><tbody><tr><td>Web Framework</td><td>FastAPI (Python 3.10+)</td></tr><tr><td>Task Queue</td><td>Celery 5.x with Redis</td></tr><tr><td>OCR</td><td>Tesseract / PaddleOCR</td></tr><tr><td>PDF Processing</td><td>PyMuPDF (fitz)</td></tr><tr><td>Medical Imaging</td><td>pydicom (DICOM), nibabel (NIfTI), OpenCV</td></tr><tr><td>Image Processing</td><td>OpenCV, Pillow</td></tr><tr><td>Authentication</td><td>PyJWT (HS256 + RS256 Keycloak)</td></tr><tr><td>Storage</td><td>Local filesystem or Google Cloud Storage</td></tr></tbody></table></div>
+<!-- <h2>2.3 Technology Stack</h2>
+<div class="table-responsive"><table><thead><tr><th>Component</th><th>Technology</th></tr></thead><tbody><tr><td>Web Framework</td><td>FastAPI (Python 3.10+)</td></tr><tr><td>Task Queue</td><td>Celery 5.x with Redis</td></tr><tr><td>OCR</td><td>Tesseract / PaddleOCR</td></tr><tr><td>PDF Processing</td><td>PyMuPDF (fitz)</td></tr><tr><td>Medical Imaging</td><td>pydicom (DICOM), nibabel (NIfTI), OpenCV</td></tr><tr><td>Image Processing</td><td>OpenCV, Pillow</td></tr><tr><td>Authentication</td><td>PyJWT (HS256 + RS256 Keycloak)</td></tr><tr><td>Storage</td><td>Local filesystem or Google Cloud Storage</td></tr></tbody></table></div> -->
 <h1>3. Architecture</h1>
 <h2>3.1 Processing Pipeline — Images/DICOM/NIfTI</h2>
 <ol>
@@ -67,8 +67,8 @@ Complete Technical & User Documentation</p>
 <li>Redaction Application: PyMuPDF redaction annotations with black rectangles.</li>
 <li>Scanned Page Fallback: Pages with < 5 native words fall back to OCR-based detection.</li>
 </ol>
-<h2>3.3 Plugin Architecture (Registry System)</h2>
-<div class="table-responsive"><table><thead><tr><th>Registry</th><th>Purpose</th><th>Implementations</th></tr></thead><tbody><tr><td>LoaderRegistry</td><td>Load files into MedicalArtifact</td><td>DicomLoader, NiftiLoader, PDFLoader, ImageLoader</td></tr><tr><td>RedactorRegistry</td><td>Apply pixel/text redaction</td><td>MaskRedactor, CropRedactor, InpaintRedactor</td></tr><tr><td>SaverRegistry</td><td>Save output in original format</td><td>DicomSaver, NiftiSaver, PDFSaver, ImageSaver</td></tr><tr><td>CleanerRegistry</td><td>Strip metadata PHI</td><td>DicomCleaner, NiftiCleaner, EXIFCleaner</td></tr></tbody></table></div>
+<!-- <h2>3.3 Plugin Architecture (Registry System)</h2>
+<div class="table-responsive"><table><thead><tr><th>Registry</th><th>Purpose</th><th>Implementations</th></tr></thead><tbody><tr><td>LoaderRegistry</td><td>Load files into MedicalArtifact</td><td>DicomLoader, NiftiLoader, PDFLoader, ImageLoader</td></tr><tr><td>RedactorRegistry</td><td>Apply pixel/text redaction</td><td>MaskRedactor, CropRedactor, InpaintRedactor</td></tr><tr><td>SaverRegistry</td><td>Save output in original format</td><td>DicomSaver, NiftiSaver, PDFSaver, ImageSaver</td></tr><tr><td>CleanerRegistry</td><td>Strip metadata PHI</td><td>DicomCleaner, NiftiCleaner, EXIFCleaner</td></tr></tbody></table></div> -->
 <h1>4. API Reference</h1>
 <h2>4.1 Authentication</h2>
 <p>POST /api/demo-token with {name, email} to get a 1-day HS256 JWT signed with SECRET_KEY. Include as Authorization: Bearer <token>. Auth bypass: set KEYCLOAK_AUTH_ENABLED=false.</p>
@@ -76,9 +76,9 @@ Complete Technical & User Documentation</p>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/api/demo-token</td><td>None</td><td>Issue demo JWT token</td></tr><tr><td>GET</td><td>/api/health</td><td>None</td><td>Liveness + engine status</td></tr><tr><td>GET</td><td>/api/supported-types</td><td>None</td><td>List supported file extensions</td></tr><tr><td>GET</td><td>/api/stats</td><td>None</td><td>Usage counters (visits, docs redacted)</td></tr><tr><td>POST</td><td>/api/redact</td><td>Bearer</td><td>Sync: upload file, get entities + URLs</td></tr><tr><td>POST</td><td>/api/submit</td><td>Bearer</td><td>Async: upload file, get task_id (202)</td></tr><tr><td>GET</td><td>/api/task-status/{id}</td><td>Bearer</td><td>Poll async task progress</td></tr><tr><td>GET</td><td>/api/task-result/{id}</td><td>Bearer</td><td>Fetch completed redaction result</td></tr><tr><td>GET</td><td>/api/files/{kind}/{key}</td><td>Bearer</td><td>Download original or redacted file</td></tr><tr><td>GET</td><td>/api/render-pages/{kind}/{key}</td><td>Bearer</td><td>Render document to page preview images</td></tr><tr><td>GET</td><td>/api/page-image/{key}/{page}</td><td>None</td><td>Serve individual page PNG</td></tr><tr><td>POST</td><td>/api/apply-redactions</td><td>Bearer</td><td>Apply manual redaction boxes to original</td></tr><tr><td>GET</td><td>/metrics</td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
 <h2>4.3 Sync Redaction Response Format</h2>
 <pre><code>{"job_id": "abc123", "filename": "scan.dcm", "content_type": "application/dicom", "entities": [{"entity_group": "PERSON_NAME", "score": 0.95, "word": "John Doe", "start": 0, "end": 8, "bbox": {"x1": 10, "y1": 20, "x2": 150, "y2": 40}}], "entity_counts": {"PERSON_NAME": 2, "DATE": 3}, "original_url": "/api/files/uploads/abc123__scan.dcm", "redacted_url": "/api/files/redacted/abc123__redacted.dcm", "notes": {"validation": {"passed": true, "risk_score": 0}}}</code></pre>
-<h1>5. Celery Task Processing</h1>
-<div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Task Name</td><td>privacy_filter.tasks.process_redaction_task</td></tr><tr><td>Queue</td><td>privacy_filter</td></tr><tr><td>Soft Time Limit</td><td>9 minutes (540 seconds)</td></tr><tr><td>Hard Time Limit</td><td>10 minutes (600 seconds)</td></tr><tr><td>Result TTL</td><td>24 hours in Redis</td></tr><tr><td>Workers</td><td>4 replicas x concurrency 2 = 8 parallel slots</td></tr></tbody></table></div>
-<h1>6. Storage</h1>
+<!-- <h1>5. Celery Task Processing</h1>
+<div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Task Name</td><td>privacy_filter.tasks.process_redaction_task</td></tr><tr><td>Queue</td><td>privacy_filter</td></tr><tr><td>Soft Time Limit</td><td>9 minutes (540 seconds)</td></tr><tr><td>Hard Time Limit</td><td>10 minutes (600 seconds)</td></tr><tr><td>Result TTL</td><td>24 hours in Redis</td></tr><tr><td>Workers</td><td>4 replicas x concurrency 2 = 8 parallel slots</td></tr></tbody></table></div> -->
+<!-- <h1>6. Storage</h1>
 <h2>6.1 Local Storage (Default)</h2>
 <pre><code>Uploads: ./data/uploads/{job_id}__{filename}</code></pre>
 <p>Redacted: ./data/redacted/{job_id}__redacted.{ext}</p>
@@ -88,8 +88,8 @@ Complete Technical & User Documentation</p>
 <p>Layout: gs://{bucket}/{prefix}/{kind}/{key}</p>
 <p>Select via: STORAGE_BACKEND=gcs environment variable</p>
 <h2>6.3 File Cleanup</h2>
-<p>Background thread removes temporary files older than PF_FILE_TTL_SECONDS (default: 30 minutes) from upload and redacted directories. Cleanup runs every PF_CLEANUP_INTERVAL_SECONDS (default: 5 minutes).</p>
-<h1>7. Security</h1>
+<p>Background thread removes temporary files older than PF_FILE_TTL_SECONDS (default: 30 minutes) from upload and redacted directories. Cleanup runs every PF_CLEANUP_INTERVAL_SECONDS (default: 5 minutes).</p> -->
+<h1>5. Security</h1>
 <ul>
 <li>All processing occurs locally — no document data sent to external services</li>
 <li>DICOM UID regeneration prevents cross-referencing with original studies</li>
@@ -98,42 +98,42 @@ Complete Technical & User Documentation</p>
 <li>Session logger stores only metadata — never the document content or detected PHI text</li>
 <li>Compliant with HIPAA Safe Harbor de-identification standard (18 identifier categories)</li>
 </ul>
-<h1>8. Configuration (Environment Variables)</h1>
-<div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>KEYCLOAK_AUTH_ENABLED</td><td>true</td><td>Auth toggle</td></tr><tr><td>STORAGE_BACKEND</td><td>local</td><td>Storage backend (local or gcs)</td></tr><tr><td>LOCAL_DATA_DIR</td><td>./data</td><td>Local storage directory</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket name</td></tr><tr><td>GCS_PREFIX</td><td>privacy-app</td><td>GCS path prefix</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result TTL (24h)</td></tr><tr><td>PF_FILE_TTL_SECONDS</td><td>1800</td><td>Temp file cleanup TTL (30 min)</td></tr><tr><td>PF_CLEANUP_INTERVAL_SECONDS</td><td>300</td><td>Cleanup interval (5 min)</td></tr></tbody></table></div>
-<h1>9. User Guide</h1>
-<h2>9.1 Browser Usage</h2>
+<!-- <h1>8. Configuration (Environment Variables)</h1>
+<div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>KEYCLOAK_AUTH_ENABLED</td><td>true</td><td>Auth toggle</td></tr><tr><td>STORAGE_BACKEND</td><td>local</td><td>Storage backend (local or gcs)</td></tr><tr><td>LOCAL_DATA_DIR</td><td>./data</td><td>Local storage directory</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket name</td></tr><tr><td>GCS_PREFIX</td><td>privacy-app</td><td>GCS path prefix</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result TTL (24h)</td></tr><tr><td>PF_FILE_TTL_SECONDS</td><td>1800</td><td>Temp file cleanup TTL (30 min)</td></tr><tr><td>PF_CLEANUP_INTERVAL_SECONDS</td><td>300</td><td>Cleanup interval (5 min)</td></tr></tbody></table></div> -->
+<h1>6. User Guide</h1>
+<h2>6.1 Browser Usage</h2>
 <ol>
 <li>Navigate to the DPI Platform website</li>
 <li>Click the 'Privacy Filter' tab</li>
 <li>Upload a file (DICOM, NIfTI, image, PDF, or text document)</li>
 <li>View detected entities in the entities table (text, type, confidence, position)</li>
 <li>Compare original vs. redacted preview side-by-side</li>
-<li>Optionally draw additional manual redaction boxes on the preview</li>
-<li>Download the redacted file</li>
+<li>Optionally draw additional manual masking boxes on the preview</li>
+<li>Download the anonymized file</li>
 </ol>
-<h2>9.2 API Usage (curl)</h2>
+<h2>6.2 API Usage (curl)</h2>
 <p># Get token</p>
 <pre><code>curl -X POST http://<host>:8003/api/demo-token -H "Content-Type: application/json" -d '{"name": "Name", "email": "email@example.com"}'</code></pre>
 <p># Sync redaction</p>
 <pre><code>curl -X POST http://<host>:8003/api/redact -H "Authorization: Bearer <token>" -F "file=@scan.dcm"</code></pre>
 <p># Download redacted file</p>
 <pre><code>curl -o redacted.dcm http://<host>:8003/api/files/redacted/<key> -H "Authorization: Bearer <token>"</code></pre>
-<h1>10. Performance</h1>
+<h1>7. Performance</h1>
 <div class="table-responsive"><table><thead><tr><th>File Type</th><th>Size</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Single DICOM image</td><td>5-20 MB</td><td>5-15 seconds</td></tr><tr><td>Multi-frame DICOM</td><td>50-200 MB</td><td>15-45 seconds</td></tr><tr><td>NIfTI volume (100+ slices)</td><td>50-500 MB</td><td>30-120 seconds</td></tr><tr><td>Standard image (PNG/JPG)</td><td>1-10 MB</td><td>3-10 seconds</td></tr><tr><td>PDF document (10 pages)</td><td>1-5 MB</td><td>10-30 seconds</td></tr></tbody></table></div>
-<h1>11. DICOM Metadata Handling</h1>
+<!-- <h1>11. DICOM Metadata Handling</h1>
 <h2>11.1 PHI Tags Stripped</h2>
 <p>PatientName, PatientID, OtherPatientIDs, PatientBirthDate, PatientAge, PatientAddress, AccessionNumber, StudyID, InstitutionName, ReferringPhysicianName, OperatorsName, PerformingPhysicianName, StationName, DeviceSerialNumber, ProtocolName.</p>
 <h2>11.2 UIDs Regenerated</h2>
 <p>StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID — regenerated via pydicom.uid.generate_uid() to prevent cross-referencing with original studies.</p>
 <h2>11.3 De-identification Flag</h2>
-<p>The DICOM dataset is marked as de-identified (PatientIdentityRemoved = YES) after processing.</p>
-<h1>12. Known Limitations & Future Enhancements</h1>
+<p>The DICOM dataset is marked as de-identified (PatientIdentityRemoved = YES) after processing.</p> -->
+<h1>8. Known Limitations & Future Enhancements</h1>
 <ul>
 <li>No burned-in pixel annotation OCR for DICOM (relies on corner text detection)</li>
 <li>No rate limiting on API endpoints</li>
 <li>Inpainting redaction is slower than masking (2-3x)</li>
 <li>Large NIfTI volumes (500+ slices) may approach the 10-minute task timeout</li>
-<li>Planned: GPU-accelerated OCR, ML-based PHI detection model, batch processing support</li>
+<li>Planned: Batch processing support</li>
 </ul>
             </div>
         </main>
