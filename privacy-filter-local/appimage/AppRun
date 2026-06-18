@@ -1,0 +1,33 @@
+#!/bin/bash
+# AppRun -- Entry point for the pf-redact AppImage
+#
+# This script is executed when the user runs the AppImage.
+# It sets up the bundled Python environment and runs the CLI.
+
+set -e
+
+APPDIR="$(dirname "$(readlink -f "$0")")"
+
+# Detect the bundled Python version
+PYTHON_VER="$(ls "${APPDIR}/usr/lib/" | grep -oE 'python[0-9]+\.[0-9]+' | head -1)"
+PYTHON_VER="${PYTHON_VER:-python3.10}"
+
+# Fully isolate from the host's Python environment.
+# Without this, packages from ~/.local/lib/pythonX.Y/site-packages leak in
+# and cause version conflicts (e.g. host torchvision vs bundled torch).
+export PYTHONNOUSERSITE=1
+export PYTHONDONTWRITEBYTECODE=1
+unset PYTHONPATH
+
+export PATH="${APPDIR}/usr/bin:${PATH}"
+export PYTHONHOME="${APPDIR}/usr"
+export PYTHONPATH="${APPDIR}/usr/lib/python3/site-packages:${APPDIR}/usr/lib/${PYTHON_VER}"
+
+# Library paths for bundled shared libraries
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+
+# SSL certificates (use system ones)
+export SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
+export REQUESTS_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
+
+exec "${APPDIR}/usr/bin/python3" -m pf_local.cli "$@"

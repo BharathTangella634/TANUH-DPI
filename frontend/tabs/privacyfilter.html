@@ -17,7 +17,7 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Privacy Filter (main upload) -->
+<!-- VIEW: LANDING PAGE (General Overview without sub-nav) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div id="pf-sub-main" class="sub-content">
 
@@ -82,21 +82,12 @@
                 </h4>
                 <span id="pfEntityTotal" style="font-size:0.78rem; font-weight:600; color:var(--primary); background:#e6f7f8; padding:3px 10px; border-radius:999px;"></span>
             </div>
-            <div style="overflow-x: auto; max-height: 280px; overflow-y: auto;">
-                <table id="pfEntityTable" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-                    <thead>
-                        <tr style="background:#f8fafc; position:sticky; top:0; z-index:1;">
-                            <th style="padding:9px 14px; text-align:left; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0; white-space:nowrap;">#</th>
-                            <th style="padding:9px 14px; text-align:left; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0;">Detected Text</th>
-                            <th style="padding:9px 14px; text-align:left; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0; white-space:nowrap;">Entity Type</th>
-                            <th style="padding:9px 14px; text-align:left; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0; white-space:nowrap;">Confidence</th>
-                            <th style="padding:9px 14px; text-align:left; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0; white-space:nowrap;">Position</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pfEntityTbody"></tbody>
-                </table>
+            
+            <div style="position: absolute; bottom: 12px; right: 12px; font-size: 0.65rem; color: var(--primary); background: #e6f7f8; border-radius: 20px; padding: 3px 10px; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-shield-alt"></i> 100% SECURED
             </div>
         </div>
+    </div>
 
         <!-- ── Visual Previews with Edit / Download ── -->
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom: 20px;">
@@ -161,46 +152,37 @@
                 </div>
             </div>
         </div>
-    </section>
-</div>
-
-</div><!-- /pf-sub-main -->
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: API Access (Privacy Filter) -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="pf-sub-api" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-code" style="color:var(--primary)"></i> Privacy Filter API</h2>
-        <p>How to call the Privacy Filter service from your own code or pipeline.</p>
     </div>
-</div>
 
-<div style="background:#fef3c7; border-left:4px solid #f59e0b; padding:14px 18px; border-radius:0 8px 8px 0; margin-bottom:20px;">
-    <p style="margin:0; font-size:0.88rem; color:#92400e;">
-        <strong>Test version only.</strong> This endpoint is intended for evaluation. Do not send production PHI/PII without contacting Tanuh for a hardened deployment.
-    </p>
-</div>
-
-<!-- Demo Token Request -->
-<div class="pf-demo-token-card" style="margin-bottom:24px;">
-    <div class="pf-demo-token-header">
-        <i class="fas fa-key"></i>
-        <span>Get a Demo Token</span>
-        <span class="pf-demo-token-badge">FREE</span>
-    </div>
-    <p style="font-size:0.88rem;color:#64748b;margin:0 0 6px;">Demo tokens are valid for <strong>1 day</strong>. Pass as: <code>Authorization: Bearer &lt;token&gt;</code></p>
-    <form id="pfApiTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-        <div class="pf-demo-token-fields">
-            <div class="pf-demo-token-field">
-                <label for="pfApiTokenName">Full Name</label>
-                <input type="text" id="pfApiTokenName" placeholder="Your name" required />
+    <!-- ── How It Works (Pipeline Steps) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Three layered processing phases executing fully on local CPU</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative;">
+            <!-- Phase 1 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">01</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Data Parsing &amp; Extraction</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Accepts PDFs, scans, DICOM, or NIfTI images. Direct text parsing or OCR processes content, drawing absolute coordinate boundaries for each term.
+                </p>
             </div>
-            <div class="pf-demo-token-field">
-                <label for="pfApiTokenEmail">Email Address</label>
-                <input type="email" id="pfApiTokenEmail" placeholder="you@example.com" required />
+            <!-- Phase 2 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">02</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">PII Detection Pipeline</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Executes advanced regex pattern mapping, lookup lists, and layout-aware heuristics to match and isolate target sensitive terms in real-time.
+                </p>
+            </div>
+            <!-- Phase 3 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">03</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Masking &amp; Fluid Redaction</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Constructs an overlay mask on coordinate values, rendering vector black boxes over raw characters or pixel arrays, and yields sanitised PDF, PNG, or JSON files.
+                </p>
             </div>
         </div>
         <button type="submit" class="pf-btn pf-btn-primary" id="pfApiTokenSubmit">
@@ -396,16 +378,8 @@ print(r.json()["entity_counts"])</pre>
     </div>
 </div>
 
-<div style="text-align:center; margin:20px 0;">
-    <a href="javascript:void(0)" onclick="openSubTab('PrivacyFilter','pf-sub-docs',document.querySelector('#PrivacyFilter .sub-tab-btn:nth-child(4)')); setTimeout(function(){ guideNav('pf-guide-container','pg-runlocally',document.querySelector('#pf-guide-container .guide-sidebar a[onclick*=pg-runlocally]')); },100);" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; background:#14868C; color:#fff; border-radius:8px; text-decoration:none; font-size:14px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#0E6C71'" onmouseout="this.style.background='#14868C'">
-        <i class="fas fa-book-open"></i> More Details in User Guide
-    </a>
-</div>
-
-</div><!-- /pf-sub-runlocally -->
-
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Docs -->
+<!-- VIEW: INTERACTIVE VIEW (Includes sub-nav & inference tabs) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div id="pf-sub-docs" class="sub-content" style="display:none">
 
@@ -414,7 +388,6 @@ print(r.json()["entity_counts"])</pre>
         <h2><i class="fas fa-book" style="color:var(--primary)"></i> Privacy Filter User Guide</h2>
         <p>Complete guide for the Privacy Filter — PII/PHI detection, redaction pipeline, supported formats, and API integration.</p>
     </div>
-</div>
 
 <div id="pf-guide-container">
 <div class="guide-layout">
@@ -500,6 +473,9 @@ print(r.json()["entity_counts"])</pre>
                     <h4>4. Download</h4>
                     <p>Download the original and the de-identified output. Redactions are applied to the file itself, in its original format.</p>
                 </div>
+                <button class="pf-remove-file-btn" onclick="PF_removeFile(event)" title="Remove selected file">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
 
             <div class="guide-callout guide-callout-warning">
@@ -565,10 +541,85 @@ print(r.json()["entity_counts"])</pre>
             </div>
         </div>
 
-        <!-- Supported Formats -->
-        <div id="pg-formats" class="guide-section">
-            <h2>Supported Input Formats</h2>
-            <p>The Privacy Filter accepts a wide range of document formats for PII detection and redaction.</p>
+                <!-- summary counters -->
+                <div id="pfSummaryCards" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;"></div>
+
+                <!-- Workspace columns -->
+                <div class="pf-dashboard-grid" style="margin-bottom: 16px;">
+                    <!-- Left Workspace: Visual Previews -->
+                    <div class="pf-dashboard-panel" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="pf-panel-header" style="margin: 0; padding-bottom: 8px;">
+                            <h4 class="pf-panel-title"><i class="fas fa-columns"></i> Preview Workspace</h4>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                            <!-- Original Preview Container -->
+                            <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <span style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;"><i class="fas fa-file-alt" style="margin-right: 4px;"></i> Original</span>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1.5px solid #ddd6fe; border-radius: 5px; background: white; font-family: inherit; font-size: 0.7rem; font-weight: 600; cursor: pointer; color: #7c3aed;" onclick="PF_openEditor('original')" id="pfEditOriginalBtn" disabled>
+                                            <i class="fas fa-pen"></i> Edit
+                                        </button>
+                                        <button style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1.5px solid #b2dfdb; border-radius: 5px; background: white; font-family: inherit; font-size: 0.7rem; font-weight: 600; cursor: pointer; color: #0e6a6f;" onclick="PF_downloadFile('original')" id="pfDlOriginal" disabled>
+                                            <i class="fas fa-download"></i> Save
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="pfPreviewOriginal" style="min-height: 200px; max-height: 300px; overflow: auto; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: #f8fafc;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; color: #94a3b8; gap: 6px;">
+                                        <i class="fas fa-image" style="font-size: 1.8rem;"></i><span style="font-size: 0.75rem;">Original document</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Redacted Preview Container -->
+                            <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <span style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;"><i class="fas fa-eye-slash" style="color:var(--primary); margin-right: 4px;"></i> Redacted Output</span>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1.5px solid #ddd6fe; border-radius: 5px; background: white; font-family: inherit; font-size: 0.7rem; font-weight: 600; cursor: pointer; color: #7c3aed;" onclick="PF_openEditor('redacted')" id="pfEditRedactedBtn" disabled>
+                                            <i class="fas fa-pen"></i> Edit
+                                        </button>
+                                        <button style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1.5px solid #b2dfdb; border-radius: 5px; background: white; font-family: inherit; font-size: 0.7rem; font-weight: 600; cursor: pointer; color: #0e6a6f;" onclick="PF_downloadFile('redacted')" id="pfDlRedacted" disabled>
+                                            <i class="fas fa-download"></i> Save
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="pfPreviewRedacted" style="min-height: 200px; max-height: 300px; overflow: auto; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: #f8fafc;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; color: #94a3b8; gap: 6px;">
+                                        <i class="fas fa-shield-alt" style="font-size: 1.8rem;"></i><span style="font-size: 0.75rem;">Redacted document</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Workspace: Entities List Table Scroller -->
+                    <div class="pf-dashboard-panel" style="display: flex; flex-direction: column;">
+                        <div class="pf-panel-header" style="margin: 0; padding-bottom: 8px;">
+                            <h4 class="pf-panel-title"><i class="fas fa-shield-virus"></i> Detected PII Entities</h4>
+                            <span id="pfEntityTotal" style="font-size:0.7rem; font-weight:700; color:var(--primary); background:#e6f7f8; padding:2px 8px; border-radius:999px;">0</span>
+                        </div>
+                        
+                        <div style="flex: 1; overflow-y: auto; max-height: 540px;">
+                            <table class="pf-table">
+                                <thead>
+                                    <tr style="position: sticky; top:0; z-index:1;">
+                                        <th>#</th>
+                                        <th>Entity Value</th>
+                                        <th>PII Category</th>
+                                        <th>Confidence</th>
+                                        <th>Position</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pfEntityTbody">
+                                    <!-- Dynamically loaded rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
             <table>
                 <thead><tr><th>Format</th><th>Extensions</th><th>Notes</th></tr></thead>
@@ -641,6 +692,8 @@ print(r.json()["entity_counts"])</pre>
                 <div class="guide-pipeline-step"><h4>3. Verify Setup</h4><p><code>./pf-redact* check</code> — confirms Tesseract OCR and all dependencies are available. No model download; runs on CPU.</p></div>
                 <div class="guide-pipeline-step"><h4>4. Redact a Document</h4><p><code>./pf-redact* document.png redacted.png --backend tesseract --json report.json</code></p></div>
             </div>
+            <div id="pfApiTokenError" class="pf-demo-token-error hidden"></div>
+        </div>
 
             <h3>Command Reference</h3>
             <table>
@@ -695,20 +748,25 @@ print(r.json()["entity_counts"])</pre>
                 </tbody>
             </table>
 
-            <h3>Quick Start (curl)</h3>
-            <pre><code># 1. Get a demo token
-TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/privacy-filter/api/demo-token \
+        <div class="api-section-box">
+            <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">curl</h4>
+            <div class="api-code-block">
+                <pre style="margin:0; white-space:pre-wrap;">TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/privacy-filter/api/demo-token \
   -H "Content-Type: application/json" \
   -d '{"name":"Your Name","email":"you@example.com"}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-# 2. Redact a document
 curl -X POST https://dpi-dev.tanuh.ai/privacy-filter/api/redact \
   -H "Authorization: Bearer $TOKEN" \
-  -F "file=@/path/to/document.pdf"</code></pre>
+  -F "file=@/path/to/document.pdf"</pre>
+                <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+            </div>
+        </div>
 
-            <h3>Python Example</h3>
-            <pre><code>import requests
+        <div class="api-section-box">
+            <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Python</h4>
+            <div class="api-code-block">
+                <pre style="margin:0; white-space:pre-wrap;">import requests
 
 resp = requests.post(
     "https://dpi-dev.tanuh.ai/privacy-filter/api/demo-token",
@@ -723,13 +781,20 @@ with open("document.pdf", "rb") as f:
         files={"file": ("document.pdf", f, "application/pdf")},
         timeout=600,
     )
-print(r.json()["entity_counts"])</code></pre>
+print(r.json()["entity_counts"])</pre>
+                <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+            </div>
         </div>
 
-        <!-- Configuration -->
-        <div id="pg-config" class="guide-section">
-            <h2>Configuration</h2>
-            <p>Environment variables for deploying the Privacy Filter service.</p>
+        <!-- Supported file types -->
+        <div class="api-section-box">
+            <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Supported File Types</h4>
+            <p style="margin:0; font-size:0.88rem; color:#334155;">
+                <code>.dcm</code>/<code>.dicom</code>, <code>.nii</code>/<code>.nii.gz</code>,
+                <code>.png</code>, <code>.jpg</code>/<code>.jpeg</code>, <code>.tif</code>/<code>.tiff</code>,
+                <code>.bmp</code>, <code>.pdf</code>
+            </p>
+        </div>
 
             <table>
                 <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
@@ -742,13 +807,50 @@ print(r.json()["entity_counts"])</code></pre>
                 </tbody>
             </table>
 
-            <h3>Docker Deployment</h3>
-            <pre><code># Standalone
-docker build -t privacy-filter -f privacy_filter/Dockerfile .
-docker run -p 8003:8003 -e KEYCLOAK_AUTH_ENABLED=false privacy-filter
+        <div style="margin-top:16px; text-align:center;">
+            <a href="https://github.com/TRANSLATIONAL-FOUNDATION/TANUH-DPI/blob/main/README_Terminal_Instructins.md" target="_blank" style="font-size:0.82rem; color:#64748b; text-decoration:none;">
+                <i class="fas fa-terminal"></i> DPI Terminal Instructions (GitHub)
+            </a>
+        </div>
+    </div><!-- /pf-sub-api -->
 
-# With Docker Compose
-docker compose up -d privacy-filter</code></pre>
+    <!-- ── SUB: Run Locally ── -->
+    <div id="pf-sub-runlocally" class="sub-content" style="display:none">
+        <div class="tab-header">
+            <div class="tab-header-text">
+                <h2><i class="fas fa-download" style="color:var(--primary)"></i> Run Locally (Offline Mode)</h2>
+                <p>Download a single executable for your OS. No Python, no pip, no cloud APIs. All data stays on your machine.</p>
+            </div>
+        </div>
+        <p style="margin:0 0 16px; padding:10px 14px; background:#f0fdfa; border-left:4px solid #14868C; border-radius:0 6px 6px 0; font-size:0.8rem; color:#0f766e;">
+            <strong><i class="fas fa-terminal"></i> CLI Tool:</strong> <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size: 0.72rem;">pf-redact</code> - command-line PII/PHI detection &amp; redaction. Runs entirely on CPU - no model download; uses Tesseract OCR and rule-based detection.
+        </p>
+
+        <div class="pf-runlocally-grid">
+            <a href="/downloads/pf-redact-linux-x86_64.zip" download class="pf-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-linux" style="color:#14868C;"></i>
+                <h3>Linux x86_64</h3>
+                <p style="color:#64748b;">ZIP Archive</p>
+                <p class="pf-meta" style="color:#94a3b8;">Ubuntu 20.04+, Fedora 33+</p>
+            </a>
+            <a href="/downloads/pf-redact-linux-aarch64.zip" download class="pf-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-linux" style="color:#14868C;"></i>
+                <h3>Linux ARM64</h3>
+                <p style="color:#64748b;">ZIP Archive</p>
+                <p class="pf-meta" style="color:#94a3b8;">aarch64 / AWS Graviton</p>
+            </a>
+            <a href="/downloads/pf-redact-windows-x86_64.zip" download class="pf-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-windows" style="color:#14868C;"></i>
+                <h3>Windows</h3>
+                <p style="color:#64748b;">ZIP Archive</p>
+                <p class="pf-meta" style="color:#94a3b8;">Windows 10 / 11</p>
+            </a>
+            <a href="/downloads/pf-redact-macos.zip" download class="pf-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-apple" style="color:#14868C;"></i>
+                <h3>macOS</h3>
+                <p style="color:#64748b;">ZIP Archive</p>
+                <p class="pf-meta" style="color:#94a3b8;">macOS 13+ (Apple Silicon / Intel)</p>
+            </a>
         </div>
 
         <!-- Source Code -->
@@ -762,7 +864,6 @@ docker compose up -d privacy-filter</code></pre>
                     <p>CPU-based medical de-identification and redaction service</p>
                 </a>
             </div>
-        </div>
 
         <!-- Feedback -->
         <div id="pg-feedback" class="guide-section">
@@ -795,5 +896,13 @@ docker compose up -d privacy-filter</code></pre>
 </div>
 </div>
 
-</div><!-- /pf-sub-docs -->
+            <div style="margin-bottom:12px; padding:10px 14px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 4px 0; font-size: 0.85rem; font-weight: 700; color:#0f766e;">3. Verify Setup</h4>
+                <p style="margin:0 0 4px 0; color:#0f766e; font-size:0.78rem;">
+                    <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size: 0.72rem;">./pf-redact* check</code>
+                </p>
+                <p style="margin:0; color:#64748b; font-size:0.72rem;">
+                    Confirms Tesseract OCR and all dependencies are available. No model download required - detection runs entirely on CPU.
+                </p>
+            </div>
 

@@ -154,6 +154,9 @@
             if (tabName === 'Home' && window.initDashboard) window.initDashboard();
             if (tabName === 'Login' && window.DPI_Auth) DPI_Auth.initLoginPage();
             if (tabName === 'PrivacyFilter' && window.PF_init) window.PF_init();
+            if (tabName === 'ForgeryDetection' && window.FG_init) window.FG_init();
+            if (tabName === 'PDF2NHCX' && window.INS_init) window.INS_init();
+            if (tabName === 'PDF2FHIR' && window.CLN_init) window.CLN_init();
             if ((tabName === 'PDF2FHIR' || tabName === 'PDF2NHCX' || tabName === 'ForgeryDetection') && window.initApiAccess) {
                 window.initApiAccess();
             }

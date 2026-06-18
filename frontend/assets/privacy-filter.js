@@ -22,9 +22,9 @@
   // ── Config ───────────────────────────────────────────────────────────────
   // Apache proxy path: /privacy-filter/* → http://privacy-filter:8003/
   const PF_LOCAL     = "http://localhost:8003";
-  const PF_BASE      = window.location.hostname === "localhost"
-    ? PF_LOCAL        // dev: hit local privacy-filter service
-    : "/privacy-filter"; // prod: go through Apache reverse proxy
+  const PF_BASE      = (window.DPI_API_CONFIG && window.DPI_API_CONFIG.pf)
+    ? window.DPI_API_CONFIG.pf
+    : (window.location.hostname === "localhost" ? PF_LOCAL : "/privacy-filter");
   const PF_TOKEN_KEY = "pf_token";
 
   // Expose for pf-editor.js
@@ -607,6 +607,26 @@
     PF_loadSupported();
     // Pre-fetch a token silently so it's ready when the user hits Redact
     PF_ensureToken();
+
+    // Reset view to landing/overview page on tab load
+    const landing = document.getElementById('pf-landing-view');
+    const interactive = document.getElementById('pf-interactive-view');
+    if (landing) landing.style.display = 'block';
+    if (interactive) interactive.style.display = 'none';
+  };
+
+  window.PF_launchService = function () {
+    const landing = document.getElementById('pf-landing-view');
+    const interactive = document.getElementById('pf-interactive-view');
+    if (landing) landing.style.display = 'none';
+    if (interactive) {
+      interactive.style.display = 'block';
+      // Automatically activate the first subtab button
+      const firstBtn = interactive.querySelector('.sub-tab-btn');
+      if (firstBtn) {
+        firstBtn.click();
+      }
+    }
   };
 
 })();

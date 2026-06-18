@@ -24,46 +24,40 @@
 
     // ── URL helpers ──────────────────────────────────────────────────────────
     function getStatsUrl() {
-        const isLocal = window.location.hostname === 'localhost';
-        return isLocal
-            ? 'http://localhost:8002/logs/stats'
-            : `${window.location.origin}/session-logger/logs/stats`;
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002/logs/stats' : `${window.location.origin}/session-logger/logs/stats`;
     }
 
     function getPfStatsDirectUrl() {
-        const isLocal = window.location.hostname === 'localhost';
-        return isLocal
-            ? 'http://localhost:8003/api/stats'
-            : `${window.location.origin}/privacy-filter/api/stats`;
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.pf) return `${window.DPI_API_CONFIG.pf}/api/stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8003/api/stats' : `${window.location.origin}/privacy-filter/api/stats`;
     }
 
     // Fallback PF source: GCS-backed session-logger proxy (60s cache)
     function getPfStatsFallbackUrl() {
-        const isLocal = window.location.hostname === 'localhost';
-        return isLocal
-            ? 'http://localhost:8002/logs/pf-stats'
-            : `${window.location.origin}/session-logger/logs/pf-stats`;
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/pf-stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002/logs/pf-stats' : `${window.location.origin}/session-logger/logs/pf-stats`;
     }
 
     function getVisitStatsUrl() {
-        const isLocal = window.location.hostname === 'localhost';
-        return isLocal
-            ? 'http://localhost:8002/logs/visit/stats'
-            : `${window.location.origin}/session-logger/logs/visit/stats`;
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/visit/stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002/logs/visit/stats' : `${window.location.origin}/session-logger/logs/visit/stats`;
     }
 
     function getForgeryStatsUrl() {
-        const isLocal = window.location.hostname === 'localhost';
-        return isLocal
-            ? 'http://localhost:8004/stats'
-            : `${window.location.origin}/forgensic/stats`;
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.forgensic) return `${window.DPI_API_CONFIG.forgensic}/stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8004/stats' : `${window.location.origin}/forgensic/stats`;
     }
 
     function getVisitUrl() {
-        const isLocal = window.location.hostname === 'localhost';
-        return isLocal
-            ? 'http://localhost:8002/logs/visit'
-            : `${window.location.origin}/session-logger/logs/visit`;
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/visit`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002/logs/visit' : `${window.location.origin}/session-logger/logs/visit`;
     }
 
     // ── Geo helper ───────────────────────────────────────────────────────────
@@ -203,11 +197,23 @@
         }
 
         // Cards
-        animate('statPageVisitors',    pageVisits);
-        animate('statClinical',        clinical);
-        animate('statInsurance',       insurance);
-        animate('statDocsRedacted',    docsRedacted);
-        animate('statForgery',         forgeryDocs);
+        const setTarget = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('data-target-value', val || 0);
+        };
+        setTarget('statPageVisitors',    pageVisits);
+        setTarget('statClinical',        clinical);
+        setTarget('statInsurance',       insurance);
+        setTarget('statDocsRedacted',    docsRedacted);
+        setTarget('statForgery',         forgeryDocs);
+        
+        // Trigger animations for any elements that are already revealed
+        document.querySelectorAll('.stat-value').forEach(el => {
+            if (el.classList.contains('revealed-stat')) {
+                const target = parseInt(el.getAttribute('data-target-value')) || 0;
+                animate(el.id, target);
+            }
+        });
 
         // Geo coverage
         const sCount = document.getElementById('stateCount');
@@ -227,6 +233,7 @@
         trackPageVisit();
 
         renderDashboard();
+        initStatsObserver();
 
         if (_refreshInterval) clearInterval(_refreshInterval);
         _refreshInterval = setInterval(renderDashboard, 30000);

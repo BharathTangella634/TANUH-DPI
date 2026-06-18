@@ -50,11 +50,11 @@
             document.getElementById(resultId)?.classList.add('hidden');
 
             try {
-                const isLocal = window.location.hostname === 'localhost';
-                const endpointPath = isLocal
+                const base = _resolveBase(endpoint);
+                const isBaseLocal = base.includes('localhost') || base.includes('127.0.0.1');
+                const endpointPath = isBaseLocal
                     ? endpoint.replace(/^\/forgensic(?=\/)/, '')
                     : endpoint;
-                const base = _resolveBase(endpoint);
                 const r = await fetch(`${base}${endpointPath}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -82,6 +82,12 @@
     }
 
     function _resolveBase(endpoint) {
+        if (window.DPI_API_CONFIG) {
+            if (endpoint.includes('privacy') && window.DPI_API_CONFIG.pf) return window.DPI_API_CONFIG.pf;
+            if (endpoint.includes('abdm') && window.DPI_API_CONFIG.abdm) return window.DPI_API_CONFIG.abdm;
+            if (endpoint.includes('nhcx') && window.DPI_API_CONFIG.nhcx) return window.DPI_API_CONFIG.nhcx;
+            if (endpoint.includes('forgensic') && window.DPI_API_CONFIG.forgensic) return window.DPI_API_CONFIG.forgensic;
+        }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             if (endpoint.includes('privacy'))   return 'http://localhost:8003';
             if (endpoint.includes('abdm'))      return 'http://localhost:8000';

@@ -17,297 +17,170 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Insurance Policy (main upload) -->
+<!-- VIEW: LANDING PAGE (General Overview without sub-nav) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="insurance-main" class="sub-content">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2>PDF to NHCX Conversion</h2>
-        <p>Process insurance and claim documents into NHCX compliant format.</p>
+<div id="insurance-landing-view" class="ins-container">
+    <!-- Hero / Intro -->
+    <div style="display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 32px; align-items: center; margin-bottom: 40px; padding: 20px 0;">
+        <div>
+            <span style="display: inline-block; background: rgba(20, 134, 140, 0.08); color: var(--primary); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;">
+                Standardized &amp; Automated
+            </span>
+            <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
+                PDF to NHCX Insurance Policy Conversion
+            </h2>
+            <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
+                Extract and translate complex insurance policy files into structured, interoperable FHIR InsurancePlanBundles conforming to India's National Health Claims Exchange (NHCX) standards. Built for speed, precision, and complete regulatory compliance.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+                <button onclick="INS_launchService()" class="process-btn" style="padding: 12px 24px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600;">
+                    <i class="fas fa-rocket"></i> Launch Interactive Service
+                </button>
+                <button onclick="openTab(null, 'InsuranceDocs'); return false;" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fas fa-book"></i> Read User Guide
+                </button>
+            </div>
+        </div>
         
-    </div>
-    <div class="tab-header-logos">
-        <!-- <img src="assets/tanuh.png" alt="Tanuh Logo" class="logo">
-        <img src="assets/MoE_Logo.svg" alt="Ministry of Education Logo" class="logo">
-        <img src="assets/IISc_Logo.png" alt="IISc Logo" class="logo"> -->
-        <img src="assets/NHA_logo.png" alt="NHA Logo" class="logo">
-    </div>
-</div>
-
-<div class="info-notes" style="margin-bottom: 20px; padding: 15px; border-left: 4px solid #14868C; background-color: #f0fdfa; border-radius: 6px;">
-    <p style="margin: 0 0 8px 0; color: #0f766e; font-size: 14px;">
-        <strong><i class="fas fa-clock"></i> Note:</strong> Processing time is typically <strong>3 to 5 minutes</strong>, depending on the PDF size. <strong>Please do not close or refresh this tab</strong> while processing is in progress — your document is being analyzed by the AI model and closing the tab will interrupt the process.
-    </p>
-    <p style="margin: 0 0 8px 0; color: #0f766e; font-size: 14px;">
-        <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use. No data is stored. Kindly download your JSON bundles to preserve your results.
-    </p>
-    <p style="margin: 0; color: #0f766e; font-size: 14px;">
-        <strong><i class="fas fa-file-pdf"></i> Limit:</strong> Maximum allowed file size is <strong>25 MB</strong>.
-    </p>
-</div>
-
-<div class="upload-section">
-    <div class="controls">
-        <div class="file-input-wrapper">
-            <input type="file" id="fileNHCX" accept=".pdf" onchange="updateFileName('fileNHCX')">
-            <label for="fileNHCX" id="labelNHCX">
-                <i class="fas fa-file-pdf"></i>
-                <span class="file-text">Choose PDF file...</span>
-            </label>
-        </div>
-        <button onclick="processFile('PDF2NHCX')" id="btnNHCX" class="process-btn">
-            <span>Process</span>
-            <div class="loader" id="loaderNHCX"></div>
-        </button>
-    </div>
-</div>
-
-<div class="output-wrapper">
-    <div id="infoNHCX" style="display: none; padding: 10px; background: #eef2f5; border-radius: 6px; margin-bottom: 10px; font-family: sans-serif; font-size: 14px; border: 1px solid #d1d9e0;">
-        <strong style="color: #2c3e50;">Processing Time:</strong> <span id="procTimeNHCX" style="color: #34495e;">-</span>
-    </div>
-    <div id="bundleSelectorContainerNHCX" style="display: none; padding: 10px; background: #eef2f5; border-radius: 6px; margin-bottom: 10px; border: 1px solid #d1d9e0;">
-        <label for="bundleSelectNHCX" style="font-weight: bold; color: #2c3e50; margin-right: 10px;">Select Bundle:</label>
-        <select id="bundleSelectNHCX" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; width: 60%; font-family: sans-serif;"></select>
-    </div>
-    <div id="processingLogoNHCX" style="display: none; text-align: center; padding: 40px; border: 1px dashed #d1d9e0; border-radius: 6px; background: #fafafa; margin-bottom: 10px;">
-        <img src="assets/tanuh.png" alt="Processing Logo" style="width: 60px; height: auto; animation: pulse 1.5s infinite;">
-        <p style="margin-top: 15px; color: #34495e; font-family: sans-serif; font-weight: bold;">Processing file... Please wait.</p>
-    </div>
-    <div class="output-section">
-        <div class="output-toolbar">
-            <span class="label">NHCX JSON Output</span>
-            <div>
-                <button onclick="copyToClipboard('outputNHCX')" class="copy-btn cta-secondary"><i class="fas fa-copy"></i> Copy JSON</button>
-                <button onclick="downloadJSON('outputNHCX')" class="copy-btn cta-secondary" style="margin-left: 10px;"><i class="fas fa-file-download"></i> Download JSON</button>
+        <!-- Mockup Visual FHIR Graph -->
+        <div style="position: relative; border-radius: 16px; overflow: hidden; border: 1.5px dashed rgba(20, 134, 140, 0.25); background: #ffffff; padding: 20px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02); height: 260px; display: flex; flex-direction: column; justify-content: center; gap: 10px; box-sizing: border-box;">
+            <div style="display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 2px; opacity: 0.8;">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+                <span style="font-size: 0.7rem; font-weight: 600; color: #64748b; font-family: monospace; margin-left: auto;">star_health_policy.pdf</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px; font-family: monospace; font-size: 0.72rem; color: #334155; line-height: 1.35;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #94a3b8;">📦</span>
+                    <span style="font-weight: 700; color: #0f172a;">Bundle</span>
+                    <span style="color: #64748b;">[collection]</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: 14px; border-left: 1.5px solid #cbd5e1; padding-left: 8px;">
+                    <span style="color: var(--primary);">🏢</span>
+                    <span style="font-weight: 600; color: #334155;">Organization</span>
+                    <span style="background: rgba(20, 134, 140, 0.08); color: var(--primary); font-size: 0.6rem; padding: 1px 4px; border-radius: 4px;">Star Health</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: 14px; border-left: 1.5px solid #cbd5e1; padding-left: 8px;">
+                    <span style="color: #8b5cf6;">📄</span>
+                    <span style="font-weight: 600; color: #334155;">InsurancePlan</span>
+                    <span style="background: rgba(139, 92, 246, 0.08); color: #8b5cf6; font-size: 0.6rem; padding: 1px 4px; border-radius: 4px;">Gold Elite</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-left: 28px; border-left: 1.5px solid #cbd5e1; padding-left: 8px; font-size: 0.68rem; color: #64748b;">
+                    <div>• type: <span style="color: #0f172a; font-weight: 600;">Medical Insurance (EHCP)</span></div>
+                    <div>• limit: <span style="color: #10b981; font-weight: 600;">INR 5,00,000</span></div>
+                    <div>• network: <span style="color: #0ea5e9; font-weight: 600;">12,000+ Hospitals</span></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: 14px; border-left: 1.5px solid #cbd5e1; padding-left: 8px;">
+                    <span style="color: #f59e0b;">👤</span>
+                    <span style="font-weight: 600; color: #334155;">Patient</span>
+                    <span style="background: rgba(245, 158, 11, 0.08); color: #f59e0b; font-size: 0.6rem; padding: 1px 4px; border-radius: 4px;">Policyholder</span>
+                </div>
+            </div>
+            
+            <div style="position: absolute; bottom: 12px; right: 12px; font-size: 0.65rem; color: var(--primary); background: #e6f7f8; border-radius: 20px; padding: 3px 10px; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-check-circle"></i> NHCX COMPLIANT FHIR
             </div>
         </div>
-        <pre class="json-output"><code id="outputNHCX" class="language-json">Output will appear here...</code></pre>
-    </div>
-</div>
-
-<div class="validation-container">
-    <div class="validation-trigger">
-        <button onclick="runFhirValidation('PDF2NHCX')" id="valBtnNHCX" class="validate-btn">
-            <i class="fas fa-shield-alt"></i> Validate FHIR R4
-        </button>
-        <div class="loader-v" id="loaderValNHCX"></div>
-    </div>
-    <div id="validationReportNHCX" class="validation-report-area"></div>
-</div>
-
-</div><!-- /insurance-main -->
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Run Locally -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="insurance-runlocally" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-download" style="color:var(--primary)"></i> Run Locally (Offline Mode)</h2>
-        <p>Download a single executable for your OS. No Python, no pip, no cloud APIs. All data stays on your machine.</p>
-    </div>
-</div>
-<p style="margin:0 0 20px; padding:10px 14px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0; font-size:14px; color:#92400e;">
-    <strong><i class="fas fa-microchip"></i> Requires:</strong> NVIDIA GPU with 16 GB+ VRAM (or Apple Silicon Mac with 16 GB+ memory) and ~20 GB free disk space.
-</p>
-
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;">
-    <a href="/downloads/nhcx-extract-linux-x86_64.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-linux" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">Linux x86_64</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">AppImage (~400 MB)</p>
-        <p style="margin:4px 0 0; color:#94a3b8; font-size:12px;">Ubuntu 20.04+, Fedora 33+</p>
-    </a>
-    <a href="/downloads/nhcx-extract-linux-aarch64.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-linux" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">Linux ARM64</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Binary (~400 MB)</p>
-        <p style="margin:4px 0 0; color:#94a3b8; font-size:12px;">aarch64 / AWS Graviton</p>
-    </a>
-    <a href="/downloads/nhcx-extract-windows-x86_64.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-windows" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">Windows</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Portable EXE (~400 MB)</p>
-        <p style="margin:4px 0 0; color:#94a3b8; font-size:12px;">Windows 10 / 11</p>
-    </a>
-    <a href="/downloads/nhcx-extract-macos.zip" download style="text-decoration:none; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:25px; text-align:center; transition: border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-        <i class="fab fa-apple" style="font-size:3rem; color:#14868C; margin-bottom:12px;"></i>
-        <h3 style="margin:0 0 6px 0; color:#0f172a;">macOS</h3>
-        <p style="margin:0; color:#64748b; font-size:14px;">Binary (~400 MB)</p>
-        <p style="margin:4px 0 0; color:#94a3b8; font-size:12px;">macOS 13+ (Apple Silicon / Intel)</p>
-    </a>
-</div>
-
-<div style="background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); padding:25px; margin:20px 0;">
-    <h3 style="margin-bottom:20px;">Setup Steps (All Platforms)</h3>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">1. Install Ollama</h4>
-        <p style="margin:0; color:#0f766e; font-size:14px;">
-            Download from <a href="https://ollama.com/download" target="_blank" style="color:#14868C; font-weight:bold;">ollama.com/download</a><br>
-            Linux: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">curl -fsSL https://ollama.com/install.sh | sh</code>
-        </p>
     </div>
 
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">2. Pull the LLM Model (~16 GB download)</h4>
-        <p style="margin:0; color:#0f766e; font-size:14px;">
-            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">ollama pull gemma4:26b</code><br>
-            Requires NVIDIA GPU with 16 GB+ VRAM, or Apple Silicon with 16 GB+ unified memory.
-        </p>
-    </div>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">3. Unzip &amp; Make Executable</h4>
-        <p style="margin:0; color:#0f766e; font-size:14px;">
-            Unzip the downloaded file. On Linux/Mac run: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">chmod +x nhcx-extract*</code><br>
-            Linux requires <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">sudo apt install libfuse2</code> if not already installed.
-        </p>
-    </div>
-
-    <div style="margin-bottom:20px; padding:15px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
-        <h4 style="margin:0 0 8px 0; color:#0f766e;">4. Run NHCX Insurance Extraction</h4>
-        <p style="margin:0 0 8px 0; color:#0f766e; font-size:14px;">
-            <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./nhcx-extract nhcx policy.pdf -o result.json -m gemma4:26b</code>
-        </p>
-        <p style="margin:0; color:#64748b; font-size:13px;">
-            Use <code>check</code> first to verify setup: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px;">./nhcx-extract check -m gemma4:26b</code>
-        </p>
-    </div>
-
-    <div style="padding:12px 15px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0;">
-        <p style="margin:0; color:#92400e; font-size:14px;">
-            <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. Zero cloud API calls. The output JSON contains a complete FHIR R4 Bundle.
-        </p>
-    </div>
-</div>
-
-<div style="text-align:center; margin:20px 0;">
-    <a href="javascript:void(0)" onclick="openSubTab('PDF2NHCX','insurance-docs',document.querySelector('#PDF2NHCX .sub-tab-btn:nth-child(4)')); setTimeout(function(){ guideNav('insurance-guide-container','ig-runlocally',document.querySelector('#insurance-guide-container .guide-sidebar a[onclick*=ig-runlocally]')); },100);" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; background:#14868C; color:#fff; border-radius:8px; text-decoration:none; font-size:14px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#0E6C71'" onmouseout="this.style.background='#14868C'">
-        <i class="fas fa-book-open"></i> More Details in User Guide
-    </a>
-</div>
-
-</div><!-- /insurance-runlocally -->
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: API Access (Insurance Policy) -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="insurance-api" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-code" style="color:var(--primary)"></i> Insurance Policy API</h2>
-        <p>Developer API for converting insurance policy PDFs into NHCX-compliant FHIR InsurancePlanBundles.</p>
-    </div>
-</div>
-
-<div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:20px;">
-    <p style="margin:0; font-size:0.92rem; color:#0e6a6f; line-height:1.5;">
-        <strong><i class="fas fa-info-circle"></i> Authentication:</strong> Uses JWT bearer tokens. Request a 1-day demo token via the form below, then pass it as <code>Authorization: Bearer &lt;token&gt;</code>.
-        <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Insurance Policy tab, tokens are fetched automatically.
-    </p>
-</div>
-
-<!-- Token Request -->
-<div class="pf-demo-token-card" style="margin-bottom:24px;">
-    <div class="pf-demo-token-header">
-        <i class="fas fa-shield-alt" style="color:#14868C;"></i>
-        <span>Insurance Policy API Token&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2nhcx)</small></span>
-        <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-    </div>
-    <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">NHCX-compliant claim extraction from insurance policy PDFs.</p>
-    <form id="apiNhcxTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-        <div class="pf-demo-token-fields">
-            <div class="pf-demo-token-field">
-                <label for="apiNhcxTokenName">Full Name</label>
-                <input type="text" id="apiNhcxTokenName" placeholder="Your name" required />
+    <!-- ── Key Capabilities (Grid Cards) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 24px; letter-spacing: -0.01em;">
+            Key Capabilities
+        </h3>
+        <div class="key-capabilities-grid" style="display: grid; gap: 20px;">
+            <!-- Card 1 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(20, 134, 140, 0.08); color: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">NHCX Schema Compiler</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Fully compiles unstructured medical policy conditions, limits, networks, and copays directly into NHCX Schema StructureDefinitions.
+                </p>
             </div>
-            <div class="pf-demo-token-field">
-                <label for="apiNhcxTokenEmail">Email Address</label>
-                <input type="email" id="apiNhcxTokenEmail" placeholder="you@example.com" required />
+            
+            <!-- Card 2 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); color: #10b981; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">OCR Waterfall Engine</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Employs 6 OCR engines including PyPDF, Chandra2 VLM layouts, Docling table solvers, and Tesseract defaults to handle scan artifacts flawlessly.
+                </p>
+            </div>
+            
+            <!-- Card 3 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(139, 92, 246, 0.08); color: #8b5cf6; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-code"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Structured FHIR Output</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Constructs ready-to-transmit FHIR R4 InsurancePlan, Organization, Patient, and Condition resources tied together in a single interoperable Bundle.
+                </p>
+            </div>
+            
+            <!-- Card 4 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(14, 165, 233, 0.08); color: #0ea5e9; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-download"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">On-Premises Runtime</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Run locally using standalone zero-dependency packages for Windows, Mac, or Linux, keeping sensitive medical policy information completely secure offline.
+                </p>
             </div>
         </div>
-        <button type="submit" class="pf-btn pf-btn-primary" id="apiNhcxTokenSubmit">
-            <i class="fas fa-bolt"></i> Request Insurance Token
-        </button>
-    </form>
-    <div id="apiNhcxTokenResult" class="pf-demo-token-result hidden">
-        <div class="pf-demo-token-result-header">
-            <span id="apiNhcxTokenGreeting"></span>
-            <span id="apiNhcxTokenExpiry" class="pf-demo-token-expiry"></span>
-        </div>
-        <div class="pf-demo-token-output-wrap">
-            <pre class="pf-demo-token-output" id="apiNhcxTokenOutput"></pre>
-            <button class="pf-demo-token-copy pf-btn" id="apiNhcxTokenCopy"><i class="fas fa-copy"></i> Copy</button>
+    </div>
+
+    <!-- ── How It Works (Pipeline Steps) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Three conversion steps running securely on the platform</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative;">
+            <!-- Phase 1 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">01</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Ingestion &amp; Verification</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    PDF policies are OCRed, categorized, and fed to a multi-tier document validator. Unrelated files are automatically identified and flagged.
+                </p>
+            </div>
+            <!-- Phase 2 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">02</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">LangGraph Extraction</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    A dependency-ordered LangGraph workflow pulls details (insurers, co-payments, room ceilings, deductibles) by referencing official NHCX rulesets.
+                </p>
+            </div>
+            <!-- Phase 3 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">03</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">FHIR Assembly &amp; Validation</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Constructs cross-references, validates codes against ICD-10/SNOMED CT, embeds the original PDF as base64, and compiles a clean, validated NHCX Bundle.
+                </p>
+            </div>
         </div>
     </div>
-    <div id="apiNhcxTokenError" class="pf-demo-token-error hidden"></div>
-</div>
 
-<!-- Endpoint Reference -->
-<h3 style="margin:0 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-list-ul"></i> Endpoint Reference</h3>
-<div class="api-section-box">
-    <table class="api-endpoint-table">
-        <thead>
-            <tr>
-                <th style="width:70px;">Method</th>
-                <th>Path</th>
-                <th style="width:100px;">Auth</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2nhcx/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT for the Insurance API</td></tr>
-            <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2nhcx/submit</code></td><td>Bearer</td><td>Async: submit PDF, returns <code>task_id</code> (202)</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2nhcx/task-status/{id}</code></td><td>Open</td><td>Poll async task status</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2nhcx/health</code></td><td>Open</td><td>Service liveness + model status</td></tr>
-            <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2nhcx/model-health</code></td><td>Open</td><td>AI model readiness check</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<!-- Quick Start (curl) -->
-<h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-terminal"></i> Quick Start</h3>
-
-<div class="api-section-box">
-    <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">curl</h4>
-    <div class="api-code-block">
-        <pre style="margin:0; white-space:pre-wrap;">TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/pdf2nhcx/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Your Name","email":"you@example.com"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-curl -X POST https://dpi-dev.tanuh.ai/pdf2nhcx/submit \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@/path/to/insurance_policy.pdf"</pre>
-        <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
-    </div>
-</div>
-
-<div class="api-section-box">
-    <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">Python</h4>
-    <div class="api-code-block">
-        <pre style="margin:0; white-space:pre-wrap;">import requests
-
-resp = requests.post(
-    "https://dpi-dev.tanuh.ai/pdf2nhcx/api/token",
-    json={"name": "Your Name", "email": "you@example.com"},
-)
-token = resp.json()["access_token"]
-
-with open("insurance_policy.pdf", "rb") as f:
-    r = requests.post(
-        "https://dpi-dev.tanuh.ai/pdf2nhcx/submit",
-        headers={"Authorization": f"Bearer {token}"},
-        files={"file": ("policy.pdf", f, "application/pdf")},
-        timeout=600,
-    )
-print(r.json())</pre>
-        <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+    <!-- ── On-Premises Security Banner ──────────────────────────────────────── -->
+    <div style="display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg, rgba(20, 134, 140, 0.05) 0%, rgba(20, 134, 140, 0.01) 100%); border: 1.5px solid rgba(20, 134, 140, 0.15); border-radius: 12px; padding: 24px; margin-bottom: 20px; box-sizing: border-box;">
+        <div style="font-size: 2rem; color: var(--primary); flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px;">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 4px;">100% Confidential On-Premises Analysis</h4>
+            <p style="font-size: 0.85rem; line-height: 1.5; color: #475569; margin: 0;">
+                All extraction processes, OCR computation layers, and FHIR mappings compile in memory locally. No data bytes are logged or transmitted externally, maintaining compliance with national healthcare architecture guidelines and privacy protocols.
+            </p>
+        </div>
     </div>
 </div>
 
@@ -333,16 +206,21 @@ print(r.json())</pre>
 </div><!-- /insurance-api -->
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- SUB: Docs (Insurance Policy) -->
+<!-- VIEW: INTERACTIVE VIEW (Includes sub-nav & inference tabs) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="insurance-docs" class="sub-content" style="display:none">
-
-<div class="tab-header">
-    <div class="tab-header-text">
-        <h2><i class="fas fa-book" style="color:var(--primary)"></i> Insurance Pipeline User Guide</h2>
-        <p>Complete guide for the NHCX Insurance Pipeline — architecture, resource extraction, FHIR profiles, and deployment.</p>
+<div id="insurance-interactive-view" class="ins-container" style="display:none;">
+    <!-- Sub Navigation inside tool page -->
+    <div class="sub-nav-bar">
+        <button class="sub-tab-btn active" id="btn-ins-launch" onclick="openSubTab('PDF2NHCX','insurance-main',this)">
+            <i class="fas fa-shield-alt"></i> Insurance Policy
+        </button>
+        <button class="sub-tab-btn" onclick="openSubTab('PDF2NHCX','insurance-api',this)">
+            <i class="fas fa-code"></i> API Access
+        </button>
+        <button class="sub-tab-btn" onclick="openSubTab('PDF2NHCX','insurance-runlocally',this)">
+            <i class="fas fa-download"></i> Run Locally
+        </button>
     </div>
-</div>
 
 <div id="insurance-guide-container">
 <div class="guide-layout">
@@ -385,431 +263,314 @@ print(r.json())</pre>
                 <strong>What you will see</strong>
                 Upload an insurance policy PDF, watch the AI extract structured coverage data, and download a FHIR R4 InsurancePlanBundle — all in under 5 minutes.
             </div>
-        </div>
-
-        <!-- Overview -->
-        <div id="ig-overview" class="guide-section">
-            <div class="guide-hero">
-                <span style="display:inline-block;background:var(--primary);color:#fff;font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:20px;margin-bottom:10px;">v2.0 — Gemma 4 26B</span>
-                <h2>NHCX Insurance Pipeline</h2>
-                <p>Converts insurance documents into FHIR R4 InsurancePlanBundle resources conforming to National Health Claims Exchange (NHCX) standards for India's healthcare interoperability.</p>
+            <div class="tab-header-logos">
+                <img src="assets/NHA_logo.png" alt="NHA Logo" class="logo">
             </div>
-
-            <h3>Key Capabilities</h3>
-            <table>
-                <thead><tr><th>Feature</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td>Document Intelligence</td><td>Automatic validation that uploaded documents are insurance-related with two-tier gate</td></tr>
-                    <tr><td>InsurancePlanBundle</td><td>All insurance documents converted into a single standardized FHIR bundle format</td></tr>
-                    <tr><td>FHIR R4 Compliance</td><td>Generated bundles conform to NHCX StructureDefinition profiles with IRDAI codes</td></tr>
-                    <tr><td>LangGraph Orchestration</td><td>Dependency-aware extraction using topological sort for correct resource ordering</td></tr>
-                    <tr><td>Async Processing</td><td>Celery + Redis task queue supports up to 12 concurrent PDF processing slots</td></tr>
-                    <tr><td>Local Execution</td><td>Standalone executables for Linux, Windows, and macOS — run offline with full data confidentiality</td></tr>
-                </tbody>
-            </table>
         </div>
 
-        <!-- How to Use -->
-        <div id="ig-howto" class="guide-section">
-            <h2>How to Use</h2>
-            <p>Follow these three steps to convert an insurance PDF into an NHCX-compliant FHIR bundle.</p>
+        <div class="ins-info-notes" style="margin-bottom: 16px; padding: 10px 14px; border-left: 4px solid #14868C; background-color: #f0fdfa; border-radius: 6px;">
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-clock"></i> Note:</strong> Processing time is typically <strong>3 to 5 minutes</strong>, depending on the PDF size. <strong>Please do not close or refresh this tab</strong> while processing is in progress.
+            </p>
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically. No data is stored.
+            </p>
+            <p style="margin: 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-file-pdf"></i> Limit:</strong> Maximum allowed file size is <strong>25 MB</strong>. Supported format: PDF.
+            </p>
+        </div>
 
-            <div class="guide-pipeline">
-                <div class="guide-pipeline-step">
-                    <h4>1. Upload PDF</h4>
-                    <p>Click <strong>"Choose PDF file..."</strong> and select an insurance document (health insurance policy, pre-authorization, or claims form). Maximum file size is 25 MB.</p>
-                    
-                    <p style="margin-top: 10px;">
-                        Sample demo PDF is provided below and can be directly uploaded
-                        in the upload area for testing.
-                    </p>
+        <!-- Hidden elements needed by processor.js -->
+        <div id="labelNHCX" style="display:none;"><span class="file-text"></span></div>
 
-                    <div style="
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 14px;
-                        margin-top: 12px;
-                        align-items: center;
-                    ">
-                        <a href="assets/nhcx_demo_doc.pdf"
-                        download
-                        style="
-                                text-decoration: none;
-                                color: #14868C;
-                                font-weight: 600;
-                                font-size: 14px;
-                                display: inline-flex;
-                                align-items: center;
-                                gap: 6px;
-                        ">
-                            <i class="fas fa-file-download"></i>
-                            Download Demo Insurance PDF
-                        </a>
+        <!-- Redesigned Workspace Card -->
+        <div class="ins-workspace-card">
+            <div class="ins-dropzone-modern" id="insDropzone" onclick="document.getElementById('fileNHCX').click()">
+                <div class="ins-upload-icon-wrap">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div>
+                    <p class="ins-dropzone-title">Drag &amp; drop policy PDF here, or <span style="color:var(--primary); text-decoration:underline; font-weight:700;">browse files</span></p>
+                    <p class="ins-dropzone-subtitle" style="margin-top: 4px;">Supports PDF format (Max 25 MB)</p>
+                </div>
+            </div>
+            
+            <input type="file" id="fileNHCX" accept=".pdf" style="display:none;" onchange="window.INS_handleFileChange()">
+            
+            <!-- Selected File Card (hidden by default) -->
+            <div class="ins-selected-card" id="insFileCard" style="display:none;">
+                <div class="ins-file-icon">
+                    <i class="far fa-file-pdf"></i>
+                </div>
+                <div class="ins-file-details">
+                    <div class="ins-file-name" id="insCardFileName">Selected_document.pdf</div>
+                    <div class="ins-file-size" id="insCardFileSize">0.0 MB</div>
+                </div>
+                <button class="ins-remove-file-btn" onclick="window.INS_removeFile(event)" title="Remove selected file">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+            
+            <!-- Process Button area -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 14px;">
+                <button onclick="processFile('PDF2NHCX')" id="btnNHCX" class="ins-btn-modern" disabled>
+                    <span>Process Document</span>
+                    <div class="loader" id="loaderNHCX" style="display:none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                </button>
+            </div>
+        </div>
+
+        <div class="output-wrapper">
+            <div id="infoNHCX" style="display: none; padding: 10px; background: #eef2f5; border-radius: 6px; margin-bottom: 10px; font-family: sans-serif; font-size: 14px; border: 1px solid #d1d9e0;">
+                <strong style="color: #2c3e50;">Processing Time:</strong> <span id="procTimeNHCX" style="color: #34495e;">-</span>
+            </div>
+            <div id="bundleSelectorContainerNHCX" style="display: none; padding: 10px; background: #eef2f5; border-radius: 6px; margin-bottom: 10px; border: 1px solid #d1d9e0;">
+                <label for="bundleSelectNHCX" style="font-weight: bold; color: #2c3e50; margin-right: 10px;">Select Bundle:</label>
+                <select id="bundleSelectNHCX" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; width: 60%; font-family: sans-serif;"></select>
+            </div>
+            <div id="processingLogoNHCX" style="display: none; text-align: center; padding: 40px; border: 1px dashed #d1d9e0; border-radius: 6px; background: #fafafa; margin-bottom: 10px;">
+                <img src="assets/tanuh.png" alt="Processing Logo" style="width: 60px; height: auto; animation: pulse 1.5s infinite;">
+                <p style="margin-top: 15px; color: #34495e; font-family: sans-serif; font-weight: bold;">Processing file... Please wait.</p>
+            </div>
+            <div class="output-section">
+                <div class="output-toolbar">
+                    <span class="label">NHCX JSON Output</span>
+                    <div>
+                        <button onclick="copyToClipboard('outputNHCX')" class="copy-btn cta-secondary"><i class="fas fa-copy"></i> Copy JSON</button>
+                        <button onclick="downloadJSON('outputNHCX')" class="copy-btn cta-secondary" style="margin-left: 10px;"><i class="fas fa-file-download"></i> Download JSON</button>
                     </div>
                 </div>
-                <div class="guide-pipeline-step">
-                    <h4>2. Process Document</h4>
-                    <p>Click <strong>"Process insurance document"</strong>. The AI pipeline extracts text via OCR, validates the document type, and generates FHIR resources. Processing takes 3–5 minutes.</p>
+                <pre class="json-output"><code id="outputNHCX" class="language-json">Output will appear here...</code></pre>
+            </div>
+        </div>
+
+        <div class="validation-container">
+            <div class="validation-trigger">
+                <button onclick="runFhirValidation('PDF2NHCX')" id="valBtnNHCX" class="validate-btn">
+                    <i class="fas fa-shield-alt"></i> Validate FHIR R4
+                </button>
+                <div class="loader-v" id="loaderValNHCX"></div>
+            </div>
+            <div id="validationReportNHCX" class="validation-report-area"></div>
+        </div>
+    </div><!-- /insurance-main -->
+
+    <!-- ── SUB: Run Locally ── -->
+    <div id="insurance-runlocally" class="sub-content" style="display:none">
+        <div class="tab-header">
+            <div class="tab-header-text">
+                <h2><i class="fas fa-download" style="color:var(--primary)"></i> Run Locally (Offline Mode)</h2>
+                <p>Download a single executable for your OS. No Python, no pip, no cloud APIs. All data stays on your machine.</p>
+            </div>
+        </div>
+        <p style="margin:0 0 16px; padding:10px 14px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0; font-size:0.8rem; color:#92400e;">
+            <strong><i class="fas fa-microchip"></i> Requires:</strong> NVIDIA GPU with 16 GB+ VRAM (or Apple Silicon Mac with 16 GB+ memory) and ~20 GB free disk space.
+        </p>
+
+        <div class="ins-runlocally-grid">
+            <a href="/downloads/nhcx-extract-linux-x86_64.zip" download class="ins-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-linux" style="color:#14868C;"></i>
+                <h3>Linux x86_64</h3>
+                <p>AppImage (~400 MB)</p>
+                <p class="ins-meta">Ubuntu 20.04+, Fedora 33+</p>
+            </a>
+            <a href="/downloads/nhcx-extract-linux-aarch64.zip" download class="ins-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-linux" style="color:#14868C;"></i>
+                <h3>Linux ARM64</h3>
+                <p>Binary (~400 MB)</p>
+                <p class="ins-meta">aarch64 / AWS Graviton</p>
+            </a>
+            <a href="/downloads/nhcx-extract-windows-x86_64.zip" download class="ins-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-windows" style="color:#14868C;"></i>
+                <h3>Windows</h3>
+                <p>Portable EXE (~400 MB)</p>
+                <p class="ins-meta">Windows 10 / 11</p>
+            </a>
+            <a href="/downloads/nhcx-extract-macos.zip" download class="ins-runlocally-card" onmouseover="this.style.borderColor='#14868C'; this.style.boxShadow='0 4px 12px rgba(20,134,140,0.15)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <i class="fab fa-apple" style="color:#14868C;"></i>
+                <h3>macOS</h3>
+                <p>Binary (~400 MB)</p>
+                <p class="ins-meta">macOS 13+ (Apple Silicon / Intel)</p>
+            </a>
+        </div>
+
+        <div style="background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05); padding:20px; margin:20px 0;">
+            <h3 style="margin-bottom:14px; font-size:1rem; font-weight:700; color:#0f172a;">Setup Steps (All Platforms)</h3>
+
+            <div style="margin-bottom:16px; padding:12px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 6px 0; color:#0f766e; font-size:0.88rem; font-weight:700;">1. Install Ollama</h4>
+                <p style="margin:0; color:#0f766e; font-size:0.8rem; line-height:1.4;">
+                    Download from <a href="https://ollama.com/download" target="_blank" style="color:#14868C; font-weight:bold;">ollama.com/download</a><br>
+                    Linux: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.75rem;">curl -fsSL https://ollama.com/install.sh | sh</code>
+                </p>
+            </div>
+
+            <div style="margin-bottom:16px; padding:12px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 6px 0; color:#0f766e; font-size:0.88rem; font-weight:700;">2. Pull the LLM Model (~16 GB download)</h4>
+                <p style="margin:0; color:#0f766e; font-size:0.8rem; line-height:1.4;">
+                    <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.75rem;">ollama pull gemma4:26b</code><br>
+                    Requires NVIDIA GPU with 16 GB+ VRAM, or Apple Silicon with 16 GB+ unified memory.
+                </p>
+            </div>
+
+            <div style="margin-bottom:16px; padding:12px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 6px 0; color:#0f766e; font-size:0.88rem; font-weight:700;">3. Unzip &amp; Make Executable</h4>
+                <p style="margin:0; color:#0f766e; font-size:0.8rem; line-height:1.4;">
+                    Unzip the downloaded file. On Linux/Mac run: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.75rem;">chmod +x nhcx-extract*</code><br>
+                    Linux requires <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.75rem;">sudo apt install libfuse2</code> if not already installed.
+                </p>
+            </div>
+
+            <div style="margin-bottom:16px; padding:12px; border-left:4px solid #14868C; background:#f0fdfa; border-radius:0 6px 6px 0;">
+                <h4 style="margin:0 0 6px 0; color:#0f766e; font-size:0.88rem; font-weight:700;">4. Run NHCX Insurance Extraction</h4>
+                <p style="margin:0 0 6px 0; color:#0f766e; font-size:0.8rem; line-height:1.4;">
+                    <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.75rem;">./nhcx-extract nhcx policy.pdf -o result.json -m gemma4:26b</code>
+                </p>
+                <p style="margin:0; color:#64748b; font-size:0.76rem;">
+                    Use <code>check</code> first to verify setup: <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.72rem;">./nhcx-extract check -m gemma4:26b</code>
+                </p>
+            </div>
+
+            <div style="padding:10px 12px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 6px 6px 0;">
+                <p style="margin:0; color:#92400e; font-size:0.78rem; line-height:1.4;">
+                    <strong><i class="fas fa-shield-alt"></i> Privacy:</strong> All data stays on your machine. Zero cloud API calls. The output JSON contains a complete FHIR R4 Bundle.
+                </p>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin:20px 0;">
+            <a href="javascript:void(0)" onclick="openTab(null, 'InsuranceDocs'); return false;" class="ins-btn-modern" style="text-decoration:none; padding:10px 24px !important;">
+                <i class="fas fa-book-open"></i> More Details in User Guide
+            </a>
+        </div>
+    </div><!-- /insurance-runlocally -->
+
+    <!-- ── SUB: API Access (Insurance Policy) ── -->
+    <div id="insurance-api" class="sub-content" style="display:none">
+        <div class="tab-header">
+            <div class="tab-header-text">
+                <h2><i class="fas fa-code" style="color:var(--primary)"></i> Insurance Policy API</h2>
+                <p>Developer API for converting insurance policy PDFs into NHCX-compliant FHIR InsurancePlanBundles.</p>
+            </div>
+        </div>
+
+        <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:12px 16px; border-radius:8px; margin-bottom:16px;">
+            <p style="margin:0; font-size:0.8rem; color:#0e6a6f; line-height:1.5;">
+                <strong><i class="fas fa-info-circle"></i> Authentication:</strong> Uses JWT bearer tokens. Request a 1-day demo token via the form below, then pass it as <code>Authorization: Bearer &lt;token&gt;</code>.
+                <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Insurance Policy tab, tokens are fetched automatically.
+            </p>
+        </div>
+
+        <!-- Token Request -->
+        <div class="pf-demo-token-card" style="margin-bottom:20px;">
+            <div class="pf-demo-token-header">
+                <i class="fas fa-shield-alt" style="color:#14868C;"></i>
+                <span>Insurance Policy API Token&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2nhcx)</small></span>
+                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
+            </div>
+            <p style="font-size:0.8rem;color:#64748b;margin:0 0 12px;">NHCX-compliant claim extraction from insurance policy PDFs.</p>
+            <form id="apiNhcxTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
+                <div class="pf-demo-token-fields">
+                    <div class="pf-demo-token-field">
+                        <label for="apiNhcxTokenName">Full Name</label>
+                        <input type="text" id="apiNhcxTokenName" placeholder="Your name" required />
+                    </div>
+                    <div class="pf-demo-token-field">
+                        <label for="apiNhcxTokenEmail">Email Address</label>
+                        <input type="email" id="apiNhcxTokenEmail" placeholder="you@example.com" required />
+                    </div>
                 </div>
-                <div class="guide-pipeline-step">
-                    <h4>3. Download FHIR Bundle</h4>
-                    <p>Once complete, the NHCX-compliant FHIR JSON appears in the output panel. Use <strong>Copy JSON</strong> or <strong>Download JSON</strong> to save. Validate using the <strong>Validate FHIR R4</strong> button.</p>
+                <button type="submit" class="pf-btn pf-btn-primary" id="apiNhcxTokenSubmit">
+                    <i class="fas fa-bolt"></i> Request Insurance Token
+                </button>
+            </form>
+            <div id="apiNhcxTokenResult" class="pf-demo-token-result hidden">
+                <div class="pf-demo-token-result-header">
+                    <span id="apiNhcxTokenGreeting"></span>
+                    <span id="apiNhcxTokenExpiry" class="pf-demo-token-expiry"></span>
+                </div>
+                <div class="pf-demo-token-output-wrap">
+                    <pre class="pf-demo-token-output" id="apiNhcxTokenOutput"></pre>
+                    <button class="pf-demo-token-copy pf-btn" id="apiNhcxTokenCopy"><i class="fas fa-copy"></i> Copy</button>
                 </div>
             </div>
-
-            <div class="guide-callout guide-callout-warning">
-                <strong>Privacy Protocol</strong>
-                This is a non-persistent service. Your data is processed in real-time and purged automatically after use. No data is stored. Kindly download your JSON bundles to preserve your results.
-            </div>
+            <div id="apiNhcxTokenError" class="pf-demo-token-error hidden"></div>
         </div>
 
-        <!-- Architecture -->
-        <div id="ig-architecture" class="guide-section">
-            <h2>System Architecture</h2>
-            <p>The platform consists of Docker microservices orchestrated via Docker Compose, communicating over an internal Docker network.</p>
-
-            <div class="guide-flow-diagram">                    +------------------+
-                    |    Frontend      |
-                    |  (Apache :8080)  |
-                    +--------+---------+
-                             |
-          +------------------+------------------+
-          |                                     |
-+---------v--------+              +---------v--------+
-|   pdf2abdm       |              |   pdf2nhcx       |
-|  (FastAPI :8000) |              |  (FastAPI :8001) |
-+---------+--------+              +---------+--------+
-          |                                     |
-          +------------------+------------------+
-                             |
-                  +----------v-----------+
-                  |     Celery Workers   |
-                  |  (3 replicas x 4)    |
-                  +----------+-----------+
-                             |
-                  +----------v-----------+
-                  |     Redis            |
-                  |  (Broker + Backend)  |
-                  +----------+-----------+
-                             |
-                  +----------v-----------+
-                  |   Vertex AI (LLM)    |
-                  |   Gemma 4 26B MaaS   |
-                  +----------------------+</div>
-
-            <h3>Service Overview</h3>
-            <table>
-                <thead><tr><th>Service</th><th>Port</th><th>Role</th></tr></thead>
+        <!-- Endpoint Reference -->
+        <h3 style="margin:0 0 12px;font-size:0.92rem;color:#0e6a6f;font-weight:700;"><i class="fas fa-list-ul"></i> Endpoint Reference</h3>
+        <div class="api-section-box">
+            <table class="api-endpoint-table">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">Method</th>
+                        <th>Path</th>
+                        <th style="width:100px;">Auth</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><code>frontend</code></td><td>8080</td><td>Static SPA + reverse proxy (Apache httpd)</td></tr>
-                    <tr><td><code>pdf2abdm</code></td><td>8000</td><td>Clinical document pipeline (ABDM profiles)</td></tr>
-                    <tr><td><code>pdf2nhcx</code></td><td>8001</td><td>Insurance document pipeline (NHCX profiles)</td></tr>
-                    <tr><td><code>celery-worker</code></td><td>&mdash;</td><td>Background task processing (3 replicas, concurrency=4)</td></tr>
-                    <tr><td><code>redis</code></td><td>6379</td><td>Task broker, result backend, progress store</td></tr>
+                    <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2nhcx/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT for the Insurance API</td></tr>
+                    <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2nhcx/submit</code></td><td>Bearer</td><td>Async: submit PDF, returns <code>task_id</code> (202)</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2nhcx/task-status/{id}</code></td><td>Open</td><td>Poll async task status</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2nhcx/health</code></td><td>Open</td><td>Service liveness + model status</td></tr>
+                    <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2nhcx/model-health</code></td><td>Open</td><td>AI model readiness check</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- NHCX Pipeline -->
-        <div id="ig-pipeline" class="guide-section">
-            <h2>NHCX Insurance Pipeline</h2>
-            <p>The pdf2nhcx service converts insurance documents into FHIR R4 <code>InsurancePlanBundle</code> resources conforming to National Health Claims Exchange standards. All insurance document types are converted into this single bundle format.</p>
+        <!-- Quick Start (curl) -->
+        <h3 style="margin:20px 0 12px;font-size:0.92rem;color:#0e6a6f;font-weight:700;"><i class="fas fa-terminal"></i> Quick Start</h3>
 
-            <h3>Resource Dependency Graph</h3>
-            <p>NHCX resources have strict ordering requirements. The pipeline uses topological sorting to ensure dependencies are resolved before dependent resources are extracted:</p>
-            <div class="guide-flow-diagram">  Organization ──────────┐
-                         v
-  InsurancePlan ─────────┤
-                         v
-  InsurancePlanBundle ───┘
-
-  Independent: Binary, DocumentReference, Condition, Patient, Practitioner</div>
-
-            <h3>Pipeline Steps</h3>
-            <div class="guide-pipeline">
-                <div class="guide-pipeline-step"><h4>1. OCR + Distillation</h4><p>Multi-engine OCR extracts raw text, then 8 LLM calls distill structured information from the entire text.</p></div>
-                <div class="guide-pipeline-step"><h4>2. Document Type Gate</h4><p>Classifier validates the document is actually an insurance document. Clinical docs are rejected with a redirect message.</p></div>
-                <div class="guide-pipeline-step"><h4>3. NHCX Resource Selection</h4><p>LLM identifies which insurance-specific FHIR resources are present in the document.</p></div>
-                <div class="guide-pipeline-step"><h4>4. LangGraph Extraction (Dependency-Ordered)</h4><p>Each resource extracted via dedicated LLM call with NHCX rulebook (StructureDefinition JSON) loaded into prompt context.</p></div>
-                <div class="guide-pipeline-step"><h4>5. Sanitization &amp; Assembly</h4><p><code>sanitize_fhir_resource()</code> fixes hallucinated types, missing required fields, invalid code systems. Bundle assembled with InsurancePlan first.</p></div>
-                <div class="guide-pipeline-step"><h4>6. PDF Embedding &amp; Caching</h4><p>Original PDF embedded as base64 Binary resource. Final bundle cached in Redis (24h TTL).</p></div>
-            </div>
-
-            <h3>Rulebook-Driven Extraction</h3>
-            <p>Each FHIR resource type has a corresponding StructureDefinition JSON file (40+ rulebooks) loaded into the LLM prompt. This ensures generated resources conform to the exact field constraints, cardinality rules, and terminology bindings defined by NHCX.</p>
-
-            <div class="guide-callout guide-callout-info">
-                <strong>Cross-Reference Integrity</strong>
-                An <code>id_registry</code> dictionary tracks generated resource IDs across the workflow, ensuring that references (e.g., InsurancePlan referencing Organization) use correct UUIDs.
-            </div>
-        </div>
-
-        <!-- OCR Engines -->
-        <div id="ig-ocr" class="guide-section">
-            <h2>OCR Engine Waterfall</h2>
-            <p>The platform employs a 6-engine waterfall strategy to maximize text extraction quality across diverse PDF types.</p>
-
-            <table>
-                <thead><tr><th>#</th><th>Engine</th><th>Technology</th><th>Best For</th><th>Fallback Trigger</th></tr></thead>
-                <tbody>
-                    <tr><td>1</td><td><strong>PyPDF</strong></td><td>Native PDF text layer</td><td>Clean digital PDFs</td><td>&lt;50 chars/page (scanned)</td></tr>
-                    <tr><td>2</td><td><strong>Chandra2</strong></td><td>VLM 4B (datalab/chandra2)</td><td>Complex layouts, handwriting</td><td>GPU unavailable or error</td></tr>
-                    <tr><td>3</td><td><strong>Docling</strong></td><td>IBM Structural Parser</td><td>Tables, structured docs</td><td>Parse failure or empty</td></tr>
-                    <tr><td>4</td><td><strong>LightOn</strong></td><td>PyMuPDF4LLM</td><td>Fast digital extraction</td><td>Empty or insufficient text</td></tr>
-                    <tr><td>5</td><td><strong>Surya</strong></td><td>Transformer OCR</td><td>90+ languages, 2x resolution</td><td>Low confidence scores</td></tr>
-                    <tr><td>6</td><td><strong>Chandra</strong></td><td>Tesseract (300 DPI)</td><td>Last resort, any document</td><td>Final fallback (always succeeds)</td></tr>
-                </tbody>
-            </table>
-
-            <div class="guide-callout guide-callout-success">
-                <strong>GPU Optimization</strong>
-                Chandra2 (VLM) requires 8–12 GB VRAM. When no GPU is available, the waterfall automatically skips to Docling, maintaining service availability without hardware dependency.
-            </div>
-        </div>
-
-        <!-- LLM Integration -->
-        <div id="ig-llm" class="guide-section">
-            <h2>LLM Integration</h2>
-            <p>The platform uses Google's Gemma 4 26B model via Vertex AI Model-as-a-Service for all inference tasks.</p>
-
-            <h3>Model Configuration</h3>
-            <table>
-                <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
-                <tbody>
-                    <tr><td>Model</td><td><code>publishers/google/models/gemma-4-26b-a4b-it-maas</code></td></tr>
-                    <tr><td>Provider</td><td>Google Vertex AI (Model-as-a-Service)</td></tr>
-                    <!-- <tr><td>Temperature</td><td>0.3</td></tr> -->
-                    <tr><td>Max Tokens</td><td>Depends on Resource</td></tr>
-                    <tr><td>Context Window</td><td>128K tokens</td></tr>
-                </tbody>
-            </table>
-
-            <h3>LLM Call Budget Per Document</h3>
-            <table>
-                <thead><tr><th>Stage</th><th>Calls</th><th>Purpose</th></tr></thead>
-                <tbody>
-                    <tr><td>Distillation</td><td>~8</td><td>Structured text extraction from raw OCR</td></tr>
-                    <tr><td>Classification</td><td>1</td><td>Document type + resource selection</td></tr>
-                    <tr><td>FHIR Extraction</td><td>~6</td><td>One call per resource type (InsurancePlan, Organization, etc.)</td></tr>
-                    <tr><td><strong>Total</strong></td><td><strong>~15</strong></td><td>Per Insurance PDF</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- FHIR Profiles -->
-        <div id="ig-profiles" class="guide-section">
-            <h2>NHCX FHIR Profiles</h2>
-            <p>Generated resources conform to NHCX-specific FHIR R4 profiles for insurance interoperability.</p>
-
-            <table>
-                <thead><tr><th>Resource</th><th>Profile</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td>InsurancePlan</td><td>NHCX InsurancePlan</td><td>Policy details, coverage, benefits, exclusions</td></tr>
-                    <tr><td>Organization</td><td>NHCX Organization</td><td>Insurance company with IRDAI registration</td></tr>
-                    <tr><td>Patient</td><td>NHCX Patient</td><td>Policyholder demographics</td></tr>
-                    <tr><td>Condition</td><td>NHCX Condition</td><td>Pre-existing conditions, exclusions</td></tr>
-                    <tr><td>Binary</td><td>FHIR Binary</td><td>Base64-encoded source PDF</td></tr>
-                    <tr><td>DocumentReference</td><td>NHCX DocumentReference</td><td>Metadata about the source document</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Terminology Bindings</h3>
-            <ul>
-                <li><strong>ICD-10:</strong> Diagnosis coding (Condition resources)</li>
-                <li><strong>SNOMED CT:</strong> Clinical findings and procedures</li>
-                <li><strong>IRDAI Codes:</strong> Insurance plan and coverage types</li>
-                <li><strong>NHA Value Sets:</strong> India-specific extensions and identifiers</li>
-            </ul>
-        </div>
-
-        <!-- Validation -->
-        <div id="ig-validation" class="guide-section">
-            <h2>Validation &amp; Sanitization</h2>
-            <p>LLM-generated FHIR resources undergo multi-layer validation and correction before inclusion in the final bundle.</p>
-
-            <table>
-                <thead><tr><th>Issue</th><th>Fix Applied</th></tr></thead>
-                <tbody>
-                    <tr><td>Wrong <code>resourceType</code></td><td>Corrected to match expected type</td></tr>
-                    <tr><td>Missing required fields</td><td>Populated with sensible defaults</td></tr>
-                    <tr><td>Invalid code systems</td><td>Replaced with correct canonical URLs</td></tr>
-                    <tr><td>Incorrect date formats</td><td>Normalized to FHIR dateTime format</td></tr>
-                </tbody>
-            </table>
-
-            <div class="guide-callout guide-callout-info">
-                <strong>40+ Rulebooks</strong>
-                The <code>pdf2nhcx/rulebooks_updated/</code> directory contains StructureDefinition JSONs for every supported NHCX resource type, loaded dynamically based on document classification.
-            </div>
-        </div>
-
-        <!-- Run Locally -->
-        <div id="ig-runlocally" class="guide-section">
-            <h2>Run Locally (Offline Mode)</h2>
-            <p>Download a single executable file for your operating system. No Python, no pip, no cloud APIs needed. All processing happens entirely on your machine.</p>
-
-            <div class="guide-callout guide-callout-warning">
-                <strong>Requirements</strong>
-                NVIDIA GPU with 16 GB+ VRAM (e.g., RTX 4090, A100, L4) or Apple Silicon Mac with 16 GB+ unified memory. ~20 GB free disk space.
-            </div>
-
-            <h3>Download</h3>
-            <div class="guide-card-grid">
-                <a href="/downloads/nhcx-extract-linux-x86_64.zip" target="_blank" class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-linux"></i></div>
-                    <h4>Linux x86_64</h4>
-                    <p>AppImage (~400 MB)</p>
-                </a>
-                <a href="/downloads/nhcx-extract-linux-aarch64.zip" target="_blank" class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-linux"></i></div>
-                    <h4>Linux ARM64</h4>
-                    <p>Binary (~400 MB)</p>
-                </a>
-                <a href="/downloads/nhcx-extract-windows-x86_64.zip" target="_blank" class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-windows"></i></div>
-                    <h4>Windows</h4>
-                    <p>Portable EXE (~400 MB)</p>
-                </a>
-                <a href="/downloads/nhcx-extract-macos.zip" target="_blank" class="guide-card" style="text-decoration:none;text-align:center;">
-                    <div class="card-icon"><i class="fab fa-apple"></i></div>
-                    <h4>macOS</h4>
-                    <p>Binary (~400 MB)</p>
-                </a>
-            </div>
-
-            <h3>Setup Steps</h3>
-            <div class="guide-pipeline">
-                <div class="guide-pipeline-step"><h4>1. Install Ollama</h4><p>Download from <a href="https://ollama.com/download" target="_blank">ollama.com/download</a>. Linux: <code>curl -fsSL https://ollama.com/install.sh | sh</code></p></div>
-                <div class="guide-pipeline-step"><h4>2. Pull the LLM Model</h4><p><code>ollama pull gemma4:26b</code> — Downloads ~16 GB. Requires 16 GB+ VRAM.</p></div>
-                <div class="guide-pipeline-step"><h4>3. Unzip &amp; Make Executable</h4><p>Unzip the download. Linux/Mac: <code>chmod +x nhcx-extract*</code>. Linux may need <code>sudo apt install libfuse2</code>.</p></div>
-                <div class="guide-pipeline-step"><h4>4. Verify Setup</h4><p><code>./nhcx-extract check -m gemma4:26b</code></p></div>
-                <div class="guide-pipeline-step"><h4>5. Extract FHIR Bundles</h4><p><code>./nhcx-extract nhcx policy.pdf -o result.json -m gemma4:26b</code></p></div>
-            </div>
-
-            <h3>Command Reference</h3>
-            <table>
-                <thead><tr><th>Command</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><code>nhcx-extract check -m gemma4:26b</code></td><td>Verify Ollama and model are ready</td></tr>
-                    <tr><td><code>nhcx-extract nhcx &lt;pdf&gt; -o &lt;out&gt; -m gemma4:26b</code></td><td>Extract NHCX FHIR bundle from insurance PDF</td></tr>
-                    <tr><td><code>nhcx-extract auto &lt;pdf&gt; -o &lt;out&gt; -m gemma4:26b</code></td><td>Auto-detect type and extract</td></tr>
-                </tbody>
-            </table>
-
-            <div class="guide-callout guide-callout-success">
-                <strong>About Run Locally - Secure Local Execution</strong>
-                This feature enables running the service completely locally with only the file and Ollama model. All processing occurs within your local environment, ensuring data privacy and security. The service operates independently without requiring external connections, making it 
-  ideal for confidential or sensitive data handling. For those interested in contributing, the source code is publicly available and contributions are welcome.
-            </div>
-        </div>
-
-        <!-- API Reference -->
-        <div id="ig-api" class="guide-section">
-            <h2>API Reference</h2>
-            <p>The Insurance Pipeline API exposes RESTful endpoints for converting insurance PDFs into NHCX-compliant FHIR InsurancePlanBundles.</p>
-
-            <div class="guide-callout guide-callout-info">
-                <strong>Authentication</strong>
-                Uses JWT bearer tokens. Request a 1-day demo token via <code>POST /pdf2nhcx/api/token</code>, then pass as <code>Authorization: Bearer &lt;token&gt;</code>. UI uploads handle tokens automatically.
-            </div>
-
-            <h3>Endpoints</h3>
-            <table>
-                <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>POST</strong></td><td><code>/pdf2nhcx/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT</td></tr>
-                    <tr><td><strong>POST</strong></td><td><code>/pdf2nhcx</code></td><td>Bearer</td><td>Sync: PDF to NHCX FHIR InsurancePlanBundle</td></tr>
-                    <tr><td><strong>POST</strong></td><td><code>/pdf2nhcx/submit</code></td><td>Bearer</td><td>Async: submit PDF, returns <code>task_id</code></td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/pdf2nhcx/task-status/{id}</code></td><td>Open</td><td>Poll async task status and progress</td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/pdf2nhcx/task-result/{id}</code></td><td>Open</td><td>Retrieve completed FHIR bundle result</td></tr>
-                    <tr><td><strong>GET</strong></td><td><code>/pdf2nhcx/health</code></td><td>Open</td><td>Service liveness + model status</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Quick Start (curl)</h3>
-            <pre><code># 1. Get a token
-TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/pdf2nhcx/api/token \
+        <div class="api-section-box">
+            <h4 style="margin:0 0 6px; font-size:0.8rem; color:var(--text-dark); font-weight:700;">curl</h4>
+            <div class="api-code-block">
+                <pre style="margin:0; white-space:pre-wrap;">TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/pdf2nhcx/api/token \
   -H "Content-Type: application/json" \
   -d '{"name":"Your Name","email":"you@example.com"}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-# 2. Synchronous conversion
-curl -X POST https://dpi-dev.tanuh.ai/pdf2nhcx \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@insurance_policy.pdf"
-
-# 3. Asynchronous submission
 curl -X POST https://dpi-dev.tanuh.ai/pdf2nhcx/submit \
   -H "Authorization: Bearer $TOKEN" \
-  -F "file=@insurance_policy.pdf"
-
-# 4. Poll for result
-curl https://dpi-dev.tanuh.ai/pdf2nhcx/task-result/{task_id}</code></pre>
-
-            <h3>Response Format</h3>
-            <pre><code>{
-  "status": "completed",
-  "doc_type": "InsurancePolicy",
-  "bundle": {
-    "resourceType": "Bundle",
-    "type": "collection",
-    "entry": [ ... ]
-  },
-  "model_used": "gemma4"
-}</code></pre>
-
-            <div class="guide-callout guide-callout-warning">
-                <strong>Document Validation</strong>
-                Uploading a non-insurance document (e.g., clinical report) returns HTTP 422 with redirect message to the ABDM/Clinical pipeline.
+  -F "file=@/path/to/insurance_policy.pdf"</pre>
+                <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
             </div>
         </div>
 
-        <!-- Concurrency -->
-        <div id="ig-concurrency" class="guide-section">
-            <h2>Concurrency &amp; Deployment</h2>
-            <p>The platform handles concurrent document processing through Celery distributed task queues backed by Redis.</p>
+        <div class="api-section-box">
+            <h4 style="margin:0 0 6px; font-size:0.8rem; color:var(--text-dark); font-weight:700;">Python</h4>
+            <div class="api-code-block">
+                <pre style="margin:0; white-space:pre-wrap;">import requests
 
-            <table>
-                <thead><tr><th>Setting</th><th>Value</th><th>Effect</th></tr></thead>
-                <tbody>
-                    <tr><td>Worker replicas</td><td>3</td><td>3 independent Celery worker containers</td></tr>
-                    <tr><td>Concurrency per worker</td><td>4</td><td>4 prefork processes per container</td></tr>
-                    <tr><td><strong>Total slots</strong></td><td><strong>12</strong></td><td>12 PDFs can process simultaneously</td></tr>
-                    <tr><td>Task time limit</td><td>1800s (30min)</td><td>Hard kill after 30 minutes</td></tr>
-                </tbody>
-            </table>
+resp = requests.post(
+    "https://dpi-dev.tanuh.ai/pdf2nhcx/api/token",
+    json={"name": "Your Name", "email": "you@example.com"},
+)
+token = resp.json()["access_token"]
 
-            <div class="guide-callout guide-callout-warning">
-                <strong>Bottleneck: Vertex AI Rate Limits</strong>
-                The actual throughput ceiling is Vertex AI API quotas, not infrastructure. Each PDF requires ~15 LLM calls.
+with open("insurance_policy.pdf", "rb") as f:
+    r = requests.post(
+        "https://dpi-dev.tanuh.ai/pdf2nhcx/submit",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("policy.pdf", f, "application/pdf")},
+        timeout=600,
+    )
+print(r.json())</pre>
+                <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
             </div>
         </div>
 
-        <!-- Configuration -->
-        <div id="ig-env" class="guide-section">
-            <h2>Configuration</h2>
-            <p>Key environment variables for deploying the insurance pipeline.</p>
-
-            <table>
-                <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td><code>GOOGLE_CLOUD_PROJECT</code></td><td>Yes</td><td>GCP project ID for Vertex AI</td></tr>
-                    <tr><td><code>GOOGLE_APPLICATION_CREDENTIALS</code></td><td>Yes</td><td>Path to service account JSON</td></tr>
-                    <tr><td><code>REDIS_URL</code></td><td>Yes</td><td>Redis connection string</td></tr>
-                    <tr><td><code>TASK_RESULT_TTL</code></td><td>No</td><td>Redis result cache TTL (default: 86400s)</td></tr>
-                    <tr><td><code>MAX_FILE_SIZE_MB</code></td><td>Yes</td><td>Upload size limit (25MB)</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Docker Deployment</h3>
-            <pre><code># Build and deploy
-docker compose -f docker-compose.yml up --build -d
-
-# Scale workers for higher throughput
-docker compose up -d --scale celery-worker=5
-
-# View logs
-docker compose logs -f pdf2nhcx celery-worker</code></pre>
+        <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;">
+            <button onclick="API_downloadPostman()" class="pf-btn-postman" style="flex:1;font-size:0.84rem;padding:0;height:42px;display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:0;">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                    <circle cx="16" cy="16" r="16" fill="#FF6C37"/>
+                    <path d="M22.3 9.7a8.5 8.5 0 1 0-1.1 12.1l-4.6-4.6 1.3-1.3 4.6 4.6A8.5 8.5 0 0 0 22.3 9.7z" fill="#fff"/>
+                </svg>
+                Download Postman Collection
+            </button>
+            <a href="javascript:void(0)" onclick="openTab(null, 'InsuranceDocs'); return false;" class="pf-btn pf-btn-ghost" style="flex:1;font-size:0.84rem;padding:0;height:42px;display:inline-flex;align-items:center;justify-content:center;margin:0;text-decoration:none;">
+                <i class="fas fa-book-open"></i>&nbsp; Full API Documentation
+            </a>
         </div>
 
         <!-- Source Code -->
@@ -824,6 +585,7 @@ docker compose logs -f pdf2nhcx celery-worker</code></pre>
                 </a>
             </div>
         </div>
+    </div><!-- /insurance-api -->
 
         <!-- Feedback -->
         <div id="ig-feedback" class="guide-section">

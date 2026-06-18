@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import numpy as np
 
 APP_ENV = os.getenv("APP_ENV", "prod")
 DATA_DIR = Path(os.getenv("DATA_DIR", "/app/forgensic_data"))

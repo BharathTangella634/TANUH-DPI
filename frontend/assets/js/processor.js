@@ -67,10 +67,11 @@
         if (btn)    btn.disabled = true;
         outputEl.textContent = "Processing...";
 
-        const isLocal = window.location.hostname === "localhost";
-        const base    = isLocal
-            ? (isClinical ? "http://localhost:8000" : "http://localhost:8001")
-            : window.location.origin;
+        const base = window.DPI_API_CONFIG
+            ? (isClinical ? window.DPI_API_CONFIG.abdm : window.DPI_API_CONFIG.nhcx)
+            : (window.location.hostname === "localhost"
+                ? (isClinical ? "http://localhost:8000" : "http://localhost:8001")
+                : window.location.origin);
 
         // Silently obtain or reuse a token — user never needs to do this manually
         const token   = await ensureToken(isClinical, base);
@@ -223,6 +224,150 @@
     window.processFile       = processFile;
     window.runFhirValidation = async function(type) {
         window.showToast('Validation', 'Starting FHIR R4 validation...', 'info');
+    };
+
+    window.INS_init = function () {
+        const landing = document.getElementById('insurance-landing-view');
+        const interactive = document.getElementById('insurance-interactive-view');
+        if (landing) landing.style.display = 'block';
+        if (interactive) interactive.style.display = 'none';
+    };
+
+    window.INS_launchService = function () {
+        const landing = document.getElementById('insurance-landing-view');
+        const interactive = document.getElementById('insurance-interactive-view');
+        if (landing) landing.style.display = 'none';
+        if (interactive) {
+            interactive.style.display = 'block';
+            const firstBtn = interactive.querySelector('.sub-tab-btn');
+            if (firstBtn) {
+                firstBtn.click();
+            }
+        }
+    };
+
+    window.INS_handleFileChange = function () {
+        if (window.updateFileName) {
+            window.updateFileName('fileNHCX');
+        }
+        const input = document.getElementById('fileNHCX');
+        const dropzone = document.getElementById('insDropzone');
+        const card = document.getElementById('insFileCard');
+        const nameEl = document.getElementById('insCardFileName');
+        const sizeEl = document.getElementById('insCardFileSize');
+        const btn = document.getElementById('btnNHCX');
+        
+        if (input && input.files && input.files.length > 0) {
+            const file = input.files[0];
+            if (nameEl) nameEl.textContent = file.name;
+            if (sizeEl) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                sizeEl.textContent = sizeMB + " MB";
+            }
+            if (dropzone) dropzone.style.display = 'none';
+            if (card) card.style.display = 'flex';
+            if (btn) btn.removeAttribute('disabled');
+        }
+    };
+
+    window.INS_removeFile = function (e) {
+        if (e) e.stopPropagation();
+        const input = document.getElementById('fileNHCX');
+        const dropzone = document.getElementById('insDropzone');
+        const card = document.getElementById('insFileCard');
+        const btn = document.getElementById('btnNHCX');
+        
+        if (input) {
+            input.value = '';
+            const span = document.querySelector('#labelNHCX .file-text');
+            if (span) span.textContent = 'Choose PDF file...';
+        }
+        if (dropzone) dropzone.style.display = 'flex';
+        if (card) card.style.display = 'none';
+        if (btn) btn.setAttribute('disabled', 'true');
+        
+        const outputEl = document.getElementById('outputNHCX');
+        if (outputEl) outputEl.textContent = 'Output will appear here...';
+        const info = document.getElementById('infoNHCX');
+        if (info) info.style.display = 'none';
+        const bundleSelect = document.getElementById('bundleSelectorContainerNHCX');
+        if (bundleSelect) bundleSelect.style.display = 'none';
+        const logo = document.getElementById('processingLogoNHCX');
+        if (logo) logo.style.display = 'none';
+        const valReport = document.getElementById('validationReportNHCX');
+        if (valReport) valReport.textContent = '';
+    };
+
+    window.CLN_init = function () {
+        const landing = document.getElementById('clinical-landing-view');
+        const interactive = document.getElementById('clinical-interactive-view');
+        if (landing) landing.style.display = 'block';
+        if (interactive) interactive.style.display = 'none';
+    };
+
+    window.CLN_launchService = function () {
+        const landing = document.getElementById('clinical-landing-view');
+        const interactive = document.getElementById('clinical-interactive-view');
+        if (landing) landing.style.display = 'none';
+        if (interactive) {
+            interactive.style.display = 'block';
+            const firstBtn = interactive.querySelector('.sub-tab-btn');
+            if (firstBtn) {
+                firstBtn.click();
+            }
+        }
+    };
+
+    window.CLN_handleFileChange = function () {
+        if (window.updateFileName) {
+            window.updateFileName('fileFHIR');
+        }
+        const input = document.getElementById('fileFHIR');
+        const dropzone = document.getElementById('clnDropzone');
+        const card = document.getElementById('clnFileCard');
+        const nameEl = document.getElementById('clnCardFileName');
+        const sizeEl = document.getElementById('clnCardFileSize');
+        const btn = document.getElementById('btnFHIR');
+        
+        if (input && input.files && input.files.length > 0) {
+            const file = input.files[0];
+            if (nameEl) nameEl.textContent = file.name;
+            if (sizeEl) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                sizeEl.textContent = sizeMB + " MB";
+            }
+            if (dropzone) dropzone.style.display = 'none';
+            if (card) card.style.display = 'flex';
+            if (btn) btn.removeAttribute('disabled');
+        }
+    };
+
+    window.CLN_removeFile = function (e) {
+        if (e) e.stopPropagation();
+        const input = document.getElementById('fileFHIR');
+        const dropzone = document.getElementById('clnDropzone');
+        const card = document.getElementById('clnFileCard');
+        const btn = document.getElementById('btnFHIR');
+        
+        if (input) {
+            input.value = '';
+            const span = document.querySelector('#labelFHIR .file-text');
+            if (span) span.textContent = 'Choose PDF file...';
+        }
+        if (dropzone) dropzone.style.display = 'flex';
+        if (card) card.style.display = 'none';
+        if (btn) btn.setAttribute('disabled', 'true');
+        
+        const outputEl = document.getElementById('outputFHIR');
+        if (outputEl) outputEl.textContent = 'Output will appear here...';
+        const info = document.getElementById('infoFHIR');
+        if (info) info.style.display = 'none';
+        const bundleSelect = document.getElementById('bundleSelectorContainerFHIR');
+        if (bundleSelect) bundleSelect.style.display = 'none';
+        const logo = document.getElementById('processingLogoFHIR');
+        if (logo) logo.style.display = 'none';
+        const valReport = document.getElementById('validationReportFHIR');
+        if (valReport) valReport.textContent = '';
     };
 
 })();
