@@ -27,10 +27,10 @@
             <div class="docs-content-inner">
             <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Clinical Document Extraction Documentation</span>
             <h1 style="margin-top:0.25rem;">Clinical Document Extraction Service</h1>
-            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">pdf2abdm — ABDM FHIR Document Bundle Generator
+            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">pdf2abdm - ABDM FHIR Document Bundle Generator
 Complete Technical & User Documentation</p>
             
-            <h1>1. Summary</h1>
+            <h1>1. Executive Summary</h1>
 <p>The pdf2abdm service is a core microservice within the DPI Integrated Platform that converts clinical PDF documents (Diagnostic Reports and Discharge Summaries) into HL7 FHIR R4 Document Bundles compliant with ABDM (Ayushman Bharat Digital Mission) and NHCX profiles.</p>
 <p>The service is built on a privacy-first architecture, using LLM-orchestrated dynamic workflows powered by Google Gemma 4 (26B parameters) via Vertex AI. It runs as a FastAPI application on port 8000, with asynchronous task processing via Celery workers backed by Redis.</p>
 <p>Key capabilities include multi-engine OCR extraction, intelligent document classification, dependency-aware FHIR resource generation using LangGraph workflows, and rulebook-driven structural enforcement.</p>
@@ -53,48 +53,42 @@ Complete Technical & User Documentation</p>
 <h2>2.3 Technology Stack</h2>
 <div class="table-responsive"><table><thead><tr><th>Component</th><th>Technology</th></tr></thead><tbody><tr><td>Web Framework</td><td>FastAPI (Python 3.10+)</td></tr><tr><td>ASGI Server</td><td>Uvicorn</td></tr><tr><td>Task Queue</td><td>Celery 5.x</td></tr><tr><td>Message Broker</td><td>Redis 7</td></tr><tr><td>LLM</td><td>Google Gemma 4 26B via Vertex AI MaaS</td></tr><tr><td>Workflow Engine</td><td>LangGraph</td></tr><tr><td>OCR Engines</td><td>PyPDF, Docling, LightOn</td></tr><tr><td>Authentication</td><td>PyJWT (HS256 demo + RS256 Keycloak)</td></tr><tr><td>Metrics</td><td>Prometheus (prometheus-client)</td></tr><tr><td>Container</td><td>Docker</td></tr><tr><td>Cloud Storage</td><td>Google Cloud Storage (optional)</td></tr><tr><td>Database</td><td>Cloud SQL MySQL (via session-logger)</td></tr></tbody></table></div>
 <h2>2.4 Supported Document Types</h2>
-<div class="table-responsive"><table><thead><tr><th>Clinical Artifact</th><th>FHIR Bundle Type</th>
-    <!-- <th>Mandatory Resources</th> -->
-</tr></thead><tbody><tr><td>DiagnosticReportRecord</td><td>Document Bundle</td>
-    <!-- <td>Composition, Patient, Practitioner, Organization, DiagnosticReportLab, Observation, DocumentReference</td> -->
-</tr><tr><td>DischargeSummaryRecord</td><td>Document Bundle</td>
-    <!-- <td>Composition, Patient, Encounter, Practitioner, Organization, Condition, Procedure, Observation, DocumentReference</td> -->
-</tr></tbody></table></div>
+<div class="table-responsive"><table><thead><tr><th>Clinical Artifact</th><th>FHIR Bundle Type</th><th>Mandatory Resources</th></tr></thead><tbody><tr><td>DiagnosticReportRecord</td><td>Document Bundle</td><td>Composition, Patient, Practitioner, Organization, DiagnosticReportLab, Observation, DocumentReference</td></tr><tr><td>DischargeSummaryRecord</td><td>Document Bundle</td><td>Composition, Patient, Encounter, Practitioner, Organization, Condition, Procedure, Observation, DocumentReference</td></tr></tbody></table></div>
 <h1>3. Architecture</h1>
 <h2>3.1 System Architecture</h2>
 <p>The pdf2abdm service operates within the DPI Docker Compose stack. It exposes a FastAPI HTTP API on port 8000 and delegates long-running processing to Celery workers consuming from the dedicated 'abdm' Redis queue.</p>
 <p>Architecture components:</p>
 <ul>
-<li>FastAPI API Server (pdf2abdm container, port 8000) — handles HTTP requests, file validation, sync processing, and task submission</li>
-<li>Celery Workers (celery-abdm-worker, 4 replicas x concurrency 2 = 8 parallel slots) — execute the full OCR-to-FHIR pipeline asynchronously</li>
-<li>Redis (port 6379) — serves as Celery broker, result backend, and task status cache</li>
-<!-- <li>Vertex AI MaaS — provides LLM inference for classification, resource extraction, and distillation</li> -->
-<!-- <li>Google Cloud Storage (tanuh-bcd-bucket) — optional persistent storage for PDFs and output JSONs</li> -->
-<li>Session Logger (port 8002) — receives fire-and-forget audit logs for every processing event</li>
-<!-- <li>Cloud SQL (via proxy, port 3306) — stores session logs, auth tokens, and usage statistics</li> -->
+<li>FastAPI API Server (pdf2abdm container, port 8000) - handles HTTP requests, file validation, sync processing, and task submission</li>
+<li>Celery Workers (celery-abdm-worker, 4 replicas x concurrency 2 = 8 parallel slots) - execute the full OCR-to-FHIR pipeline asynchronously</li>
+<li>Redis (port 6379) - serves as Celery broker, result backend, and task status cache</li>
+<li>Vertex AI MaaS - provides LLM inference for classification, resource extraction, and distillation</li>
+<li>Google Cloud Storage (tanuh-bcd-bucket) - optional persistent storage for PDFs and output JSONs</li>
+<li>Session Logger (port 8002) - receives fire-and-forget audit logs for every processing event</li>
+<li>Cloud SQL (via proxy, port 3306) - stores session logs, auth tokens, and usage statistics</li>
 </ul>
 <h2>3.2 Processing Pipeline</h2>
 <p>The end-to-end pipeline from PDF upload to FHIR Bundle output follows these stages:</p>
 <ol>
 <li>File Upload & Validation: Accept PDF (max 25 MB, max 100 pages), validate format</li>
-<li>OCR Text Extraction: Multi-engine waterfall — PyPDF (fast, native text), then Docling (LaTeX-based layout), then LightOn (fast OCR) if needed. Threshold: if PyPDF extracts < 50 chars/page average, fall back to next engine.</li>
+<li>OCR Text Extraction: Multi-engine waterfall - PyPDF (fast, native text), then Docling (LaTeX-based layout), then LightOn (fast OCR) if needed. Threshold: if PyPDF extracts < 50 chars/page average, fall back to next engine.</li>
 <li>Multi-Patient Grouping: For lab batch reports, detect multiple patients by grouping pages by (Age/Sex, Collection Date) fingerprint. Non-lab documents are treated as single-patient.</li>
-<li>Document Classification Gate: Two-tier classification — Tier 1 uses keyword heuristics (< 1ms), Tier 2 falls back to LLM if inconclusive. Returns CLINICAL, INSURANCE, or INVALID. Non-CLINICAL documents are rejected with HTTP 422.</li>
+<li>Document Classification Gate: Two-tier classification - Tier 1 uses keyword heuristics (< 1ms), Tier 2 falls back to LLM if inconclusive. Returns CLINICAL, INSURANCE, or INVALID. Non-CLINICAL documents are rejected with HTTP 422.</li>
 <li>Document Type Classification: LLM analyzes text to select between DischargeSummaryRecord or DiagnosticReportRecord. Determines mandatory and optional FHIR resources to extract.</li>
 <li>LangGraph Dynamic Workflow: Resources are topologically sorted by dependency order. A LangGraph workflow is dynamically constructed with one node per resource type. Each node calls the LLM with the resource's rulebook (StructureDefinition JSON) as structural constraint.</li>
-<li>Per-Resource LLM Extraction: Each FHIR resource is extracted independently via dedicated LLM calls. Token limits vary per resource type (Patient: 2048, Composition: 8192, Observation: 4096, etc.).</li>
+<li>Per-Resource LLM Extraction: Each FHIR resource is extracted independently via dedicated LLM calls with temperature 0.3. Token limits vary per resource type (Patient: 2048, Composition: 8192, Observation: 4096, etc.).</li>
 <li>Sanitization & Normalization: Fix hallucinated fields, ensure UUIDs, set NDHM ABDM profile URLs, enforce correct statuses and required fields.</li>
 <li>Bundle Assembly: Composition resource placed first (index 0), remaining resources in dependency order, DocumentReference last. All entries get fullUrl as urn:uuid:{id}.</li>
 <li>PDF Embedding: Original PDF base64-encoded and injected into DocumentReference.content[0].attachment.data.</li>
 <li>Result Storage: For async mode, result is stored in Redis with 24-hour TTL. For sync mode, returned directly in HTTP response.</li>
 <li>Audit Logging: Fire-and-forget POST to session-logger with processing metadata.</li>
-<!-- <li>Cloud Storage Upload: Optional, fire-and-forget upload of PDF and JSON to GCS. Non-fatal if upload fails.</li> -->
+<li>Cloud Storage Upload: Optional, fire-and-forget upload of PDF and JSON to GCS. Non-fatal if upload fails.</li>
 </ol>
 <h2>3.3 OCR Engine Waterfall</h2>
 <div class="table-responsive"><table><thead><tr><th>Priority</th><th>Engine</th><th>Strength</th><th>Speed</th><th>Trigger</th></tr></thead><tbody><tr><td>1</td><td>PyPDF</td><td>Native text extraction (digital PDFs)</td><td>&lt; 1s</td><td>Always tried first</td></tr><tr><td>2</td><td>Docling</td><td>LaTeX-based layout understanding</td><td>3-10s</td><td>If PyPDF &lt; 50 chars/page</td></tr><tr><td>3</td><td>LightOn</td><td>Fast OCR for scanned documents</td><td>2-5s</td><td>If Docling fails/unavailable</td></tr></tbody></table></div>
 <p>The OCR output is normalized into AI-ready Markdown with YAML front-matter (source, engine, pages, extraction timestamp) and <!-- PAGE N --> markers for page boundaries.</p>
-<!-- <h2>3.4 LLM Configuration</h2>
-<div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Model</td><td>Google Gemma 4 26B (gemma-4-26b-a4b-it-maas)</td></tr><tr><td>Provider</td><td>Vertex AI MaaS</td></tr><tr><td>Project</td><td>bcd-prototypes</td></tr><tr><td>Region</td><td>us-central1</td></tr><tr><td>Temperature</td><td>0.3</td></tr><tr><td>Max Retries</td><td>3 (exponential backoff: 1s, 2s, 4s)</td></tr><tr><td>Timeout</td><td>120 seconds per request</td></tr><tr><td>Cache TTL</td><td>55 minutes (OAuth2 token refresh at 60 min)</td></tr><tr><td>Authentication</td><td>Service account JSON (gcp-service-account.json) or ADC</td></tr></tbody></table></div> -->
+<h2>3.4 LLM Configuration</h2>
+<div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Model</td><td>Google Gemma 4 26B (gemma-4-26b-a4b-it-maas)</td></tr><tr><td>Provider</td><td>Vertex AI MaaS</td></tr><tr><td>Project</td><td>bcd-prototypes</td></tr><tr><td>Region</td><td>us-central1</td></tr><tr><td>Temperature</td><td>0.3</td></tr><tr><td>Max Retries</td><td>3 (exponential backoff: 1s, 2s, 4s)</td></tr><tr><td>Timeout</td><td>120 seconds per request</td></tr><tr><td>Cache TTL</td><td>55 minutes (OAuth2 token refresh at 60 min)</td></tr><tr><td>Authentication</td><td>Service account JSON (gcp-service-account.json) or ADC</td></tr></tbody></table></div>
 <h1>4. API Reference</h1>
 <h2>4.1 Base URL</h2>
 <p>Browser access: http://<host>:8080/pdf2abdm/ (via Apache reverse proxy)</p>
@@ -118,20 +112,20 @@ Complete Technical & User Documentation</p>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td>/health or /pdf2abdm/health</td><td>None</td><td>Service liveness probe. Returns {status: ok}</td></tr><tr><td>GET</td><td>/model-health?model=gemma4</td><td>None</td><td>Check if LLM model is available</td></tr><tr><td>GET</td><td>/ocr-health?engine=lighton</td><td>None</td><td>Check if OCR engine is available</td></tr><tr><td>GET</td><td>/metrics</td><td>None</td><td>Prometheus metrics endpoint</td></tr></tbody></table></div>
 <h3>4.3.3 Synchronous Processing</h3>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/pdf2abdm</td><td>Bearer</td><td>Upload PDF, wait for FHIR Bundle response (blocking)</td></tr><tr><td>POST</td><td>/pdf2abdmurl</td><td>Bearer</td><td>Process a local file path (blocking)</td></tr></tbody></table></div>
-<p>POST /pdf2abdm — multipart/form-data fields: file (PDF, required), model (default: gemma4), ocr_engine (default: auto), state (optional), city (optional).</p>
+<p>POST /pdf2abdm - multipart/form-data fields: file (PDF, required), model (default: gemma4), ocr_engine (default: auto), state (optional), city (optional).</p>
 <p>Response (200 OK):</p>
 <pre><code>{"processing_time": "45.32 seconds", "document_type": "DischargeSummaryRecord", "bundles": [{...}], "bundle_names": ["Bundle 1 - DischargeSummaryRecord"], "model_used": "gemma4", "ocr_engine_used": "auto"}</code></pre>
 <h3>4.3.4 Asynchronous Processing</h3>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/pdf2abdm/submit</td><td>Bearer</td><td>Submit PDF for async processing (returns 202)</td></tr><tr><td>POST</td><td>/pdf2abdm/submit-url</td><td>Bearer</td><td>Submit local file path for async processing (returns 202)</td></tr><tr><td>GET</td><td>/pdf2abdm/task-status/{task_id}</td><td>Bearer</td><td>Poll task progress</td></tr><tr><td>GET</td><td>/pdf2abdm/task-result/{task_id}</td><td>Bearer</td><td>Fetch completed result</td></tr></tbody></table></div>
-<p>POST /pdf2abdm/submit — multipart/form-data fields: file (PDF, required), model (default: gemma4).</p>
+<p>POST /pdf2abdm/submit - multipart/form-data fields: file (PDF, required), model (default: gemma4).</p>
 <p>Response (202 Accepted): {"task_id": "uuid", "status": "queued", "poll_url": "/pdf2abdm/task-status/{task_id}", "result_url": "/pdf2abdm/task-result/{task_id}"}</p>
-<p>GET /task-status/{task_id} — Returns: {"status": "PROGRESS", "step": "LLM Extraction", "progress": 65}</p>
-<p>GET /task-result/{task_id} — Returns 200 with bundle JSON when complete, 202 if still processing, 404 if expired (24h TTL).</p>
+<p>GET /task-status/{task_id} - Returns: {"status": "PROGRESS", "step": "LLM Extraction", "progress": 65}</p>
+<p>GET /task-result/{task_id} - Returns 200 with bundle JSON when complete, 202 if still processing, 404 if expired (24h TTL).</p>
 <h3>4.3.5 FHIR Validation</h3>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/validate</td><td>Bearer</td><td>Validate FHIR JSON against HL7 validator with NDHM IG</td></tr></tbody></table></div>
 <p>Request body: {"json_data": "<json_string>"}</p>
 <p>Uses: HL7 FHIR Validator CLI (java -Xmx2G -jar validator_cli.jar -version 4.0.1 -ig nrces.in.ndhm#6.0.0)</p>
-<!-- <h1>5. Asynchronous Task Processing</h1>
+<h1>5. Asynchronous Task Processing</h1>
 <h2>5.1 Task Definition</h2>
 <div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Task Name</td><td>pdf2abdm.tasks.process_abdm_task</td></tr><tr><td>Queue</td><td>abdm</td></tr><tr><td>Soft Time Limit</td><td>29 minutes (1740 seconds)</td></tr><tr><td>Hard Time Limit</td><td>30 minutes (1800 seconds)</td></tr><tr><td>Auto Retries</td><td>None (0)</td></tr><tr><td>Result TTL</td><td>24 hours (86400 seconds) in Redis</td></tr><tr><td>Workers</td><td>4 replicas x concurrency 2 = 8 parallel slots</td></tr></tbody></table></div>
 <h2>5.2 Task Progress Stages</h2>
@@ -139,33 +133,33 @@ Complete Technical & User Documentation</p>
 <h2>5.3 Result Payloads</h2>
 <p>Success: {"status": "completed", "task_id": "...", "doc_types": ["DischargeSummaryRecord"], "bundle_count": 1, "bundles": [{...}], "model_used": "gemma4"}</p>
 <p>Rejection (wrong document type): {"status": "rejected", "task_id": "...", "error": "Wrong service: this document appears to be an insurance document", "detected_type": "INSURANCE"}</p>
-<p>Failure: {"status": "failed", "task_id": "...", "error": "<exception details>"}</p> -->
-<h1>5. Security</h1>
-<h2>5.1 Authentication</h2>
+<p>Failure: {"status": "failed", "task_id": "...", "error": "<exception details>"}</p>
+<h1>6. Security</h1>
+<h2>6.1 Authentication</h2>
 <p>The service supports two authentication mechanisms:</p>
 <p>Demo Tokens (HS256): Self-service JWT tokens issued by the service itself at POST /api/token. Signed with HMAC-SHA256 using the ABDM_SECRET_KEY environment variable. Suitable for demos, hackathons, and testing.</p>
 <p>Keycloak Tokens (RS256): Enterprise SSO tokens issued by an external Keycloak identity server. Validated against the Keycloak realm's JWKS endpoint. Enabled when KEYCLOAK_REALM_URL is set. Suitable for production deployments.</p>
-<h2>5.2 Data Privacy</h2>
+<h2>6.2 Data Privacy</h2>
 <ul>
 <li>All document processing occurs on-premises within the Docker stack</li>
 <li>No clinical data is sent to external services (LLM inference uses Vertex AI within the GCP project)</li>
 <li>GCS uploads are optional and fire-and-forget (non-fatal if disabled)</li>
 <li>Temporary files are deleted after processing</li>
-<li>Session logger stores only metadata (filename, processing time, IP) — never the document content</li>
+<li>Session logger stores only metadata (filename, processing time, IP) - never the document content</li>
 <li>Compliant with Digital Personal Data Protection (DPDP) Act requirements</li>
 </ul>
-<h2>5.3 Known Limitations</h2>
+<h2>6.3 Known Limitations</h2>
 <ul>
-<li>No rate limiting on API endpoints — any valid token can make unlimited requests</li>
+<li>No rate limiting on API endpoints - any valid token can make unlimited requests</li>
 <li>Email addresses in token requests are format-validated but not verified</li>
 <li>No token revocation mechanism (tokens remain valid until expiry)</li>
 </ul>
-<h1>6. Deployment</h1>
-<h2>6.1 Docker Compose (Recommended)</h2>
+<h1>7. Deployment</h1>
+<h2>7.1 Docker Compose (Recommended)</h2>
 <p>The service runs as part of the DPI integrated Docker Compose stack:</p>
 <p>docker-compose up --build</p>
 <p>This starts: redis, cloud-sql-proxy, session-logger, pdf2abdm (port 8000), celery-abdm-worker (4 replicas), frontend (port 8080), and all other services.</p>
-<h2>6.2 Standalone Local Development</h2>
+<h2>7.2 Standalone Local Development</h2>
 <p>cd dpi-integrated</p>
 <pre><code>pip install -r pdf2abdm/requirements.txt</code></pre>
 <pre><code>export PYTHONPATH=$(pwd)</code></pre>
@@ -174,23 +168,23 @@ Complete Technical & User Documentation</p>
 <pre><code>export REDIS_URL=redis://localhost:6379/0</code></pre>
 <pre><code>export SESSION_LOGGER_URL=http://localhost:8002</code></pre>
 <pre><code>uvicorn pdf2abdm.app.main:app --host 0.0.0.0 --port 8000</code></pre>
-<h2>6.3 System Requirements</h2>
+<h2>7.3 System Requirements</h2>
 <div class="table-responsive"><table><thead><tr><th>Requirement</th><th>Specification</th></tr></thead><tbody><tr><td>Python</td><td>3.10+</td></tr><tr><td>RAM</td><td>8-16 GB (Vertex AI handles LLM inference remotely)</td></tr><tr><td>GCP Credentials</td><td>Service account JSON with Vertex AI access</td></tr><tr><td>Redis</td><td>Running instance for Celery broker/backend</td></tr><tr><td>Network</td><td>Outbound HTTPS to Vertex AI (aiplatform.googleapis.com)</td></tr></tbody></table></div>
-<!-- <h1>8. Configuration (Environment Variables)</h1>
+<h1>8. Configuration (Environment Variables)</h1>
 <div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection for Celery broker and result backend</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>URL of the session logging service</td></tr><tr><td>ABDM_SECRET_KEY</td><td>(required)</td><td>Secret key for HS256 JWT token signing</td></tr><tr><td>ABDM_AUTH_ENABLED</td><td>true</td><td>Set to 'false' to disable auth (dev only)</td></tr><tr><td>ABDM_TOKEN_EXPIRY_DAYS</td><td>1</td><td>Demo token validity in days</td></tr><tr><td>KEYCLOAK_REALM_URL</td><td>(optional)</td><td>Keycloak realm URL for RS256 token validation</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket for PDF and JSON uploads</td></tr><tr><td>GCS_CREDENTIALS_JSON</td><td>(optional)</td><td>Path to GCS-specific service account JSON</td></tr><tr><td>GOOGLE_APPLICATION_CREDENTIALS</td><td>(optional)</td><td>Path to shared Google service account JSON</td></tr><tr><td>LLM_MODEL</td><td>gemma-4-26b-a4b-it-maas</td><td>Vertex AI model identifier</td></tr><tr><td>LLM_PROJECT_ID</td><td>bcd-prototypes</td><td>GCP project for Vertex AI</td></tr><tr><td>LLM_LOCATION</td><td>us-central1</td><td>Vertex AI region</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result cache TTL in seconds (24h)</td></tr><tr><td>PDF_UPLOAD_DIR</td><td>/app/pdf_uploads/tmp</td><td>Shared volume for async temp files</td></tr><tr><td>WORKER_METRICS_PORT</td><td>9200</td><td>Prometheus metrics port for Celery workers</td></tr></tbody></table></div>
 <h1>9. Monitoring & Observability</h1>
 <h2>9.1 Prometheus Metrics</h2>
 <div class="table-responsive"><table><thead><tr><th>Metric</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td>dpi_http_requests_total</td><td>Counter</td><td>Total HTTP requests (service, method, status_code)</td></tr><tr><td>dpi_http_request_duration_seconds</td><td>Histogram</td><td>Request latency (buckets: 0.05s to 300s)</td></tr><tr><td>dpi_tasks_started_total</td><td>Counter</td><td>Celery tasks started</td></tr><tr><td>dpi_tasks_completed_total</td><td>Counter</td><td>Celery tasks completed successfully</td></tr><tr><td>dpi_tasks_failed_total</td><td>Counter</td><td>Celery tasks failed</td></tr><tr><td>dpi_task_duration_seconds</td><td>Histogram</td><td>Task wall-clock duration</td></tr><tr><td>dpi_documents_processed_total</td><td>Counter</td><td>Documents successfully processed</td></tr><tr><td>dpi_documents_failed_total</td><td>Counter</td><td>Documents that failed processing</td></tr><tr><td>dpi_exceptions_total</td><td>Counter</td><td>Exceptions by type and severity</td></tr></tbody></table></div>
 <h2>9.2 Session Logging</h2>
-<p>Every processing event is logged to the session-logger service (fire-and-forget HTTP POST). Logged data includes: service name, filename, document type, model used, OCR engine, processing time, GCS URI, status (success/failed), client IP, and timestamp. This data is stored in Cloud SQL (MySQL) and queryable via the session-logger API.</p> -->
-<h1>7. Error Handling</h1>
+<p>Every processing event is logged to the session-logger service (fire-and-forget HTTP POST). Logged data includes: service name, filename, document type, model used, OCR engine, processing time, GCS URI, status (success/failed), client IP, and timestamp. This data is stored in Cloud SQL (MySQL) and queryable via the session-logger API.</p>
+<h1>10. Error Handling</h1>
 <div class="table-responsive"><table><thead><tr><th>Scenario</th><th>Response</th><th>Details</th></tr></thead><tbody><tr><td>File too large (&gt; 25 MB)</td><td>HTTP 413</td><td>File rejected at upload</td></tr><tr><td>Too many pages (&gt; 100)</td><td>HTTP 413</td><td>File rejected at upload</td></tr><tr><td>Invalid document type (INSURANCE)</td><td>HTTP 422</td><td>Rejected with 'use Insurance tab'</td></tr><tr><td>Invalid document type (OTHER)</td><td>HTTP 422</td><td>Rejected with 'invalid document'</td></tr><tr><td>LLM timeout/error</td><td>Fallback</td><td>Minimal resource generated with placeholder</td></tr><tr><td>OCR all engines fail</td><td>Partial</td><td>Returns minimal Markdown with warning</td></tr><tr><td>Task timeout (30 min)</td><td>FAILURE</td><td>Celery kills worker; stored as failed in Redis</td></tr><tr><td>Result expired (24h)</td><td>HTTP 404</td><td>Client must resubmit</td></tr><tr><td>GCS upload failure</td><td>Non-fatal</td><td>Pipeline completes; upload failure logged as warning</td></tr></tbody></table></div>
-<h1>8. Performance</h1>
-<!-- <h2>11.1 Typical Processing Times</h2> -->
+<h1>11. Performance</h1>
+<h2>11.1 Typical Processing Times</h2>
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Diagnostic Report (simple)</td><td>1-3</td><td>30-60 seconds</td></tr><tr><td>Discharge Summary</td><td>3-10</td><td>60-120 seconds</td></tr><tr><td>Lab Batch Report (multi-patient)</td><td>10-20</td><td>2-5 minutes (per patient group)</td></tr></tbody></table></div>
-<!-- <h2>11.2 Concurrency</h2>
-<p>The service supports 8 parallel processing slots (4 worker replicas x concurrency 2). Additional requests queue in Redis and are processed FIFO. The API server itself handles many concurrent HTTP connections (Uvicorn async).</p> -->
-<h1>9. FHIR Output Format</h1>
+<h2>11.2 Concurrency</h2>
+<p>The service supports 8 parallel processing slots (4 worker replicas x concurrency 2). Additional requests queue in Redis and are processed FIFO. The API server itself handles many concurrent HTTP connections (Uvicorn async).</p>
+<h1>12. FHIR Output Format</h1>
 <p>The service generates FHIR R4 Document Bundles compliant with ABDM/NDHM profiles. Each bundle contains:</p>
 <ul>
 <li>Bundle.resourceType = 'Bundle', Bundle.type = 'document'</li>
@@ -202,8 +196,8 @@ Complete Technical & User Documentation</p>
 <li>Meta.profile set to NDHM ABDM profile URLs</li>
 </ul>
 <p>The output can be validated against the HL7 FHIR Validator with IG nrces.in.ndhm#6.0.0 using the POST /validate endpoint.</p>
-<h1>10. User Guide</h1>
-<h2>10.1 Browser Usage</h2>
+<h1>13. User Guide</h1>
+<h2>13.1 Browser Usage</h2>
 <ol>
 <li>Navigate to the DPI Platform website (e.g., https://nhcxhackathon.tanuh.ai/)</li>
 <li>Click the 'Clinical Document' tab</li>
@@ -214,16 +208,16 @@ Complete Technical & User Documentation</p>
 <li>View the generated FHIR Bundle in the results panel</li>
 <li>Download the JSON bundle or validate it against HL7 standards</li>
 </ol>
-<h2>10.2 API Usage (curl)</h2>
-<p>Step 1 — Get a token:</p>
+<h2>13.2 API Usage (curl)</h2>
+<p>Step 1 - Get a token:</p>
 <pre><code>curl -X POST http://<host>:8000/pdf2abdm/api/token -H "Content-Type: application/json" -d '{"name": "Your Name", "email": "you@example.com"}'</code></pre>
-<p>Step 2 — Submit a PDF (async):</p>
+<p>Step 2 - Submit a PDF (async):</p>
 <pre><code>curl -X POST http://<host>:8000/pdf2abdm/submit -H "Authorization: Bearer <token>" -F "file=@report.pdf"</code></pre>
-<p>Step 3 — Poll status:</p>
+<p>Step 3 - Poll status:</p>
 <pre><code>curl http://<host>:8000/pdf2abdm/task-status/<task_id> -H "Authorization: Bearer <token>"</code></pre>
-<p>Step 4 — Get result:</p>
+<p>Step 4 - Get result:</p>
 <pre><code>curl http://<host>:8000/pdf2abdm/task-result/<task_id> -H "Authorization: Bearer <token>"</code></pre>
-<h2>10.3 API Usage (Python)</h2>
+<h2>13.3 API Usage (Python)</h2>
 <pre><code>import requests</code></pre>
 <p># Get token</p>
 <pre><code>resp = requests.post("http://<host>:8000/pdf2abdm/api/token", json={"name": "Test", "email": "test@example.com"})</code></pre>
@@ -235,8 +229,8 @@ Complete Technical & User Documentation</p>
 <p>task_id = resp.json()["task_id"]</p>
 <p># Poll until complete</p>
 <p>result = requests.get(f"http://<host>:8000/pdf2abdm/task-result/{task_id}", headers=headers).json()</p>
-<h1>11. Known Limitations & Future Enhancements</h1>
-<h2>11.1 Current Limitations</h2>
+<h1>14. Known Limitations & Future Enhancements</h1>
+<h2>14.1 Current Limitations</h2>
 <ul>
 <li>High latency due to multi-step LLM extraction (30-120 seconds per document)</li>
 <li>No automated FHIR validation correction loop (planned: LLM-in-the-loop)</li>
@@ -244,7 +238,7 @@ Complete Technical & User Documentation</p>
 <li>No rate limiting on API endpoints</li>
 <li>No email verification for token issuance</li>
 </ul>
-<h2>11.2 Planned Enhancements</h2>
+<h2>14.2 Planned Enhancements</h2>
 <ul>
 <li>LLM-in-the-loop validation: iterative FHIR validator → LLM fix cycle (3-4 iterations)</li>
 <li>Missing field resolver: compare extracted text vs generated JSON, regenerate missing resources</li>

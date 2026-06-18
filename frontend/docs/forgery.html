@@ -27,11 +27,11 @@
             <div class="docs-content-inner">
             <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Forgery Detection Documentation</span>
             <h1 style="margin-top:0.25rem;">Document Forgery Detection Service</h1>
-            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Forgensic — Classical CV-Based Tampering Detection
+            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Forgensic - Classical CV-Based Tampering Detection
 Complete Technical & User Documentation</p>
             
-            <h1>1. Summary</h1>
-<p>The Forgensic service is a production-ready document forgery detection platform built entirely on classical computer vision methods — no neural networks, no GPU requirements, 100% explainable results. It detects 10 categories of document tampering (C1-C10) including copy-paste, overwriting, added content, erasure, document merging, watermark removal, irregular spacing, and AI-generated content.</p>
+            <h1>1. Executive Summary</h1>
+<p>The Forgensic service is a production-ready document forgery detection platform built entirely on classical computer vision methods - no neural networks, no GPU requirements, 100% explainable results. It detects 10 categories of document tampering (C1-C10) including copy-paste, overwriting, added content, erasure, document merging, watermark removal, irregular spacing, and AI-generated content.</p>
 <p>The service is designed for the high-throughput, low-latency demands of healthcare document verification in the AB-PMJAY ecosystem. Every detection traces back to a clear mathematical equation, making results legally defensible and auditable.</p>
 <p>It runs as a FastAPI application on port 8004 with asynchronous processing via Celery workers on the dedicated 'forgensic' queue. Processing time: 1-3 seconds per page on standard CPU hardware.</p>
 <h1>2. Service Overview</h1>
@@ -41,7 +41,7 @@ Complete Technical & User Documentation</p>
 <div class="table-responsive"><table><thead><tr><th>ID</th><th>Category</th><th>Detection Method</th><th>Signal</th></tr></thead><tbody><tr><td>C1</td><td>Copy-Paste</td><td>ORB keypoint matching + spatial clustering</td><td>Duplicate regions displaced spatially</td></tr><tr><td>C2</td><td>Overwriting</td><td>Edge density anomalies + stroke width analysis</td><td>Anomalous texture in text components</td></tr><tr><td>C3</td><td>Added Content</td><td>Component shape analysis (circularity, fill)</td><td>Stamps, signatures, pasted elements</td></tr><tr><td>C4</td><td>Erasure</td><td>Gap analysis + smooth region detection</td><td>Unnaturally smooth gaps in text lines</td></tr><tr><td>C5</td><td>Document Merge</td><td>Row/col density discontinuities</td><td>Header/body from different documents</td></tr><tr><td>C6</td><td>Watermark Removal</td><td>Hough diagonal lines + FFT periodicity</td><td>Frequency-domain ghosts</td></tr><tr><td>C7</td><td>Irregular Spacing</td><td>Token-level gap z-score analysis</td><td>Anomalous inter-word/inter-line gaps</td></tr><tr><td>C8</td><td>AI-Generated (Full)</td><td>FFT spectrum flatness + high-freq ratio</td><td>Page-wide AI generation signatures</td></tr><tr><td>C9</td><td>AI-Generated (Partial)</td><td>Region-level FFT + edge/gradient z-scores</td><td>Localized AI-edited regions</td></tr><tr><td>C10</td><td>No Tampering</td><td>Default</td><td>No detections found</td></tr></tbody></table></div>
 <h2>2.3 Supported File Formats</h2>
 <ul>
-<li>PDF (.pdf) — rendered to per-page JPEG images via PyMuPDF</li>
+<li>PDF (.pdf) - rendered to per-page JPEG images via PyMuPDF</li>
 <li>Images: JPG, JPEG, PNG, BMP, TIFF, WebP</li>
 <li>Maximum file size: 25 MB</li>
 </ul>
@@ -78,10 +78,10 @@ Complete Technical & User Documentation</p>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/forgensic/api/token</td><td>None</td><td>Issue demo JWT token</td></tr><tr><td>POST</td><td>/forgensic/jobs</td><td>Bearer</td><td>Upload document, get job_id</td></tr><tr><td>GET</td><td>/forgensic/jobs/{id}</td><td>Bearer</td><td>Poll job status and progress</td></tr><tr><td>GET</td><td>/forgensic/jobs/{id}/results</td><td>Bearer</td><td>Fetch analysis findings (when complete)</td></tr><tr><td>GET</td><td>/forgensic/jobs/{id}/files/{name}</td><td>Bearer</td><td>Download output file (preview/JSON/Excel/YAML)</td></tr><tr><td>GET</td><td>/health</td><td>None</td><td>Liveness probe (checks Redis)</td></tr><tr><td>GET</td><td>/stats</td><td>None</td><td>Active jobs count + total docs analyzed</td></tr><tr><td>GET</td><td>/metrics</td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
 <h2>4.3 Job Lifecycle</h2>
 <ol>
-<li>POST /forgensic/jobs — Upload file (multipart form-data), optional ocr_enabled parameter. Returns {job_id, status: 'queued'}.</li>
-<li>GET /forgensic/jobs/{job_id} — Poll status. Returns {status: 'queued'|'processing'|'complete'|'error', progress: 0.0-1.0, message: '...'}.</li>
-<li>GET /forgensic/jobs/{job_id}/results — When status='complete', returns full JobResultResponse with pages, category_summary, findings_summary, export_urls.</li>
-<li>GET /forgensic/jobs/{job_id}/files/{name} — Download specific output files (annotated previews, submission.json, submission_preview.xlsx, YAML annotations).</li>
+<li>POST /forgensic/jobs - Upload file (multipart form-data), optional ocr_enabled parameter. Returns {job_id, status: 'queued'}.</li>
+<li>GET /forgensic/jobs/{job_id} - Poll status. Returns {status: 'queued'|'processing'|'complete'|'error', progress: 0.0-1.0, message: '...'}.</li>
+<li>GET /forgensic/jobs/{job_id}/results - When status='complete', returns full JobResultResponse with pages, category_summary, findings_summary, export_urls.</li>
+<li>GET /forgensic/jobs/{job_id}/files/{name} - Download specific output files (annotated previews, submission.json, submission_preview.xlsx, YAML annotations).</li>
 </ol>
 <h2>4.4 Result Format</h2>
 <p>The JobResultResponse contains:</p>
@@ -92,36 +92,36 @@ Complete Technical & User Documentation</p>
 <li>export_urls: Links to submission.json, submission_preview.xlsx, and per-page YAML annotations</li>
 <li>inference_seconds: Total processing time</li>
 </ul>
-<!-- <h1>5. Celery Task Processing</h1>
+<h1>5. Celery Task Processing</h1>
 <div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Task Name</td><td>forgensic.tasks.process_forgensic_job</td></tr><tr><td>Queue</td><td>forgensic</td></tr><tr><td>Soft Time Limit</td><td>55 minutes</td></tr><tr><td>Hard Time Limit</td><td>60 minutes</td></tr><tr><td>Auto Retries</td><td>None (0)</td></tr><tr><td>Result TTL</td><td>1 hour in Redis (JOB_TTL_SECONDS)</td></tr><tr><td>Workers</td><td>4 replicas x concurrency 2 = 8 parallel slots</td></tr><tr><td>Worker Prefetch</td><td>1 (CPU-bound, heavy CV workload)</td></tr></tbody></table></div>
 
         <div class="callout">
             <div class="callout-title"><i class="fas fa-info-circle"></i> Note</div>
             <p>Forgensic uses a shorter result TTL (1 hour) compared to other services (24 hours) because results include file_map references to disk files that may be cleaned up.</p>
-        </div> -->
+        </div>
         
-<!-- <h1>6. Output Files</h1>
+<h1>6. Output Files</h1>
 <h2>6.1 Disk Layout</h2>
-<pre><code>DATA_DIR/{job_id}/input/ — Original uploaded file</code></pre>
-<pre><code>DATA_DIR/{job_id}/output/rendered_pages/ — Per-page JPEG images (if PDF input)</code></pre>
-<pre><code>DATA_DIR/{job_id}/output/preview/ — Annotated preview images with bounding boxes</code></pre>
-<pre><code>DATA_DIR/{job_id}/output/annotations/ — Per-page YAML annotation files</code></pre>
-<pre><code>DATA_DIR/{job_id}/output/submission.json — Machine-readable results (filename to Category_ID mapping)</code></pre>
-<pre><code>DATA_DIR/{job_id}/output/submission_preview.xlsx — Excel report with links, filenames, categories, region counts</code></pre>
+<pre><code>DATA_DIR/{job_id}/input/ - Original uploaded file</code></pre>
+<pre><code>DATA_DIR/{job_id}/output/rendered_pages/ - Per-page JPEG images (if PDF input)</code></pre>
+<pre><code>DATA_DIR/{job_id}/output/preview/ - Annotated preview images with bounding boxes</code></pre>
+<pre><code>DATA_DIR/{job_id}/output/annotations/ - Per-page YAML annotation files</code></pre>
+<pre><code>DATA_DIR/{job_id}/output/submission.json - Machine-readable results (filename to Category_ID mapping)</code></pre>
+<pre><code>DATA_DIR/{job_id}/output/submission_preview.xlsx - Excel report with links, filenames, categories, region counts</code></pre>
 <h2>6.2 Zero-Persistence Privacy</h2>
-<p>Document data is temporarily stored on the shared volume and automatically purged after JOB_TTL_SECONDS (default: 1 hour). No data is permanently stored. This ensures compliance with healthcare data privacy requirements.</p> -->
-<h1>5. Security</h1>
+<p>Document data is temporarily stored on the shared volume and automatically purged after JOB_TTL_SECONDS (default: 1 hour). No data is permanently stored. This ensures compliance with healthcare data privacy requirements.</p>
+<h1>7. Security</h1>
 <ul>
-<li>All processing occurs locally on CPU — no external AI services or cloud inference</li>
+<li>All processing occurs locally on CPU - no external AI services or cloud inference</li>
 <li>No document data leaves the server</li>
 <li>Results auto-expire after 1 hour</li>
 <li>100% explainable: every detection traces to a mathematical equation</li>
 <li>JWT authentication on all job endpoints</li>
 </ul>
-<!-- <h1>8. Configuration (Environment Variables)</h1>
-<div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>DATA_DIR</td><td>/app/forgensic_data</td><td>Shared volume for uploads and outputs</td></tr><tr><td>MAX_UPLOAD_BYTES</td><td>26214400 (25MB)</td><td>Maximum file upload size</td></tr><tr><td>PIPELINE_PRESET</td><td>npv_focus</td><td>Detection tuning preset</td></tr><tr><td>OCR_ENABLED</td><td>true</td><td>Enable Tesseract OCR for text extraction</td></tr><tr><td>JOB_TTL_SECONDS</td><td>3600 (1h)</td><td>Job state and file expiry</td></tr><tr><td>FORGENSIC_SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>FORGENSIC_AUTH_ENABLED</td><td>true</td><td>Auth toggle</td></tr><tr><td>FORGENSIC_TOKEN_EXPIRY_DAYS</td><td>1</td><td>Token validity</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>PIPELINE_VERSION</td><td>ps3-cv-1.0.0</td><td>Version string for results</td></tr><tr><td>FINDINGS_MAX_PER_PAGE</td><td>5</td><td>Max findings reported per page</td></tr><tr><td>FINDINGS_MIN_AREA_RATIO</td><td>0.003</td><td>Min region area as fraction of page</td></tr></tbody></table></div> -->
-<h1>6. User Guide</h1>
-<h2>6.1 Browser Usage</h2>
+<h1>8. Configuration (Environment Variables)</h1>
+<div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>DATA_DIR</td><td>/app/forgensic_data</td><td>Shared volume for uploads and outputs</td></tr><tr><td>MAX_UPLOAD_BYTES</td><td>26214400 (25MB)</td><td>Maximum file upload size</td></tr><tr><td>PIPELINE_PRESET</td><td>npv_focus</td><td>Detection tuning preset</td></tr><tr><td>OCR_ENABLED</td><td>true</td><td>Enable Tesseract OCR for text extraction</td></tr><tr><td>JOB_TTL_SECONDS</td><td>3600 (1h)</td><td>Job state and file expiry</td></tr><tr><td>FORGENSIC_SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>FORGENSIC_AUTH_ENABLED</td><td>true</td><td>Auth toggle</td></tr><tr><td>FORGENSIC_TOKEN_EXPIRY_DAYS</td><td>1</td><td>Token validity</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>PIPELINE_VERSION</td><td>ps3-cv-1.0.0</td><td>Version string for results</td></tr><tr><td>FINDINGS_MAX_PER_PAGE</td><td>5</td><td>Max findings reported per page</td></tr><tr><td>FINDINGS_MIN_AREA_RATIO</td><td>0.003</td><td>Min region area as fraction of page</td></tr></tbody></table></div>
+<h1>9. User Guide</h1>
+<h2>9.1 Browser Usage</h2>
 <ol>
 <li>Navigate to the DPI Platform website</li>
 <li>Click the 'Forgery Detection' tab</li>
@@ -133,7 +133,7 @@ Complete Technical & User Documentation</p>
 <li>Click on individual regions to zoom in via the crop modal</li>
 <li>Copy findings text or download the annotated preview / export files</li>
 </ol>
-<h2>6.2 API Usage (curl)</h2>
+<h2>9.2 API Usage (curl)</h2>
 <p># Get token</p>
 <pre><code>curl -X POST http://<host>:8004/forgensic/api/token -H "Content-Type: application/json" -d '{"name": "Name", "email": "email@example.com"}'</code></pre>
 <p># Submit document for analysis</p>
@@ -144,16 +144,16 @@ Complete Technical & User Documentation</p>
 <pre><code>curl http://<host>:8004/forgensic/jobs/<job_id>/results -H "Authorization: Bearer <token>"</code></pre>
 <p># Download annotated preview</p>
 <pre><code>curl -o preview.jpg http://<host>:8004/forgensic/jobs/<job_id>/files/preview_page_1.jpg -H "Authorization: Bearer <token>"</code></pre>
-<h1>7. Performance</h1>
+<h1>10. Performance</h1>
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Single image</td><td>1</td><td>1-3 seconds</td></tr><tr><td>Short PDF</td><td>1-5</td><td>5-15 seconds</td></tr><tr><td>Medium PDF</td><td>5-20</td><td>15-60 seconds</td></tr><tr><td>Large PDF</td><td>20-50</td><td>1-3 minutes</td></tr></tbody></table></div>
 <p>Processing is CPU-bound. Each page goes through 10 independent detectors sequentially. The pipeline is optimized for standard server CPUs (e.g., GCP e2-standard-4).</p>
-<!-- <h1>11. Offline Desktop Application</h1>
-<p>A standalone desktop GUI (forgensic_gui.py) is available for offline usage using CustomTkinter. It provides the same CV detection pipeline without requiring a server, Redis, or network connectivity. Results are saved locally as annotated images and findings text files.</p> -->
-<h1>8. Known Limitations & Future Enhancements</h1>
+<h1>11. Offline Desktop Application</h1>
+<p>A standalone desktop GUI (forgensic_gui.py) is available for offline usage using CustomTkinter. It provides the same CV detection pipeline without requiring a server, Redis, or network connectivity. Results are saved locally as annotated images and findings text files.</p>
+<h1>12. Known Limitations & Future Enhancements</h1>
 <ul>
 <li>High false positive rate on very noisy/low-quality scans (use 'strict' preset)</li>
 <li>OCR-dependent detectors (C4, C7) require Tesseract to be installed</li>
-<li>No learning/adaptation — all thresholds are static per preset</li>
+<li>No learning/adaptation - all thresholds are static per preset</li>
 <li>No rate limiting on API endpoints</li>
 <li>C8/C9 AI detection may not catch latest generation AI models</li>
 <li>Planned: adaptive thresholding, batch processing, ensemble scoring, ML-augmented detection</li>

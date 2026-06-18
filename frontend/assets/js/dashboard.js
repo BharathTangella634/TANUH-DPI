@@ -227,6 +227,27 @@
         if (dList)  dList.innerHTML    = districts.map(d => `<span class="geo-tag">${d}</span>`).join('');
     }
 
+    function initStatsObserver() {
+        const statsBand = document.querySelector('.stats-band');
+        if (!statsBand) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    statsBand.querySelectorAll('.stat-value').forEach(el => {
+                        if (!el.classList.contains('revealed-stat')) {
+                            el.classList.add('revealed-stat');
+                            const val = parseInt(el.getAttribute('data-target-value')) || 0;
+                            animate(el.id, val);
+                        }
+                    });
+                }
+            });
+        }, { threshold: 0.5 });
+
+        observer.observe(statsBand);
+    }
+
     // ── Public init ──────────────────────────────────────────────────────────
     window.initDashboard = async function() {
         await fetchGeoLocation();

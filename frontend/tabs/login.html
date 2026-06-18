@@ -1,34 +1,35 @@
 <div class="login-page">
-    <!-- ── Left branding panel ──────────────────────────────────────────── -->
-    <div class="login-panel-left">
+    <!-- Left branding panel -->
+    <div class="login-panel-left animate-fade-in-left">
         <div class="login-brand">
-            <img src="assets/tanuh.png" alt="TANUH" class="login-brand-logo">
             <h1 class="login-brand-title">TANUH DPI</h1>
-            <p class="login-brand-subtitle">Digital Public Infrastructure for AI Healthcare</p>
+            <p class="login-brand-subtitle">Digital Public Infrastructure for Healthcare AI</p>
         </div>
+        
+        <p class="login-services-desc">Login to use these 4 services:</p>
+        
         <ul class="login-features">
             <li>
                 <i class="fas fa-user-shield"></i>
-                <span>Privacy Filter - PII Redaction Engine</span>
+                <span>Privacy Filter - PII Redaction</span>
             </li>
             <li>
                 <i class="fas fa-search-plus"></i>
-                <span>Forgery Detection - Document Forensic Analysis</span>
+                <span>Forgery Detection - Forensic Analysis</span>
             </li>
             <li>
                 <i class="fas fa-shield-alt"></i>
-                <span>Insurance Policy Processing - PDF to NHCX</span>
+                <span>Insurance Policy - PDF to NHCX</span>
             </li>
             <li>
                 <i class="fas fa-file-medical"></i>
-                <span>Clinical Document Conversion - PDF to FHIR</span>
+                <span>Clinical Document - PDF to FHIR</span>
             </li>
         </ul>
-        <p class="login-brand-copy">Open source &middot; ABDM &amp; NHCX compliant</p>
     </div>
 
-    <!-- ── Right form panel ─────────────────────────────────────────────── -->
-    <div class="login-panel-right">
+    <!-- Right form panel -->
+    <div class="login-panel-right animate-fade-in-right">
         <div class="login-form-wrapper">
             <!-- Tab toggle: Sign In / Register -->
             <div class="login-tabs">
@@ -36,11 +37,16 @@
                 <button class="login-tab" id="loginTabRegister" onclick="switchAuthTab('register')">Create Account</button>
             </div>
 
-            <!-- ── Sign In form ─────────────────────────────────────── -->
+            <!-- Sign In form -->
             <div class="login-form-section" id="authSignIn">
-                <p class="login-form-heading">Welcome back</p>
-
                 <div id="signinError" class="login-error" style="display:none;"></div>
+
+                <button class="login-btn login-btn-google" onclick="handleGoogleAuth()" style="margin-bottom:1.25rem;">
+                    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    Continue with Google
+                </button>
+
+                <div class="login-divider"><span>or continue with email</span></div>
 
                 <div class="login-field">
                     <label for="signinEmail">Email</label>
@@ -51,30 +57,21 @@
                     <input type="password" id="signinPassword" placeholder="Enter your password" autocomplete="current-password">
                 </div>
 
-                <div class="login-forgot-link">
-                    <a href="#" onclick="handleForgotPassword(); return false;">Forgot Password?</a>
-                </div>
-
                 <button class="login-btn login-btn-primary" id="signinSubmitBtn" onclick="handleSignIn()">
                     <span class="login-btn-text">Sign In</span>
                     <span class="login-btn-spinner" style="display:none;"><i class="fas fa-circle-notch fa-spin"></i></span>
                 </button>
 
-                <div class="login-divider"><span>or</span></div>
-
-                <button class="login-btn login-btn-google" onclick="handleGoogleAuth()">
-                    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                    Continue with Google
-                </button>
+                <p class="login-toggle-text">
+                    Don't have an account? <a href="#" onclick="switchAuthTab('register'); return false;">Create an account</a>
+                </p>
             </div>
 
-            <!-- ── Register form ────────────────────────────────────── -->
+            <!-- Register form -->
             <div class="login-form-section" id="authRegister" style="display:none;">
-                <p class="login-form-heading">Create your account</p>
-
                 <div id="registerError" class="login-error" style="display:none;"></div>
 
-                <button class="login-btn login-btn-google" onclick="handleGoogleAuth()" style="margin-bottom:1rem;">
+                <button class="login-btn login-btn-google" onclick="handleGoogleAuth()" style="margin-bottom:1.25rem;">
                     <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                     Continue with Google
                 </button>
@@ -91,66 +88,55 @@
                 </div>
                 <div class="login-field">
                     <label for="registerPassword">Password</label>
-                    <input type="password" id="registerPassword" placeholder="Create a password (min. 6 chars)" autocomplete="new-password">
+                    <input type="password" id="registerPassword" placeholder="Create a password (min. 8 chars)" autocomplete="new-password">
+                </div>
+                <div class="login-field">
+                    <label for="registerConfirm">Confirm Password</label>
+                    <input type="password" id="registerConfirm" placeholder="Re-enter your password" autocomplete="new-password">
                 </div>
 
                 <button class="login-btn login-btn-primary" id="registerSubmitBtn" onclick="handleRegister()">
                     <span class="login-btn-text">Create Account</span>
                     <span class="login-btn-spinner" style="display:none;"><i class="fas fa-circle-notch fa-spin"></i></span>
                 </button>
+
+                <p class="login-toggle-text">
+                    Already have an account? <a href="#" onclick="switchAuthTab('signin'); return false;">Login</a>
+                </p>
             </div>
 
-            <!-- ── Email verification notice ────────────────────────── -->
-            <div class="login-form-section" id="authVerifyNotice" style="display:none;">
-                <p class="login-form-heading">Check your email</p>
+            <!-- OTP verification step -->
+            <div class="login-form-section" id="authOtp" style="display:none;">
+                <p class="login-form-heading">Verify your email</p>
+                <p class="login-otp-desc">We've sent a 6-digit code to <strong id="otpEmailDisplay"></strong></p>
 
-                <div class="login-verify-notice">
-                    <i class="fas fa-envelope-open-text"></i>
-                    <div>
-                        <p>We've sent a verification link to <strong id="verifyEmailAddr"></strong></p>
-                        <p>Click the link in the email to verify your account, then come back and sign in.</p>
-                    </div>
+                <div id="otpError" class="login-error" style="display:none;"></div>
+
+                <div class="otp-inputs" id="otpInputGroup">
+                    <input type="text" maxlength="1" class="otp-box" data-idx="0" inputmode="numeric" autocomplete="one-time-code">
+                    <input type="text" maxlength="1" class="otp-box" data-idx="1" inputmode="numeric">
+                    <input type="text" maxlength="1" class="otp-box" data-idx="2" inputmode="numeric">
+                    <input type="text" maxlength="1" class="otp-box" data-idx="3" inputmode="numeric">
+                    <input type="text" maxlength="1" class="otp-box" data-idx="4" inputmode="numeric">
+                    <input type="text" maxlength="1" class="otp-box" data-idx="5" inputmode="numeric">
                 </div>
 
-                <p id="verifyResendMsg" class="login-verify-resent" style="display:none;"></p>
-
-                <button class="login-btn login-btn-primary" onclick="handleResendVerification()" style="margin-top:1rem;">
-                    <span class="login-btn-text">Resend Verification Email</span>
-                </button>
-
-                <button class="login-btn login-btn-google" onclick="handleBackToSignIn()" style="margin-top:0.75rem;">
-                    <i class="fas fa-arrow-left" style="font-size:0.8rem;"></i>
-                    Back to Sign In
-                </button>
-            </div>
-
-            <!-- ── Forgot password ──────────────────────────────────── -->
-            <div class="login-form-section" id="authForgotPassword" style="display:none;">
-                <p class="login-form-heading">Reset your password</p>
-
-                <div id="forgotError" class="login-error" style="display:none;"></div>
-
-                <div id="forgotSuccess" class="login-verify-notice" style="display:none;">
-                    <i class="fas fa-check-circle"></i>
-                    <div>
-                        <p>Password reset email sent! Check your inbox and follow the link to set a new password.</p>
-                    </div>
-                </div>
-
-                <div class="login-field">
-                    <label for="forgotEmail">Email</label>
-                    <input type="email" id="forgotEmail" placeholder="you@example.com" autocomplete="email">
-                </div>
-
-                <button class="login-btn login-btn-primary" id="forgotSubmitBtn" onclick="handleSendReset()">
-                    <span class="login-btn-text">Send Reset Link</span>
+                <button class="login-btn login-btn-primary" id="otpSubmitBtn" onclick="handleVerifyOtp()">
+                    <span class="login-btn-text">Verify &amp; Continue</span>
                     <span class="login-btn-spinner" style="display:none;"><i class="fas fa-circle-notch fa-spin"></i></span>
                 </button>
 
-                <button class="login-btn login-btn-google" onclick="handleBackToSignIn()" style="margin-top:0.75rem;">
-                    <i class="fas fa-arrow-left" style="font-size:0.8rem;"></i>
-                    Back to Sign In
-                </button>
+                <p class="login-otp-resend">
+                    Didn't receive the code?
+                    <a href="#" id="otpResendLink" onclick="handleResendOtp(); return false;">Resend</a>
+                    <span id="otpResendTimer" style="display:none;"></span>
+                </p>
+            </div>
+
+            <!-- Dev-mode OTP display (when SMTP not configured) -->
+            <div id="devOtpBanner" class="login-dev-otp" style="display:none;">
+                <i class="fas fa-code"></i>
+                <span>Dev mode - OTP: <strong id="devOtpCode"></strong></span>
             </div>
         </div>
     </div>

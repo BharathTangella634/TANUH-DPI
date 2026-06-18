@@ -10,7 +10,7 @@
                 <span class="brand-text">for Healthcare AI</span>
             </h1>
             <p class="hero-desc animate-slide-up" style="animation-delay:0.15s;">
-                An open-source, ABDM and NHCX compliant AI platform for clinical document conversion, insurance claims processing, privacy filtering, and forgery detection. Built by TANUH, the AI Centre of Excellence in Healthcare.
+                Open-source, ABDM &amp; NHCX compliant AI platform for clinical document conversion, insurance claims processing, privacy filtering, and forgery detection, built by TANUH, the AI Centre of Excellence in Healthcare.
             </p>
             <div class="hero-ctas animate-slide-up" style="animation-delay:0.25s;">
                 <a class="btn btn-primary" href="#" onclick="openTab(null,'PDF2FHIR'); document.getElementById('navClinical').classList.add('active'); return false;">
@@ -30,28 +30,28 @@
                 <div class="hero-service-icon" style="background:rgba(14,165,233,0.1);color:#0ea5e9;"><i class="fas fa-file-medical"></i></div>
                 <div class="hero-service-info">
                     <div class="hero-service-name">Clinical Document</div>
-                    <div class="hero-service-desc">PDF to FHIR JSON conversion</div>
+                    <div class="hero-service-desc">PDF to FHIR conversion</div>
                 </div>
             </div>
             <div class="hero-service-card" onclick="openTab(null,'PDF2NHCX'); document.getElementById('navInsurance').classList.add('active');">
                 <div class="hero-service-icon" style="background:rgba(139,92,246,0.1);color:#8b5cf6;"><i class="fas fa-shield-alt"></i></div>
                 <div class="hero-service-info">
                     <div class="hero-service-name">Insurance Policy</div>
-                    <div class="hero-service-desc">PDF to NHCX JSON conversion</div>
+                    <div class="hero-service-desc">PDF to NHCX conversion</div>
                 </div>
             </div>
             <div class="hero-service-card" onclick="openTab(null,'PrivacyFilter'); document.getElementById('navPrivacyFilter').classList.add('active');">
                 <div class="hero-service-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i class="fas fa-user-shield"></i></div>
                 <div class="hero-service-info">
                     <div class="hero-service-name">Privacy Filter</div>
-                    <div class="hero-service-desc">Data anonymization engine</div>
+                    <div class="hero-service-desc">PII redaction engine</div>
                 </div>
             </div>
             <div class="hero-service-card" onclick="openTab(null,'ForgeryDetection'); document.getElementById('navForgery').classList.add('active');">
                 <div class="hero-service-icon" style="background:rgba(16,185,129,0.1);color:#10b981;"><i class="fas fa-search-plus"></i></div>
                 <div class="hero-service-info">
                     <div class="hero-service-name">Forgery Detection</div>
-                    <div class="hero-service-desc">Document tampering detection</div>
+                    <div class="hero-service-desc">Document forensic analysis</div>
                 </div>
             </div>
     </div>
@@ -61,34 +61,19 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
         </svg>
     </div>
-    </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     CREDIBILITY BAND — Stats
+     CREDIBILITY BAND - Stats
      ═══════════════════════════════════════════════════════════════════════════ -->
-<section class="stats-band">
+<section class="stats-band reveal-on-scroll">
     <div class="container">
         <div class="stats-row">
             <div class="stat-item">
-                <div class="stat-value" id="statPageVisitors">0</div>
-                <div class="stat-label">Platform visits</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="statClinical">0</div>
-                <div class="stat-label">Clinical documents converted</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="statInsurance">0</div>
-                <div class="stat-label">Insurance policies processed</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="statDocsRedacted">0</div>
-                <div class="stat-label">Documents anonymized</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="statForgery">0</div>
-                <div class="stat-label">Documents screened for forgery</div>
+                <div class="stat-value-container">
+                    <span class="stat-value" id="statPageVisitors">0</span><span class="stat-plus">+</span>
+                </div>
+                <div class="stat-label">platform visits</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value-container">
@@ -123,14 +108,14 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     WHY TANUH DPI — Numbered feature grid
+     WHY TANUH DPI - Numbered feature grid
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="section section-white">
     <div class="container">
-        <div class="section-header">
+        <div class="section-header reveal-on-scroll">
             <p class="section-label">Why TANUH DPI</p>
             <h2 class="section-title">Built for India's healthcare ecosystem</h2>
-            <p class="section-desc">Purpose-built AI tools for clinical interoperability, claims processing, data privacy, and fraud detection. Designed from the ground up around India's health data standards.</p>
+            <p class="section-desc">Standards-compliant AI tools for clinical interoperability, claims processing, data privacy, and fraud prevention. Not a general-purpose framework retrofitted for healthcare.</p>
         </div>
 
         <div class="features-grid">
@@ -138,28 +123,28 @@
                 <span class="feature-number">01</span>
                 <div>
                     <h3>ABDM &amp; NHCX Compliant</h3>
-                    <p>Every output conforms to Ayushman Bharat Digital Mission and National Health Claims Exchange specifications. Outputs are validated FHIR R4 bundles, ready for national exchange networks.</p>
+                    <p>Every output conforms to Ayushman Bharat Digital Mission and National Health Claims Exchange specifications, with validated FHIR R4 bundles ready for national exchange networks.</p>
                 </div>
             </div>
             <div class="feature-item">
                 <span class="feature-number">02</span>
                 <div>
                     <h3>AI-Powered Extraction</h3>
-                    <p>LangGraph-orchestrated pipelines with dependency-aware topological extraction. Handles printed clinical records, complex policy terms, sub-limits, and waiting periods.</p>
+                    <p>LangGraph-orchestrated pipelines with dependency-aware topological extraction. Handles handwritten and printed clinical records, complex policy terms, sub-limits, and waiting periods.</p>
                 </div>
             </div>
             <div class="feature-item">
                 <span class="feature-number">03</span>
                 <div>
                     <h3>Zero-Retention Privacy</h3>
-                    <p>DPDP Act compliant anonymization that scrubs metadata and removes burned-in patient text across DICOM, NIfTI, images, and PDFs. Includes a review and edit step before export, with zero data retention.</p>
+                    <p>3-layer CPU pipeline for DPDP Act compliance: metadata scrubbing, burned-in text detection, and OCR-based redaction across DICOM, NIfTI, images, and PDFs, with zero data retention.</p>
                 </div>
             </div>
             <div class="feature-item">
                 <span class="feature-number">04</span>
                 <div>
                     <h3>Forensic Fraud Detection</h3>
-                    <p>Classical forensic analysis with Error Level Analysis (ELA) and deep metadata inspection to detect digital manipulation, splicing, and tampering.</p>
+                    <p>Classical forensic analysis with Error Level Analysis (ELA) and deep metadata inspection to detect digital manipulation, splicing, and tampering in under 2 seconds.</p>
                 </div>
             </div>
             <div class="feature-item">
@@ -173,7 +158,7 @@
                 <span class="feature-number">06</span>
                 <div>
                     <h3>Production Scale</h3>
-                    <p>Celery worker pool with Redis message broker, Docker containers, and horizontal scaling. Handles concurrent document processing at institutional throughput levels.</p>
+                    <p>Celery worker pool with Redis message broker, Kubernetes-ready Docker containers, and horizontal scaling. Handles concurrent document processing at institutional throughput levels.</p>
                 </div>
             </div>
         </div>
@@ -181,38 +166,65 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     ECOSYSTEM — Four Service Cards
+     ECOSYSTEM - Four Service Cards
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="section section-gray">
     <div class="container">
-        <div class="section-header">
+        <div class="section-header reveal-on-scroll">
             <p class="section-label">Ecosystem</p>
             <h2 class="section-title">Four services, one platform</h2>
-            <p class="section-desc">Convert clinical documents, process insurance claims, anonymize sensitive data, and detect forgery. Everything runs through a unified AI pipeline built on shared infrastructure.</p>
+            <p class="section-desc">Convert clinical documents, process insurance claims, redact sensitive data, and detect forgery, all through a unified AI pipeline built on shared infrastructure.</p>
         </div>
 
         <div class="ecosystem-grid">
-            <!-- Clinical Document -->
+            <!-- Privacy Filter -->
             <div class="eco-card">
-                <div class="eco-card-accent" style="background:#0ea5e9;"></div>
+                <div class="eco-card-accent" style="background:#f59e0b;"></div>
                 <div class="eco-card-body">
                     <div class="eco-card-header">
-                        <div class="eco-card-icon" style="background:rgba(14,165,233,0.1);color:#0ea5e9;">
-                            <i class="fas fa-file-medical"></i>
+                        <div class="eco-card-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;">
+                            <i class="fas fa-user-shield"></i>
                         </div>
                         <div>
-                            <div class="eco-card-phase" style="color:#0ea5e9;">Convert</div>
-                            <h3 class="eco-card-name">Clinical Document</h3>
+                            <div class="eco-card-phase" style="color:#f59e0b;">Protect</div>
+                            <h3 class="eco-card-name">Privacy Filter</h3>
                         </div>
                     </div>
-                    <p>Transform raw clinical PDFs such as discharge summaries and diagnostic reports into ABDM-compliant FHIR R4 JSON bundles.</p>
+                    <p>De-identify medical images, scans, and PDFs, removing burned-in patient text, metadata, and PII entirely on CPU with zero data retention.</p>
                     <ul class="eco-card-features">
-                        <!-- <li><span class="dot" style="background:#0ea5e9;"></span> Handwritten &amp; printed record support</li> -->
-                        <li><span class="dot" style="background:#0ea5e9;"></span> LangGraph orchestrated extraction</li>
-                        <li><span class="dot" style="background:#0ea5e9;"></span> Validated FHIR R4 output</li>
-                        <li><span class="dot" style="background:#0ea5e9;"></span> Async Celery processing</li>
+                        <li><span class="dot" style="background:#f59e0b;"></span> DPDP Act compliant</li>
+                        <li><span class="dot" style="background:#f59e0b;"></span> DICOM, NIfTI, image &amp; PDF support</li>
+                        <li><span class="dot" style="background:#f59e0b;"></span> Manual editor for fine-tuning</li>
+                        <li><span class="dot" style="background:#f59e0b;"></span> 3-layer CPU pipeline</li>
                     </ul>
-                    <button class="eco-card-link" onclick="openTab(null,'PDF2FHIR'); document.getElementById('navClinical').classList.add('active');">
+                    <button class="eco-card-link" onclick="openTab(null,'PrivacyFilter'); document.getElementById('navPrivacyFilter').classList.add('active');">
+                        Launch Service
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Forensic -->
+            <div class="eco-card">
+                <div class="eco-card-accent" style="background:#10b981;"></div>
+                <div class="eco-card-body">
+                    <div class="eco-card-header">
+                        <div class="eco-card-icon" style="background:rgba(16,185,129,0.1);color:#10b981;">
+                            <i class="fas fa-search-plus"></i>
+                        </div>
+                        <div>
+                            <div class="eco-card-phase" style="color:#10b981;">Verify</div>
+                            <h3 class="eco-card-name">Forgery Detection</h3>
+                        </div>
+                    </div>
+                    <p>Classical forensic analysis to detect digital manipulation, splicing, and tampering in clinical documents and claim forms.</p>
+                    <ul class="eco-card-features">
+                        <li><span class="dot" style="background:#10b981;"></span> Error Level Analysis (ELA)</li>
+                        <li><span class="dot" style="background:#10b981;"></span> Deep metadata inspection</li>
+                        <li><span class="dot" style="background:#10b981;"></span> Sub-2-second analysis</li>
+                        <li><span class="dot" style="background:#10b981;"></span> PDF &amp; image support</li>
+                    </ul>
+                    <button class="eco-card-link" onclick="openTab(null,'ForgeryDetection'); document.getElementById('navForgery').classList.add('active');">
                         Launch Service
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                     </button>
@@ -235,7 +247,7 @@
                     <p>Process insurance policies and claim documents into validated NHCX JSON formats with dependency-aware topological extraction.</p>
                     <ul class="eco-card-features">
                         <li><span class="dot" style="background:#8b5cf6;"></span> Complex policy term parsing</li>
-                        <!-- <li><span class="dot" style="background:#8b5cf6;"></span> Sub-limit &amp; waiting period extraction</li> -->
+                        <li><span class="dot" style="background:#8b5cf6;"></span> Sub-limit &amp; waiting period extraction</li>
                         <li><span class="dot" style="background:#8b5cf6;"></span> NHCX schema validation</li>
                         <li><span class="dot" style="background:#8b5cf6;"></span> Accelerated claim approvals</li>
                     </ul>
@@ -246,54 +258,27 @@
                 </div>
             </div>
 
-            <!-- Privacy Filter -->
+            <!-- Clinical Document -->
             <div class="eco-card">
-                <div class="eco-card-accent" style="background:#f59e0b;"></div>
+                <div class="eco-card-accent" style="background:#0ea5e9;"></div>
                 <div class="eco-card-body">
                     <div class="eco-card-header">
-                        <div class="eco-card-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;">
-                            <i class="fas fa-user-shield"></i>
+                        <div class="eco-card-icon" style="background:rgba(14,165,233,0.1);color:#0ea5e9;">
+                            <i class="fas fa-file-medical"></i>
                         </div>
                         <div>
-                            <div class="eco-card-phase" style="color:#f59e0b;">Protect</div>
-                            <h3 class="eco-card-name">Privacy Filter</h3>
+                            <div class="eco-card-phase" style="color:#0ea5e9;">Convert</div>
+                            <h3 class="eco-card-name">Clinical Document</h3>
                         </div>
                     </div>
-                    <p>Anonymize medical images, scans, and PDFs by removing burned-in patient text, metadata, and PII entirely on CPU with zero data retention.</p>
+                    <p>Transform raw clinical PDFs (discharge summaries, diagnostic reports, prescriptions) into ABDM-compliant FHIR R4 JSON bundles.</p>
                     <ul class="eco-card-features">
-                        <li><span class="dot" style="background:#f59e0b;"></span> DPDP Act compliant</li>
-                        <li><span class="dot" style="background:#f59e0b;"></span> DICOM, NIfTI, image &amp; PDF support</li>
-                        <li><span class="dot" style="background:#f59e0b;"></span> Review and edit before export</li>
-                        <!-- <li><span class="dot" style="background:#f59e0b;"></span> 3-layer CPU pipeline</li> -->
+                        <li><span class="dot" style="background:#0ea5e9;"></span> Handwritten &amp; printed record support</li>
+                        <li><span class="dot" style="background:#0ea5e9;"></span> LangGraph orchestrated extraction</li>
+                        <li><span class="dot" style="background:#0ea5e9;"></span> Validated FHIR R4 output</li>
+                        <li><span class="dot" style="background:#0ea5e9;"></span> Async Celery processing</li>
                     </ul>
-                    <button class="eco-card-link" onclick="openTab(null,'PrivacyFilter'); document.getElementById('navPrivacyFilter').classList.add('active');">
-                        Launch Service
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Forgery Detection -->
-            <div class="eco-card">
-                <div class="eco-card-accent" style="background:#10b981;"></div>
-                <div class="eco-card-body">
-                    <div class="eco-card-header">
-                        <div class="eco-card-icon" style="background:rgba(16,185,129,0.1);color:#10b981;">
-                            <i class="fas fa-search-plus"></i>
-                        </div>
-                        <div>
-                            <div class="eco-card-phase" style="color:#10b981;">Verify</div>
-                            <h3 class="eco-card-name">Forgery Detection</h3>
-                        </div>
-                    </div>
-                    <p>Classical forensic analysis to detect digital manipulation, splicing, and tampering in clinical documents and claim forms.</p>
-                    <ul class="eco-card-features">
-                        <li><span class="dot" style="background:#10b981;"></span> Error Level Analysis (ELA)</li>
-                        <li><span class="dot" style="background:#10b981;"></span> Deep metadata inspection</li>
-                        <!-- <li><span class="dot" style="background:#10b981;"></span> Sub-2-second analysis</li> -->
-                        <li><span class="dot" style="background:#10b981;"></span> PDF &amp; image support</li>
-                    </ul>
-                    <button class="eco-card-link" onclick="openTab(null,'ForgeryDetection'); document.getElementById('navForgery').classList.add('active');">
+                    <button class="eco-card-link" onclick="openTab(null,'PDF2FHIR'); document.getElementById('navClinical').classList.add('active');">
                         Launch Service
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                     </button>
@@ -308,7 +293,7 @@
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="section section-white">
     <div class="container">
-        <div class="section-header">
+        <div class="section-header reveal-on-scroll">
             <p class="section-label">Adoption</p>
             <h2 class="section-title">National footprint</h2>
             <p class="section-desc">Real-time adoption tracking across the Indian healthcare network.</p>
@@ -339,12 +324,12 @@
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="section section-gray">
     <div class="container">
-        <div class="section-header">
+        <div class="section-header reveal-on-scroll">
             <p class="section-label">Backed By</p>
             <h2 class="section-title">India's premier research institutions</h2>
-            <p class="section-desc">TANUH is a Section 8 not-for-profit organization promoted by IISc Bengaluru and funded by the Ministry of Education as an AI Centre of Excellence in Healthcare.</p>
+            <p class="section-desc">TANUH is a Section 8 not-for-profit promoted by IISc Bengaluru and funded by the Ministry of Education as an AI Centre of Excellence in Healthcare.</p>
         </div>
-        <div class="logo-grid">
+        <div class="logo-grid reveal-on-scroll">
             <img src="assets/tanuh.png" alt="TANUH AI">
             <img src="assets/MoE_Logo.svg" alt="Ministry of Education">
             <img src="assets/IISc_Logo.png" alt="IISc Bengaluru">

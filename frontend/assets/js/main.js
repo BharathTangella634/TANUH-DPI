@@ -99,6 +99,41 @@
         }
     }
 
+    // ── Global Config & Fallback Router ──────────────────────────────────────────
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    window.DPI_API_CONFIG = {
+        abdm: isLocal ? 'http://localhost:8000' : `${window.location.origin}/pdf2abdm`,
+        nhcx: isLocal ? 'http://localhost:8001' : `${window.location.origin}/pdf2nhcx`,
+        logger: isLocal ? 'http://localhost:8002' : `${window.location.origin}/session-logger`,
+        pf: isLocal ? 'http://localhost:8003' : `${window.location.origin}/privacy-filter`,
+        forgensic: isLocal ? 'http://localhost:8004' : `${window.location.origin}/forgensic`
+    };
+
+    let localCheckDone = false;
+    async function checkLocalBackend() {
+        if (!isLocal || localCheckDone) return;
+        try {
+            // Check if local abdm is listening
+            const r = await fetch('http://localhost:8000/health', { method: 'GET', signal: AbortSignal.timeout(1500) });
+            if (r.ok) {
+                console.log("Local backend active. Using localhost endpoints.");
+            } else {
+                throw new Error("Local offline");
+            }
+        } catch (e) {
+            console.log("Local backend offline. Redirecting API requests to dpi-dev.tanuh.ai");
+            window.DPI_API_CONFIG.abdm = 'https://dpi-dev.tanuh.ai/pdf2abdm';
+            window.DPI_API_CONFIG.nhcx = 'https://dpi-dev.tanuh.ai/pdf2nhcx';
+            window.DPI_API_CONFIG.logger = 'https://dpi-dev.tanuh.ai/session-logger';
+            window.DPI_API_CONFIG.pf = 'https://dpi-dev.tanuh.ai/privacy-filter';
+            window.DPI_API_CONFIG.forgensic = 'https://dpi-dev.tanuh.ai/forgensic';
+            
+            if (window._PF_BASE !== undefined) window._PF_BASE = window.DPI_API_CONFIG.pf;
+        }
+        localCheckDone = true;
+        checkAllServiceBadges();
+    }
+
     // ── Per-Service AI Status Badges ────────────────────────────────────────────
     async function checkServiceHealth(badgeId, textId, url, onLabel, offLabel) {
         const badge = document.getElementById(badgeId);
@@ -117,13 +152,16 @@
     }
 
     function checkAllServiceBadges() {
-        const isLocal = window.location.hostname === 'localhost';
-        const abdm = isLocal ? 'http://localhost:8000' : `${window.location.origin}/pdf2abdm`;
-        const nhcx = isLocal ? 'http://localhost:8001' : `${window.location.origin}/pdf2nhcx`;
-        const pf = isLocal ? 'http://localhost:8003' : `${window.location.origin}/privacy-filter`;
-        checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, 'AI ON', 'AI OFF');
-        checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, 'AI ON', 'AI OFF');
-        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, 'CPU READY', 'OFFLINE');
+        const abdm = window.DPI_API_CONFIG.abdm;
+        const nhcx = window.DPI_API_CONFIG.nhcx;
+        const pf = window.DPI_API_CONFIG.pf;
+        const isCloudAbdm = abdm.includes('dpi-dev.tanuh.ai');
+        const isCloudNhcx = nhcx.includes('dpi-dev.tanuh.ai');
+        const isCloudPf = pf.includes('dpi-dev.tanuh.ai');
+        
+        checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, isCloudAbdm ? 'AI CLOUD' : 'AI ON', 'AI OFF');
+        checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, isCloudNhcx ? 'AI CLOUD' : 'AI ON', 'AI OFF');
+        checkServiceHealth('pfAiBadge', 'pfAiText', `${pf}/api/health`, isCloudPf ? 'CLOUD READY' : 'CPU READY', 'OFFLINE');
     }
 
     // ── Tab Management ──────────────────────────────────────────────────────────
@@ -132,13 +170,21 @@
     async function openTab(evt, tabName) {
         if (evt) evt.preventDefault();
 
-        // Auth gate: redirect unauthenticated users to Login for protected service tabs
+        // TEMPORARILY BYPASSED FOR LOCAL TESTING (MUST RESTORE FOR PRODUCTION)
+        /*
         if (window.DPI_Auth && DPI_Auth.isGatedTab(tabName) && !DPI_Auth.isLoggedIn()) {
             DPI_Auth.setPendingTab(tabName);
             tabName = 'Login';
         }
+        */
 
         document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
+
+        // Hide site footer on the login page to keep it clean and non-scrollable
+        const footer = document.getElementById("footer");
+        if (footer) {
+            footer.style.display = (tabName === 'Login') ? 'none' : 'block';
+        }
 
         const container = document.getElementById(tabName);
         if (container) {
@@ -152,6 +198,12 @@
             updateActiveNav(tabName);
 
             if (tabName === 'Home' && window.initDashboard) window.initDashboard();
+            
+            // Initialize scroll reveal on all tabs after content has been rendered
+            setTimeout(() => {
+                initScrollReveal();
+                if (tabName === 'Home' && window.initHeroParticles) window.initHeroParticles();
+            }, 180);
             if (tabName === 'Login' && window.DPI_Auth) DPI_Auth.initLoginPage();
             if (tabName === 'PrivacyFilter' && window.PF_init) window.PF_init();
             if (tabName === 'ForgeryDetection' && window.FG_init) window.FG_init();
@@ -191,7 +243,7 @@
             else if (fileName === 'forgerydocs') { isDoc = true; docUrl = 'docs/forgery.html'; }
 
             if (isDoc) {
-                const response = await fetch(docUrl, { cache: 'no-store' });
+                const response = await fetch(docUrl);
                 if (response.ok) {
                     const text = await response.text();
                     const parser = new DOMParser();
@@ -224,15 +276,6 @@
                         el.innerHTML = `
                             <div class="docs-tab-layout">
                                 <div class="docs-tab-sidebar">
-                                    <div class="docs-brand-header">
-                                        <div class="docs-brand-logos">
-                                            <img src="assets/tanuh.png" alt="TANUH Logo" class="docs-logo-img">
-                                            <img src="assets/MoE_Logo.svg" alt="MoE Logo" class="docs-logo-img">
-                                            <img src="assets/IISc_Logo.png" alt="IISc Logo" class="docs-logo-img">
-                                        </div>
-                                        <div class="docs-brand-title">TANUH DPI Docs</div>
-                                        <div class="docs-brand-subtitle">AI Centre of Excellence</div>
-                                    </div>
                                     <div class="docs-toc-container">
                                         <div class="docs-toc-title">On This Page</div>
                                         <ul class="docs-toc-list">
@@ -309,7 +352,7 @@
                     console.error(`Failed to load doc tab ${tabId}: ${response.status}`);
                 }
             } else {
-                const response = await fetch(`tabs/${fileName}.html`, { cache: 'no-store' });
+                const response = await fetch(`tabs/${fileName}.html?v=14`);
                 if (response.ok) {
                     el.innerHTML = await response.text();
                 } else {
@@ -466,9 +509,126 @@
         }
     };
 
+
+
+    // ── Intersection Observer Scroll Reveal ────────────────────────────────────
+    function initScrollReveal() {
+        const items = document.querySelectorAll('.feature-item, .eco-card, .geo-card, .reveal-on-scroll, .docs-content-inner h1, .docs-content-inner h2, .docs-content-inner h3, .docs-content-inner .table-responsive, .docs-content-inner pre, .fg-team-card');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.05, rootMargin: '0px 0px -45px 0px' });
+        
+        items.forEach(el => {
+            el.classList.add('reveal-on-scroll');
+            observer.observe(el);
+        });
+    }
+
+    // ── Connected Particles Hero Canvas (MONAI-inspired) ─────────────────────
+    window.initHeroParticles = function() {
+        const hero = document.querySelector('.hero');
+        const canvas = document.querySelector('.hero-particles-canvas');
+        if (!hero || !canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = hero.offsetWidth;
+        let height = canvas.height = hero.offsetHeight;
+        
+        window.addEventListener('resize', () => {
+            if (canvas && hero) {
+                width = canvas.width = hero.offsetWidth;
+                height = canvas.height = hero.offsetHeight;
+            }
+        });
+        
+        const particles = [];
+        const particleCount = Math.min(50, Math.floor((width * height) / 18000));
+        const connectionDistance = 120;
+        
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.35;
+                this.vy = (Math.random() - 0.5) * 0.35;
+                this.radius = Math.random() * 1.5 + 1.2;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x < 0 || this.x > width) this.vx = -this.vx;
+                if (this.y < 0 || this.y > height) this.vy = -this.vy;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(20, 134, 140, 0.16)';
+                ctx.fill();
+            }
+        }
+        
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+        
+        let frameId;
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < connectionDistance) {
+                        const alpha = (1 - dist / connectionDistance) * 0.12;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(20, 134, 140, ${alpha})`;
+                        ctx.lineWidth = 0.7;
+                        ctx.stroke();
+                    }
+                }
+            }
+            frameId = requestAnimationFrame(animate);
+        }
+        
+        animate();
+    };
+
+    // ── Navbar Scroll Class Toggle (Light/Translucent styling) ─────────────────
+    function handleNavbarScroll() {
+        const nav = document.getElementById('mainNav');
+        if (!nav) return;
+        if (window.scrollY > 20) {
+            nav.classList.add('navbar-scrolled');
+            nav.classList.remove('navbar-transparent');
+        } else {
+            nav.classList.add('navbar-transparent');
+            nav.classList.remove('navbar-scrolled');
+        }
+    }
+
     // ── Init ────────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         initNavigation();
+        checkLocalBackend(); // silent fallback router check
+        
+        // Setup scrolled navbar toggler
+        handleNavbarScroll();
+        window.addEventListener('scroll', handleNavbarScroll);
+        
         openTab(null, 'Home');
         setInterval(checkAllServiceBadges, 30000);
         if (window.DPI_Auth) {

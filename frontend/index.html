@@ -6,16 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Public Infrastructure | TANUH AI</title>
     <meta name="description"
-        content="TANUH DPI is the open-source AI platform for healthcare document processing — clinical conversion, insurance claims, privacy filtering, and forgery detection in one ecosystem.">
+        content="TANUH DPI is the open-source AI platform for healthcare document processing - clinical conversion, insurance claims, privacy filtering, and forgery detection in one ecosystem.">
     <link rel="icon" type="image/png" href="assets/tanuh.png">
-    <link rel="stylesheet" href="assets/style.css?v=3">
-    <link rel="stylesheet" href="assets/privacy-filter.css?v=3">
+    <link rel="stylesheet" href="assets/style.css?v=4">
+    <link rel="stylesheet" href="assets/home-modern.css?v=12">
+    <link rel="stylesheet" href="assets/privacy-filter.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"
         crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script type="text/javascript">
         (function (f, b) { if (!b.__SV) { var e, g, i, h; window.mixpanel = b; b._i = []; b.init = function (e, f, c) { function g(a, d) { var b = d.split("."); 2 == b.length && ((a = a[b[0]]), (d = b[1])); a[d] = function () { a.push([d].concat(Array.prototype.slice.call(arguments, 0))); }; } var a = b; "undefined" !== typeof c ? (a = b[c] = []) : (c = "mixpanel"); a.people = a.people || []; a.toString = function (a) { var d = "mixpanel"; "mixpanel" !== c && (d += "." + c); a || (d += " (stub)"); return d; }; a.people.toString = function () { return a.toString(1) + ".people (stub)"; }; i = "disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove".split(" "); for (h = 0; h < i.length; h++) g(a, i[h]); var j = "set set_once union unset remove delete".split(" "); a.get_group = function () { function b(c) { d[c] = function () { call2_args = arguments; call2 = [c].concat(Array.prototype.slice.call(call2_args, 0)); a.push([e, call2]); }; } for (var d = {}, e = ["get_group"].concat(Array.prototype.slice.call(arguments, 0)), c = 0; c < j.length; c++) b(j[c]); return d; }; b._i.push([e, f, c]); }; b.__SV = 1.2; e = f.createElement("script"); e.type = "text/javascript"; e.async = !0; e.src = "undefined" !== typeof MIXPANEL_CUSTOM_LIB_URL ? MIXPANEL_CUSTOM_LIB_URL : "file:" === f.location.protocol && "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//) ? "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js" : "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"; g = f.getElementsByTagName("script")[0]; g.parentNode.insertBefore(e, g); } })(document, window.mixpanel || []);
     </script>
@@ -31,8 +30,9 @@
             <div class="nav-container">
                 <div class="nav-brand-wrap">
                     <a class="nav-brand" href="#" onclick="openTab(null, 'Home'); return false;">
-                        <img src="assets/tanuh_moe_white.png" alt="TANUH MoE" class="nav-logo">
-                        <img src="assets/iisc_white.png" alt="IISc Logo" class="nav-logo-iisc">
+                        <img src="assets/tanuh.png" alt="TANUH AI" class="nav-logo">
+                        <img src="assets/MoE_Logo.svg" alt="Ministry of Education" class="nav-logo-moe">
+                        <img src="assets/IISc_Logo.png" alt="IISc Logo" class="nav-logo-iisc">
                         <div class="nav-brand-text">
                             <span class="nav-brand-title">TANUH DPI</span>
                             <span class="nav-brand-subtitle">AI Centre of Excellence</span>
@@ -68,25 +68,6 @@
                                 </svg>
                             </button>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" href="#" id="navClinical" onclick="openTab(event, 'PDF2FHIR')">
-                                    <span class="dropdown-icon"
-                                        style="background:rgba(14,165,233,0.1);color:#0ea5e9;"><i
-                                            class="fas fa-file-medical"></i></span>
-                                    <div>
-                                        <div class="dropdown-item-title">Clinical Document</div>
-                                        <div class="dropdown-item-desc">PDF to FHIR conversion</div>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item" href="#" id="navInsurance"
-                                    onclick="openTab(event, 'PDF2NHCX')">
-                                    <span class="dropdown-icon"
-                                        style="background:rgba(139,92,246,0.1);color:#8b5cf6;"><i
-                                            class="fas fa-shield-alt"></i></span>
-                                    <div>
-                                        <div class="dropdown-item-title">Insurance Policy</div>
-                                        <div class="dropdown-item-desc">PDF to NHCX conversion</div>
-                                    </div>
-                                </a>
                                 <a class="dropdown-item" href="#" id="navPrivacyFilter"
                                     onclick="openTab(event, 'PrivacyFilter')">
                                     <span class="dropdown-icon"
@@ -107,6 +88,25 @@
                                         <div class="dropdown-item-desc">Document forensic analysis</div>
                                     </div>
                                 </a>
+                                <a class="dropdown-item" href="#" id="navInsurance"
+                                    onclick="openTab(event, 'PDF2NHCX')">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(139,92,246,0.1);color:#8b5cf6;"><i
+                                            class="fas fa-shield-alt"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Insurance Policy</div>
+                                        <div class="dropdown-item-desc">PDF to NHCX conversion</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="#" id="navClinical" onclick="openTab(event, 'PDF2FHIR')">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(14,165,233,0.1);color:#0ea5e9;"><i
+                                            class="fas fa-file-medical"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Clinical Document</div>
+                                        <div class="dropdown-item-desc">PDF to FHIR conversion</div>
+                                    </div>
+                                </a>
                             </div>
                         </li>
                         <li class="nav-dropdown">
@@ -120,31 +120,13 @@
                                 </svg>
                             </button>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" href="#" onclick="openTab(event, 'ClinicalDocs')">
-                                    <span class="dropdown-icon"
-                                        style="background:rgba(14,165,233,0.1);color:#0ea5e9;"><i
-                                            class="fas fa-file-medical"></i></span>
-                                    <div>
-                                        <div class="dropdown-item-title">Clinical Document</div>
-                                        <div class="dropdown-item-desc">pdf2abdm user guide</div>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item" href="#" onclick="openTab(event, 'InsuranceDocs')">
-                                    <span class="dropdown-icon"
-                                        style="background:rgba(139,92,246,0.1);color:#8b5cf6;"><i
-                                            class="fas fa-shield-alt"></i></span>
-                                    <div>
-                                        <div class="dropdown-item-title">Insurance Policy</div>
-                                        <div class="dropdown-item-desc">pdf2nhcx user guide</div>
-                                    </div>
-                                </a>
                                 <a class="dropdown-item" href="#" onclick="openTab(event, 'PrivacyDocs')">
                                     <span class="dropdown-icon"
                                         style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i
                                             class="fas fa-user-shield"></i></span>
                                     <div>
-                                        <div class="dropdown-item-title">Privacy Filter</div>
-                                        <div class="dropdown-item-desc">privacy-filter user guide</div>
+                                        <div class="dropdown-item-title">Privacy Filter Docs</div>
+                                        <div class="dropdown-item-desc">Redaction &amp; DPDP compliance</div>
                                     </div>
                                 </a>
                                 <a class="dropdown-item" href="#" onclick="openTab(event, 'ForgeryDocs')">
@@ -152,15 +134,33 @@
                                         style="background:rgba(16,185,129,0.1);color:#10b981;"><i
                                             class="fas fa-search-plus"></i></span>
                                     <div>
-                                        <div class="dropdown-item-title">Forgery Detection</div>
-                                        <div class="dropdown-item-desc">forgensic user guide</div>
+                                        <div class="dropdown-item-title">Forgery Detection Docs</div>
+                                        <div class="dropdown-item-desc">Tampering &amp; forensics checks</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="#" onclick="openTab(event, 'InsuranceDocs')">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(139,92,246,0.1);color:#8b5cf6;"><i
+                                            class="fas fa-shield-alt"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Insurance Policy Docs</div>
+                                        <div class="dropdown-item-desc">NHCX schemas &amp; policy specs</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="#" onclick="openTab(event, 'ClinicalDocs')">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(14,165,233,0.1);color:#0ea5e9;"><i
+                                            class="fas fa-file-medical"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Clinical Document Docs</div>
+                                        <div class="dropdown-item-desc">FHIR parsing &amp; conversion</div>
                                     </div>
                                 </a>
                             </div>
                         </li>
-                        <li><a class="nav-link" id="navAboutUs" href="#" onclick="openTab(event, 'AboutUs')">About Us</a>
+                        <li><a class="nav-link" id="navAboutUs" href="#" onclick="openTab(event, 'AboutUs')">About</a>
                         </li>
-                        <!-- <li>
+                        <li>
                             <a class="nav-link nav-github" href="https://github.com/TRANSLATIONAL-FOUNDATION/TANUH-DPI"
                                 target="_blank" rel="noopener noreferrer">
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -169,7 +169,7 @@
                                 </svg>
                                 GitHub
                             </a>
-                        </li> -->
+                        </li>
                         <!-- Login / User -->
                         <li>
                             <a class="nav-login" id="navLoginBtn" href="#" onclick="openTab(event, 'Login'); return false;">
@@ -216,8 +216,8 @@
                     <a href="#" onclick="openTab(null, 'Home'); return false;" class="footer-brand">
                         <img src="assets/tanuh.png" alt="TANUH" class="footer-logo">
                     </a>
-                    <p class="footer-desc">Open-source digital public infrastructure for healthcare AI, spanning clinical
-                        data, insurance claims, privacy, and document integrity. Built for institutions across India.</p>
+                    <p class="footer-desc">Open-source AI platform for healthcare document processing, trusted by
+                        institutions across India.</p>
                     <div class="footer-socials">
                         <a href="https://www.tanuh.ai" target="_blank" aria-label="Website" rel="noopener noreferrer"><i
                                 class="fas fa-globe"></i></a>
@@ -234,11 +234,10 @@
                 <div class="footer-link-col">
                     <h4 class="footer-heading">Services</h4>
                     <ul>
-                        <li><a href="#" onclick="openTab(null,'PDF2FHIR'); return false;">Clinical Document</a></li>
-                        <li><a href="#" onclick="openTab(null,'PDF2NHCX'); return false;">Insurance Policy</a></li>
                         <li><a href="#" onclick="openTab(null,'PrivacyFilter'); return false;">Privacy Filter</a></li>
-                        <li><a href="#" onclick="openTab(null,'ForgeryDetection'); return false;">Forgery Detection</a>
-                        </li>
+                        <li><a href="#" onclick="openTab(null,'ForgeryDetection'); return false;">Forgery Detection</a></li>
+                        <li><a href="#" onclick="openTab(null,'PDF2NHCX'); return false;">Insurance Policy</a></li>
+                        <li><a href="#" onclick="openTab(null,'PDF2FHIR'); return false;">Clinical Document</a></li>
                     </ul>
                 </div>
 
@@ -251,6 +250,8 @@
                         </li>
                         <li><a href="https://benchmark.tanuh.ai" target="_blank"
                                 rel="noopener noreferrer">Benchmarks</a></li>
+                        <li><a href="https://github.com/TRANSLATIONAL-FOUNDATION/TANUH-DPI" target="_blank"
+                                rel="noopener noreferrer">GitHub</a></li>
                     </ul>
                 </div>
 
@@ -259,8 +260,6 @@
                     <h4 class="footer-heading">Resources</h4>
                     <ul>
                         <li><a href="docs/index.html" target="_blank">API Documentation</a></li>
-                        <li><a href="https://github.com/TRANSLATIONAL-FOUNDATION/TANUH-DPI" target="_blank"
-                                rel="noopener noreferrer">GitHub</a></li>
                         <li><a href="https://github.com/TRANSLATIONAL-FOUNDATION/TANUH-DPI/issues" target="_blank"
                                 rel="noopener noreferrer">Issue Tracker</a></li>
                         <li><a href="mailto:dpi@tanuh.ai">Contact Us</a></li>
@@ -270,7 +269,7 @@
 
             <!-- Bottom Bar -->
             <div class="footer-bottom">
-                <p>&copy; 2026 TANUH — AI Centre of Excellence in Healthcare. All rights reserved.</p>
+                <p>&copy; 2026 TANUH - AI Centre of Excellence in Healthcare. All rights reserved.</p>
                 <div class="footer-bottom-logos">
                     <img src="assets/tanuh.png" alt="TANUH" class="footer-inst-logo">
                     <img src="assets/MoE_Logo.svg" alt="Ministry of Education" class="footer-inst-logo">
@@ -293,7 +292,7 @@
     <script src="assets/js/fhir-validator.js"></script>
     <script src="assets/privacy-filter.js"></script>
     <script src="assets/pf-editor.js"></script>
-    <script src="assets/js/forgery.js"></script>
+    <script src="assets/js/forgery.js?v=2"></script>
 
     <!-- Third Party -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

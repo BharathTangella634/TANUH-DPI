@@ -27,10 +27,10 @@
             <div class="docs-content-inner">
             <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Insurance Document Extraction Documentation</span>
             <h1 style="margin-top:0.25rem;">Insurance Document Extraction Service</h1>
-            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">pdf2nhcx — NHCX InsurancePlanBundle FHIR Generator
+            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">pdf2nhcx - NHCX InsurancePlanBundle FHIR Generator
 Complete Technical & User Documentation</p>
             
-            <h1>1. Summary</h1>
+            <h1>1. Executive Summary</h1>
 <p>The pdf2nhcx service is a core microservice within the DPI Integrated Platform that converts insurance policy PDFs into HL7 FHIR R4 Collection Bundles compliant with NHCX (National Health Claims Exchange) standards. It supports 6 bundle types: InsurancePlanBundle, ClaimBundle, ClaimResponseBundle, CoverageEligibilityRequestBundle, CoverageEligibilityResponseBundle, and TaskBundle.</p>
 <p>The service uses a unique 'Text Distillation' pre-processing stage that condenses verbose insurance documents into actionable fact sheets before extraction, dramatically improving LLM extraction accuracy. It runs as a FastAPI application on port 8001, with asynchronous processing via Celery workers on the dedicated 'nhcx' queue.</p>
 <h1>2. Service Overview</h1>
@@ -40,24 +40,24 @@ Complete Technical & User Documentation</p>
 <ul>
 <li>Privacy-first architecture with zero external data leakage</li>
 <li>Insurance Text Distillation: 4 parallel LLM calls split and condense text into fact sheets</li>
-<li>Support for 6 NHCX bundle types (InsurancePlan, Claim, ClaimResponse, CoverageEligibility, Task)</li>
+<li>Support for 6 NHCX bundle types (InsurancePlan, Claim, ClaimResponse, CoverageEligibility*, Task)</li>
 <li>LangGraph dependency-aware workflow orchestration</li>
 <li>NHCX-specific rulebook enforcement (StructureDefinition JSONs)</li>
 <li>Synchronous and asynchronous processing modes</li>
 <li>FHIR validation via HL7 Validator CLI</li>
 </ul>
 <h2>2.3 Supported NHCX Bundle Types</h2>
-<div class="table-responsive"><table><thead><tr><th>Bundle Type</th><th>Primary Resource</th></tr></thead><tbody><tr><td>InsurancePlanBundle</td><td>InsurancePlan</td></tr><tr><td>ClaimBundle</td><td>Claim</td></tr><tr><td>ClaimResponseBundle</td><td>ClaimResponse</td></tr><tr><td>CoverageEligibilityRequestBundle</td><td>CoverageEligibilityRequest</td></tr><tr><td>CoverageEligibilityResponseBundle</td><td>CoverageEligibilityResponse</td></tr><tr><td>TaskBundle</td><td>Task</td></tr></tbody></table></div>
+<div class="table-responsive"><table><thead><tr><th>Bundle Type</th><th>Primary Resource</th><th>Mandatory Resources</th></tr></thead><tbody><tr><td>InsurancePlanBundle</td><td>InsurancePlan</td><td>InsurancePlan, Organization, DocumentReference</td></tr><tr><td>ClaimBundle</td><td>Claim</td><td>Claim, Organization, Patient, DocumentReference</td></tr><tr><td>ClaimResponseBundle</td><td>ClaimResponse</td><td>ClaimResponse, Organization, Patient, DocumentReference</td></tr><tr><td>CoverageEligibilityRequestBundle</td><td>CoverageEligibilityRequest</td><td>CoverageEligibilityRequest, Organization, Patient, DocumentReference</td></tr><tr><td>CoverageEligibilityResponseBundle</td><td>CoverageEligibilityResponse</td><td>CoverageEligibilityResponse, Organization, Patient, DocumentReference</td></tr><tr><td>TaskBundle</td><td>Task</td><td>Task, Organization, Patient, DocumentReference</td></tr></tbody></table></div>
 <h1>3. Architecture</h1>
 <h2>3.1 Processing Pipeline</h2>
 <ol>
 <li>File Upload & Validation: Accept PDF (max 25 MB, max 100 pages)</li>
 <li>OCR Text Extraction: Same multi-engine waterfall as pdf2abdm (PyPDF > Docling > LightOn)</li>
 <li>Document Classification Gate: Two-tier keyword + LLM classification. Rejects CLINICAL and INVALID documents (only accepts INSURANCE).</li>
-<li>Text Distillation: Split raw OCR text into 4 chunks with 2000-character overlap. Run 4 parallel LLM calls via ThreadPoolExecutor. Each call condenses its chunk into an 'Insurance Fact Sheet' — removing narrative fluff, preserving financial data, limits, exclusions, benefit tables.</li>
+<li>Text Distillation: Split raw OCR text into 4 chunks with 2000-character overlap. Run 4 parallel LLM calls via ThreadPoolExecutor. Each call condenses its chunk into an 'Insurance Fact Sheet' - removing narrative fluff, preserving financial data, limits, exclusions, benefit tables.</li>
 <li>NHCX Resource Selection: LLM analyzes distilled text to determine the primary bundle type (1 of 6) and select mandatory + optional FHIR resources.</li>
 <li>LangGraph Dynamic Workflow: Build dependency-ordered graph. Each node extracts one resource using LLM with NHCX-specific rulebook and bundle-type-specific context prefix.</li>
-<li>Bundle Assembly: assemble_nhcx_collection_bundle() — flatten nested Bundles, strip ABDM/forbidden resources, sanitize hallucinated fields, deduplicate by ID, enforce NRCES profile URLs.</li>
+<li>Bundle Assembly: assemble_nhcx_collection_bundle() - flatten nested Bundles, strip ABDM/forbidden resources, sanitize hallucinated fields, deduplicate by ID, enforce NRCES profile URLs.</li>
 <li>Result Storage & Logging: Same as pdf2abdm (Redis 24h TTL, GCS upload, session-logger)</li>
 </ol>
 <h2>3.2 Text Distillation (Key Differentiator)</h2>
@@ -69,25 +69,25 @@ Complete Technical & User Documentation</p>
 <li>Output: concatenated fact sheet with financial limits, exclusions, benefit tables, waiting periods</li>
 <li>This reduces context size by 60-80% while preserving all critical information</li>
 </ul>
-<!-- <p>Processing time for distillation: approximately 60-90 seconds.</p> -->
+<p>Processing time for distillation: approximately 60-90 seconds.</p>
 <h1>4. API Reference</h1>
 <h2>4.1 Authentication</h2>
 <p>Identical mechanism to pdf2abdm. POST /pdf2nhcx/api/token with {name, email} to get a 1-day HS256 JWT. Signed with NHCX_SECRET_KEY. Include as Authorization: Bearer <token> in all requests.</p>
 <h2>4.2 Endpoints</h2>
 <div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/pdf2nhcx/api/token</td><td>None</td><td>Issue 1-day demo JWT token</td></tr><tr><td>GET</td><td>/health</td><td>None</td><td>Service liveness probe</td></tr><tr><td>GET</td><td>/model-health</td><td>None</td><td>LLM model availability check</td></tr><tr><td>GET</td><td>/ocr-health</td><td>None</td><td>OCR engine availability check</td></tr><tr><td>POST</td><td>/pdf2nhcx</td><td>Bearer</td><td>Sync: upload PDF, wait for NHCX Bundle</td></tr><tr><td>POST</td><td>/pdf2nhcxurl</td><td>Bearer</td><td>Sync: process local file path</td></tr><tr><td>POST</td><td>/pdf2nhcx/submit</td><td>Bearer</td><td>Async: upload PDF, get task_id (202)</td></tr><tr><td>POST</td><td>/pdf2nhcx/submit-url</td><td>Bearer</td><td>Async: local path, get task_id (202)</td></tr><tr><td>GET</td><td>/pdf2nhcx/task-status/{id}</td><td>Bearer</td><td>Poll async task progress</td></tr><tr><td>GET</td><td>/pdf2nhcx/task-result/{id}</td><td>Bearer</td><td>Fetch completed NHCX Bundle</td></tr><tr><td>POST</td><td>/validate</td><td>Bearer</td><td>Validate FHIR JSON against HL7 validator</td></tr><tr><td>GET</td><td>/metrics</td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
-<!-- <h1>5. Celery Task Processing</h1>
+<h1>5. Celery Task Processing</h1>
 <div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Task Name</td><td>pdf2nhcx.tasks.process_nhcx_task</td></tr><tr><td>Queue</td><td>nhcx</td></tr><tr><td>Soft Time Limit</td><td>29 minutes</td></tr><tr><td>Hard Time Limit</td><td>30 minutes</td></tr><tr><td>Result TTL</td><td>24 hours in Redis</td></tr><tr><td>Workers</td><td>4 replicas x concurrency 2 = 8 parallel slots</td></tr></tbody></table></div>
 <h2>5.1 Progress Stages</h2>
-<div class="table-responsive"><table><thead><tr><th>Stage</th><th>Progress</th><th>Description</th></tr></thead><tbody><tr><td>OCR</td><td>10%</td><td>Multi-engine text extraction</td></tr><tr><td>Classification</td><td>20%</td><td>Validate document is INSURANCE type</td></tr><tr><td>Distillation</td><td>35%</td><td>4 parallel LLM calls to condense text</td></tr><tr><td>Resource Selection</td><td>50%</td><td>LLM selects bundle type and resources</td></tr><tr><td>LLM Extraction</td><td>65%</td><td>Per-resource extraction via LangGraph</td></tr><tr><td>Store Result</td><td>95%</td><td>Save to Redis with 24h TTL</td></tr><tr><td>Completed</td><td>100%</td><td>Cleanup and session logging</td></tr></tbody></table></div> -->
-<!-- <h1>6. Security</h1>
-<p>Authentication, data privacy, and security considerations are identical to the pdf2abdm service. See Section 6 of the Clinical Document documentation for details. The only differences are the environment variable names: NHCX_SECRET_KEY, NHCX_AUTH_ENABLED, NHCX_TOKEN_EXPIRY_DAYS.</p> -->
-<!-- <h1>7. Configuration (Environment Variables)</h1>
-<div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>NHCX_SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>NHCX_AUTH_ENABLED</td><td>true</td><td>Auth toggle (false for dev)</td></tr><tr><td>NHCX_TOKEN_EXPIRY_DAYS</td><td>1</td><td>Token validity in days</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket</td></tr><tr><td>LLM_MODEL</td><td>gemma-4-26b-a4b-it-maas</td><td>Vertex AI model</td></tr><tr><td>LLM_PROJECT_ID</td><td>bcd-prototypes</td><td>GCP project</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result TTL (24h)</td></tr></tbody></table></div> -->
-<h1>5. Deployment</h1>
+<div class="table-responsive"><table><thead><tr><th>Stage</th><th>Progress</th><th>Description</th></tr></thead><tbody><tr><td>OCR</td><td>10%</td><td>Multi-engine text extraction</td></tr><tr><td>Classification</td><td>20%</td><td>Validate document is INSURANCE type</td></tr><tr><td>Distillation</td><td>35%</td><td>4 parallel LLM calls to condense text</td></tr><tr><td>Resource Selection</td><td>50%</td><td>LLM selects bundle type and resources</td></tr><tr><td>LLM Extraction</td><td>65%</td><td>Per-resource extraction via LangGraph</td></tr><tr><td>Store Result</td><td>95%</td><td>Save to Redis with 24h TTL</td></tr><tr><td>Completed</td><td>100%</td><td>Cleanup and session logging</td></tr></tbody></table></div>
+<h1>6. Security</h1>
+<p>Authentication, data privacy, and security considerations are identical to the pdf2abdm service. See Section 6 of the Clinical Document documentation for details. The only differences are the environment variable names: NHCX_SECRET_KEY, NHCX_AUTH_ENABLED, NHCX_TOKEN_EXPIRY_DAYS.</p>
+<h1>7. Configuration (Environment Variables)</h1>
+<div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>NHCX_SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>NHCX_AUTH_ENABLED</td><td>true</td><td>Auth toggle (false for dev)</td></tr><tr><td>NHCX_TOKEN_EXPIRY_DAYS</td><td>1</td><td>Token validity in days</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket</td></tr><tr><td>LLM_MODEL</td><td>gemma-4-26b-a4b-it-maas</td><td>Vertex AI model</td></tr><tr><td>LLM_PROJECT_ID</td><td>bcd-prototypes</td><td>GCP project</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result TTL (24h)</td></tr></tbody></table></div>
+<h1>8. Deployment</h1>
 <p>Docker Compose: docker-compose up --build (starts all services including pdf2nhcx on port 8001)</p>
 <pre><code>Standalone: uvicorn pdf2nhcx.app.main:app --host 0.0.0.0 --port 8001</code></pre>
-<h1>6. User Guide</h1>
-<h2>6.1 Browser Usage</h2>
+<h1>9. User Guide</h1>
+<h2>9.1 Browser Usage</h2>
 <ol>
 <li>Navigate to the DPI Platform website</li>
 <li>Click the 'Insurance Policy' tab</li>
@@ -96,17 +96,17 @@ Complete Technical & User Documentation</p>
 <li>Wait for processing (distillation takes ~60-90s, total ~60-180s)</li>
 <li>View and download the generated NHCX FHIR Bundle</li>
 </ol>
-<h2>6.2 API Usage (curl)</h2>
+<h2>9.2 API Usage (curl)</h2>
 <p># Get token</p>
 <pre><code>curl -X POST http://<host>:8001/pdf2nhcx/api/token -H "Content-Type: application/json" -d '{"name": "Name", "email": "email@example.com"}'</code></pre>
 <p># Submit PDF</p>
 <pre><code>curl -X POST http://<host>:8001/pdf2nhcx/submit -H "Authorization: Bearer <token>" -F "file=@policy.pdf"</code></pre>
 <p># Poll and fetch result</p>
 <pre><code>curl http://<host>:8001/pdf2nhcx/task-result/<task_id> -H "Authorization: Bearer <token>"</code></pre>
-<h1>7. Performance</h1>
+<h1>10. Performance</h1>
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Simple insurance policy</td><td>5-10</td><td>60-90 seconds</td></tr><tr><td>Complex multi-benefit policy</td><td>20-50</td><td>90-180 seconds</td></tr><tr><td>Large comprehensive policy</td><td>50-100</td><td>3-5 minutes</td></tr></tbody></table></div>
 <p>The distillation step (4 parallel LLM calls) accounts for approximately 40-50% of total processing time. The LangGraph extraction accounts for another 40%. OCR and assembly are relatively fast.</p>
-<h1>8. FHIR Output Format</h1>
+<h1>11. FHIR Output Format</h1>
 <p>The service generates FHIR R4 Collection Bundles (Bundle.type = 'collection') compliant with NHCX/NRCES profiles.</p>
 <ul>
 <li>Primary resource placed first in Bundle.entry</li>
@@ -116,9 +116,9 @@ Complete Technical & User Documentation</p>
 <li>Meta.profile set to NRCES NHCX profile URLs</li>
 <li>Forbidden resources stripped (e.g., Condition not allowed in InsurancePlanBundle)</li>
 </ul>
-<h1>9. Error Handling</h1>
-<div class="table-responsive"><table><thead><tr><th>Scenario</th><th>Response</th></tr></thead><tbody><tr><td>File too large (&gt; 25 MB)</td><td>HTTP 413</td></tr><tr><td>Too many pages (&gt; 100)</td><td>HTTP 413</td></tr><tr><td>Clinical document uploaded</td><td>HTTP 422 — 'use ABDM/Clinical tab instead'</td></tr><tr><td>Invalid/unrecognized document</td><td>HTTP 422 — 'invalid insurance document'</td></tr><tr><td>Task timeout (30 min)</td><td>FAILURE stored in Redis</td></tr><tr><td>Result expired (24h)</td><td>HTTP 404</td></tr></tbody></table></div>
-<h1>10. Known Limitations & Future Enhancements</h1>
+<h1>12. Error Handling</h1>
+<div class="table-responsive"><table><thead><tr><th>Scenario</th><th>Response</th></tr></thead><tbody><tr><td>File too large (&gt; 25 MB)</td><td>HTTP 413</td></tr><tr><td>Too many pages (&gt; 100)</td><td>HTTP 413</td></tr><tr><td>Clinical document uploaded</td><td>HTTP 422 - 'use ABDM/Clinical tab instead'</td></tr><tr><td>Invalid/unrecognized document</td><td>HTTP 422 - 'invalid insurance document'</td></tr><tr><td>Task timeout (30 min)</td><td>FAILURE stored in Redis</td></tr><tr><td>Result expired (24h)</td><td>HTTP 404</td></tr></tbody></table></div>
+<h1>13. Known Limitations & Future Enhancements</h1>
 <ul>
 <li>High latency due to distillation + multi-step extraction</li>
 <li>No automated validation correction loop</li>
