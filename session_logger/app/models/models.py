@@ -1,7 +1,7 @@
 import uuid
 import hashlib
 from datetime import datetime
-from sqlalchemy import Column, String, Text, DateTime, Integer, Boolean
+from sqlalchemy import Column, String, Text, DateTime, Integer, Boolean, UniqueConstraint
 from sqlalchemy.sql import text
 from ..db.session import Base, USE_SQLITE
 
@@ -29,6 +29,9 @@ class SessionLog(Base):
 
 class AuthToken(Base):
     __tablename__ = "auth_tokens"
+    __table_args__ = (
+        UniqueConstraint('email', 'service', 'created_date', name='uq_email_service_date'),
+    )
 
     id                = Column(Integer,      primary_key=True, autoincrement=True)
     name              = Column(String(200),  nullable=False)
@@ -43,6 +46,8 @@ class AuthToken(Base):
     revoked           = Column(Boolean,      nullable=False, default=False)
     revoked_at        = Column(DateTime,     nullable=True)
     notes             = Column(Text,         nullable=True)
+    encrypted_token   = Column(Text,         nullable=True)
+    created_date      = Column(String(10),   nullable=True)
     created_at        = Column(DateTime,     server_default=_CREATED_AT_DEFAULT)
 
     @staticmethod

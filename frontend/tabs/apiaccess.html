@@ -10,123 +10,145 @@
     </div>
 </div>
 
-<div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:28px;">
-    <p style="margin:0; font-size:0.92rem; color:#0e6a6f; line-height:1.5;">
-        <strong><i class="fas fa-info-circle"></i> For API Developers:</strong> Each service uses an independent JWT signed with its own secret key. Use the token for the specific API you are calling via <code>curl</code> / <code>Postman</code>.
-        <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Clinical Document or Insurance Policy tabs, tokens are fetched automatically - no manual action required.
-    </p>
+<!-- 1. LOGIN REQUIRED GATE panel -->
+<div id="apiAccessAuthGate" class="hidden" style="background:#fff; border:1px solid #e2e8f0; padding:40px; text-align:center; border-radius:12px; margin-bottom:28px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); margin-top:20px;">
+    <i class="fas fa-lock" style="font-size:3rem; color:var(--primary); margin-bottom:20px; display:block;"></i>
+    <h3 style="font-size:1.35rem; color:#0e6a6f; margin-bottom:10px;">Please sign in or register to access developer APIs.</h3>
+    <p style="color:#64748b; margin-bottom:24px; font-size:0.95rem;">Identity verification via Firebase is required to obtain secure developer API tokens.</p>
+    <div style="display:inline-flex; gap:12px; justify-content:center;">
+        <button class="pf-btn pf-btn-primary" style="height:40px; padding:0 24px;" onclick="window.openTab(null, 'Login'); if(window.switchAuthTab) window.switchAuthTab('signin');">Sign In</button>
+        <button class="pf-btn pf-btn-ghost" style="height:40px; padding:0 24px;" onclick="window.openTab(null, 'Login'); if(window.switchAuthTab) window.switchAuthTab('register');">Register</button>
+    </div>
 </div>
 
-<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:18px; margin-bottom:28px;">
-
-    <!-- Clinical Document (ABDM) card -->
-    <div class="pf-demo-token-card">
-        <div class="pf-demo-token-header">
-            <i class="fas fa-file-medical-alt" style="color:#14868C;"></i>
-            <span>Clinical Document API&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2abdm)</small></span>
-            <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-        </div>
-        <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">ABDM FHIR bundle generation from clinical PDF reports.</p>
-        <form id="apiAbdmTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-            <div class="pf-demo-token-fields">
-                <div class="pf-demo-token-field">
-                    <label for="apiAbdmTokenName">Full Name</label>
-                    <input type="text" id="apiAbdmTokenName" placeholder="Your name" required />
-                </div>
-                <div class="pf-demo-token-field">
-                    <label for="apiAbdmTokenEmail">Email Address</label>
-                    <input type="email" id="apiAbdmTokenEmail" placeholder="you@example.com" required />
-                </div>
-            </div>
-            <button type="submit" class="pf-btn pf-btn-primary" id="apiAbdmTokenSubmit">
-                <i class="fas fa-bolt"></i> Request Clinical Token
-            </button>
-        </form>
-        <div id="apiAbdmTokenResult" class="pf-demo-token-result hidden">
-            <div class="pf-demo-token-result-header">
-                <span id="apiAbdmTokenGreeting"></span>
-                <span id="apiAbdmTokenExpiry" class="pf-demo-token-expiry"></span>
-            </div>
-            <div class="pf-demo-token-output-wrap">
-                <pre class="pf-demo-token-output" id="apiAbdmTokenOutput"></pre>
-                <button class="pf-demo-token-copy pf-btn" id="apiAbdmTokenCopy"><i class="fas fa-copy"></i> Copy</button>
-            </div>
-        </div>
-        <div id="apiAbdmTokenError" class="pf-demo-token-error hidden"></div>
+<!-- 2. GATED SECURE API ACCESS CONTENT (visible when logged in) -->
+<div id="apiAccessGatedContent" class="hidden">
+    <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:28px;">
+        <p style="margin:0; font-size:0.92rem; color:#0e6a6f; line-height:1.5;">
+            <strong><i class="fas fa-info-circle"></i> Integrated API Management:</strong> Developer tokens are requested seamlessly using your logged-in session. No manual email or name input is required.
+            <br><strong><i class="fas fa-magic"></i> Automatic Token Flow:</strong> When testing services inside the Clinical Document or Insurance Policy tabs, tokens are handled automatically.
+        </p>
     </div>
 
-    <!-- Insurance Policy (NHCX) card -->
-    <div class="pf-demo-token-card">
-        <div class="pf-demo-token-header">
-            <i class="fas fa-shield-alt" style="color:#14868C;"></i>
-            <span>Insurance Policy API&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2nhcx)</small></span>
-            <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-        </div>
-        <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">NHCX-compliant claim extraction from insurance policy PDFs.</p>
-        <form id="apiNhcxTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-            <div class="pf-demo-token-fields">
-                <div class="pf-demo-token-field">
-                    <label for="apiNhcxTokenName">Full Name</label>
-                    <input type="text" id="apiNhcxTokenName" placeholder="Your name" required />
-                </div>
-                <div class="pf-demo-token-field">
-                    <label for="apiNhcxTokenEmail">Email Address</label>
-                    <input type="email" id="apiNhcxTokenEmail" placeholder="you@example.com" required />
-                </div>
-            </div>
-            <button type="submit" class="pf-btn pf-btn-primary" id="apiNhcxTokenSubmit">
-                <i class="fas fa-bolt"></i> Request Insurance Token
-            </button>
-        </form>
-        <div id="apiNhcxTokenResult" class="pf-demo-token-result hidden">
-            <div class="pf-demo-token-result-header">
-                <span id="apiNhcxTokenGreeting"></span>
-                <span id="apiNhcxTokenExpiry" class="pf-demo-token-expiry"></span>
-            </div>
-            <div class="pf-demo-token-output-wrap">
-                <pre class="pf-demo-token-output" id="apiNhcxTokenOutput"></pre>
-                <button class="pf-demo-token-copy pf-btn" id="apiNhcxTokenCopy"><i class="fas fa-copy"></i> Copy</button>
-            </div>
-        </div>
-        <div id="apiNhcxTokenError" class="pf-demo-token-error hidden"></div>
-    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:18px; margin-bottom:28px;">
 
-    <!-- Forgery Detection (Forgensic) card -->
-    <div class="pf-demo-token-card">
-        <div class="pf-demo-token-header">
-            <i class="fas fa-search-plus" style="color:#14868C;"></i>
-            <span>Forgery Detection API&nbsp;<small style="font-weight:400;color:#64748b;">(forgensic)</small></span>
-            <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-        </div>
-        <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">Classical forensic analysis for tampering detection.</p>
-        <form id="apiForgeryTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-            <div class="pf-demo-token-fields">
-                <div class="pf-demo-token-field">
-                    <label for="apiForgeryTokenName">Full Name</label>
-                    <input type="text" id="apiForgeryTokenName" placeholder="Your name" required />
+        <!-- Clinical Document (ABDM) card -->
+        <div class="pf-demo-token-card">
+            <div class="pf-demo-token-header">
+                <i class="fas fa-file-medical-alt" style="color:#14868C;"></i>
+                <span>Clinical Document API&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2abdm)</small></span>
+                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
+            </div>
+            <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">ABDM FHIR bundle generation from clinical PDF reports.</p>
+            <form id="apiAbdmTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
+                <button type="submit" class="pf-btn pf-btn-primary" id="apiAbdmTokenSubmit">
+                    <i class="fas fa-bolt"></i> Generate Token
+                </button>
+            </form>
+            <div id="apiAbdmTokenResult" class="pf-demo-token-result hidden">
+                <div class="pf-demo-token-result-header">
+                    <span id="apiAbdmTokenGreeting"></span>
+                    <span id="apiAbdmTokenExpiry" class="pf-demo-token-expiry" style="font-weight:600; font-size:0.85rem; padding: 4px 8px; border-radius: 4px;"></span>
                 </div>
-                <div class="pf-demo-token-field">
-                    <label for="apiForgeryTokenEmail">Email Address</label>
-                    <input type="email" id="apiForgeryTokenEmail" placeholder="you@example.com" required />
+                <div class="pf-demo-token-output-wrap" style="position:relative; margin-top:8px;">
+                    <pre class="pf-demo-token-output" id="apiAbdmTokenOutput" style="font-family:monospace; background:#f1f5f9; padding:12px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:pre; margin:0; max-height:48px; line-height:24px; font-size:0.82rem;"></pre>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiAbdmTokenView" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-eye"></i> View</button>
+                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiAbdmTokenCopy" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
                 </div>
             </div>
-            <button type="submit" class="pf-btn pf-btn-primary" id="apiForgeryTokenSubmit">
-                <i class="fas fa-bolt"></i> Request Forgery Token
-            </button>
-        </form>
-        <div id="apiForgeryTokenResult" class="pf-demo-token-result hidden">
-            <div class="pf-demo-token-result-header">
-                <span id="apiForgeryTokenGreeting"></span>
-                <span id="apiForgeryTokenExpiry" class="pf-demo-token-expiry"></span>
-            </div>
-            <div class="pf-demo-token-output-wrap">
-                <pre class="pf-demo-token-output" id="apiForgeryTokenOutput"></pre>
-                <button class="pf-demo-token-copy pf-btn" id="apiForgeryTokenCopy"><i class="fas fa-copy"></i> Copy</button>
-            </div>
+            <div id="apiAbdmTokenError" class="pf-demo-token-error hidden" style="color:#ef4444; background:#fef2f2; padding:10px; border-radius:6px; font-size:0.85rem; margin-top:10px; border:1px solid #fee2e2;"></div>
         </div>
-        <div id="apiForgeryTokenError" class="pf-demo-token-error hidden"></div>
-    </div>
 
+        <!-- Insurance Policy (NHCX) card -->
+        <div class="pf-demo-token-card">
+            <div class="pf-demo-token-header">
+                <i class="fas fa-shield-alt" style="color:#14868C;"></i>
+                <span>Insurance Policy API&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2nhcx)</small></span>
+                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
+            </div>
+            <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">NHCX-compliant claim extraction from health insurance policies.</p>
+            <form id="apiNhcxTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
+                <button type="submit" class="pf-btn pf-btn-primary" id="apiNhcxTokenSubmit">
+                    <i class="fas fa-bolt"></i> Generate Token
+                </button>
+            </form>
+            <div id="apiNhcxTokenResult" class="pf-demo-token-result hidden">
+                <div class="pf-demo-token-result-header">
+                    <span id="apiNhcxTokenGreeting"></span>
+                    <span id="apiNhcxTokenExpiry" class="pf-demo-token-expiry" style="font-weight:600; font-size:0.85rem; padding: 4px 8px; border-radius: 4px;"></span>
+                </div>
+                <div class="pf-demo-token-output-wrap" style="position:relative; margin-top:8px;">
+                    <pre class="pf-demo-token-output" id="apiNhcxTokenOutput" style="font-family:monospace; background:#f1f5f9; padding:12px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:pre; margin:0; max-height:48px; line-height:24px; font-size:0.82rem;"></pre>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiNhcxTokenView" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-eye"></i> View</button>
+                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiNhcxTokenCopy" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                </div>
+            </div>
+            <div id="apiNhcxTokenError" class="pf-demo-token-error hidden" style="color:#ef4444; background:#fef2f2; padding:10px; border-radius:6px; font-size:0.85rem; margin-top:10px; border:1px solid #fee2e2;"></div>
+        </div>
+
+        <!-- Privacy Filter card -->
+        <div class="pf-demo-token-card">
+            <div class="pf-demo-token-header">
+                <i class="fas fa-user-shield" style="color:#14868C;"></i>
+                <span>Privacy Filter API&nbsp;<small style="font-weight:400;color:#64748b;">(privacy-filter)</small></span>
+                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
+            </div>
+            <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">PHI/PII detection & redaction for medical scans and images.</p>
+            <form id="apiPrivacyTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
+                <button type="submit" class="pf-btn pf-btn-primary" id="apiPrivacyTokenSubmit">
+                    <i class="fas fa-bolt"></i> Generate Token
+                </button>
+            </form>
+            <div id="apiPrivacyTokenResult" class="pf-demo-token-result hidden">
+                <div class="pf-demo-token-result-header">
+                    <span id="apiPrivacyTokenGreeting"></span>
+                    <span id="apiPrivacyTokenExpiry" class="pf-demo-token-expiry" style="font-weight:600; font-size:0.85rem; padding: 4px 8px; border-radius: 4px;"></span>
+                </div>
+                <div class="pf-demo-token-output-wrap" style="position:relative; margin-top:8px;">
+                    <pre class="pf-demo-token-output" id="apiPrivacyTokenOutput" style="font-family:monospace; background:#f1f5f9; padding:12px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:pre; margin:0; max-height:48px; line-height:24px; font-size:0.82rem;"></pre>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiPrivacyTokenView" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-eye"></i> View</button>
+                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiPrivacyTokenCopy" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                </div>
+            </div>
+            <div id="apiPrivacyTokenError" class="pf-demo-token-error hidden" style="color:#ef4444; background:#fef2f2; padding:10px; border-radius:6px; font-size:0.85rem; margin-top:10px; border:1px solid #fee2e2;"></div>
+        </div>
+
+        <!-- Forgery Detection (Forgensic) card -->
+        <div class="pf-demo-token-card">
+            <div class="pf-demo-token-header">
+                <i class="fas fa-search-plus" style="color:#14868C;"></i>
+                <span>Forgery Detection API&nbsp;<small style="font-weight:400;color:#64748b;">(forgensic)</small></span>
+                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
+            </div>
+            <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">Classical forensic analysis for document tampering detection.</p>
+            <form id="apiForgeryTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
+                <button type="submit" class="pf-btn pf-btn-primary" id="apiForgeryTokenSubmit">
+                    <i class="fas fa-bolt"></i> Generate Token
+                </button>
+            </form>
+            <div id="apiForgeryTokenResult" class="pf-demo-token-result hidden">
+                <div class="pf-demo-token-result-header">
+                    <span id="apiForgeryTokenGreeting"></span>
+                    <span id="apiForgeryTokenExpiry" class="pf-demo-token-expiry" style="font-weight:600; font-size:0.85rem; padding: 4px 8px; border-radius: 4px;"></span>
+                </div>
+                <div class="pf-demo-token-output-wrap" style="position:relative; margin-top:8px;">
+                    <pre class="pf-demo-token-output" id="apiForgeryTokenOutput" style="font-family:monospace; background:#f1f5f9; padding:12px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:pre; margin:0; max-height:48px; line-height:24px; font-size:0.82rem;"></pre>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiForgeryTokenView" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-eye"></i> View</button>
+                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiForgeryTokenCopy" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                </div>
+            </div>
+            <div id="apiForgeryTokenError" class="pf-demo-token-error hidden" style="color:#ef4444; background:#fef2f2; padding:10px; border-radius:6px; font-size:0.85rem; margin-top:10px; border:1px solid #fee2e2;"></div>
+        </div>
+
+    </div>
 </div>
 
 <!-- ── Endpoint Reference ── -->
@@ -146,9 +168,8 @@
                 </tr>
             </thead>
             <tbody>
-                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2abdm/api/token</code></td><td>&#128275; Open</td><td>Issue a 1-day demo JWT for the Clinical API</td></tr>
-                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2abdm</code></td><td>&#128274; Bearer</td><td>Sync: PDF → ABDM FHIR DocumentBundle</td></tr>
-                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2abdm/submit</code></td><td>&#128274; Bearer</td><td>Async: submit PDF, returns <code>task_id</code> (202 Accepted)</td></tr>
+                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2abdm</code></td><td>&#128274; Bearer</td><td>Sync: PDF → clinical resources and bundle</td></tr>
+                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2abdm/submit</code></td><td>&#128274; Bearer</td><td>Async: upload PDF, returns <code>task_id</code> (202 Accepted)</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/pdf2abdm/task-status/{id}</code></td><td>&#128275; Open</td><td>Poll async task status (PENDING / SUCCESS / FAILURE)</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/pdf2abdm/health</code></td><td>&#128275; Open</td><td>Service liveness + model status</td></tr>
                 <tr><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/pdf2abdm/model-health</code></td><td>&#128275; Open</td><td>AI model readiness check</td></tr>
@@ -171,8 +192,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2nhcx/api/token</code></td><td>&#128275; Open</td><td>Issue a 1-day demo JWT for the Insurance API</td></tr>
-                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2nhcx/submit</code></td><td>&#128274; Bearer</td><td>Async: submit PDF, returns <code>task_id</code> (202 Accepted)</td></tr>
+                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/pdf2nhcx/submit</code></td><td>&#128274; Bearer</td><td>Async: upload PDF, returns <code>task_id</code> (202 Accepted)</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/pdf2nhcx/task-status/{id}</code></td><td>&#128275; Open</td><td>Poll async task status (PENDING / SUCCESS / FAILURE)</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/pdf2nhcx/health</code></td><td>&#128275; Open</td><td>Service liveness + model status</td></tr>
                 <tr><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/pdf2nhcx/model-health</code></td><td>&#128275; Open</td><td>AI model readiness check</td></tr>
@@ -195,7 +215,6 @@
                 </tr>
             </thead>
             <tbody>
-                <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/forgensic/api/token</code></td><td>&#128275; Open</td><td>Issue a 1-day demo JWT for the Forgery API</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb post" style="font-size:0.78rem;">POST</span></td><td><code>/forgensic/jobs</code></td><td>&#128274; Bearer</td><td>Upload a document and create a processing job</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/forgensic/jobs/{job_id}</code></td><td>&#128274; Bearer</td><td>Poll job status and progress</td></tr>
                 <tr style="border-bottom:1px solid #f0f4f8;"><td style="padding:7px 12px;"><span class="pf-http-verb get" style="font-size:0.78rem;">GET</span></td><td><code>/forgensic/jobs/{job_id}/results</code></td><td>&#128274; Bearer</td><td>Fetch complete forgery analysis results</td></tr>
@@ -219,4 +238,3 @@
         <i class="fas fa-book-open"></i>&nbsp; Full API Documentation
     </button>
 </div>
-

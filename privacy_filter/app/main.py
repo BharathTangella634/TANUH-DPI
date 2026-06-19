@@ -165,6 +165,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from common.rate_limit import RateLimitMiddleware, RequestIDMiddleware, register_standard_error_handlers
+
+app.add_middleware(RequestIDMiddleware)
+register_standard_error_handlers(app)
+
+app.add_middleware(
+    RateLimitMiddleware,
+    service_name="privacy_filter",
+    limit=150
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -215,34 +226,11 @@ class DemoTokenRequest(BaseModel):
 
 @app.post("/api/demo-token")
 async def create_demo_token(body: DemoTokenRequest):
-    """Issue a signed demo JWT for the given name + email."""
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret:
-        raise HTTPException(
-            status_code=503,
-            detail="Demo tokens are not available: SECRET_KEY is not configured.",
-        )
-
-    expiry_days = int(os.getenv("DEMO_TOKEN_EXPIRY_DAYS", "1"))
-    now = int(time.time())
-    payload = {
-        "sub": body.email,
-        "name": body.name,
-        "email": body.email,
-        "type": "demo",
-        "iat": now,
-        "exp": now + expiry_days * 86_400,
-    }
-    token = jwt.encode(payload, secret, algorithm="HS256")
-    logger.info("Demo token issued for %s (%s), expires in %dd",
-                body.name, body.email, expiry_days)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in_days": expiry_days,
-        "name": body.name,
-        "email": body.email,
-    }
+    """Public token generation is disabled in production."""
+    raise HTTPException(
+        status_code=403,
+        detail="Public token generation on this service is disabled. Developer tokens must be requested via the centralized /auth/token endpoint on session_logger with a verified Firebase ID token."
+    )
 
 
 @app.post("/api/redact", response_model=RedactionResult)

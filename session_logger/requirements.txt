@@ -7,3 +7,4 @@ pytz
 google-cloud-storage
 prometheus_client>=0.20.0
 firebase-admin
+pyjwt

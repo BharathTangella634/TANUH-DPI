@@ -36,7 +36,7 @@ if db_url is None:
     os.makedirs(_db_dir, exist_ok=True)
     _db_path = os.path.join(_db_dir, "local_session.db")
     db_url = f"sqlite:///{_db_path}"
-    connect_args = {"check_same_thread": False}
+    connect_args = {"check_same_thread": False, "timeout": 30}
     if not (settings.MYSQL_USER and settings.MYSQL_PASSWORD):
         logger.info("MySQL credentials not found — using local SQLite: %s", _db_path)
 

@@ -726,47 +726,11 @@
             </div>
         </div>
 
-        <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:12px 16px; border-radius:8px; margin-bottom:16px;">
-            <p style="margin:0; font-size:0.8rem; color:#0e6a6f; line-height:1.5;">
-                <strong><i class="fas fa-info-circle"></i> Authentication:</strong> Uses JWT bearer tokens. Request a 1-day demo token via the form below, then pass it as <code>Authorization: Bearer &lt;token&gt;</code>.
-                <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Clinical Document tab, tokens are fetched automatically.
+        <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:24px;">
+            <p style="margin:0; font-size:0.85rem; color:#0e6a6f; line-height:1.5;">
+                <strong><i class="fas fa-info-circle"></i> Secure Authentication:</strong> All API requests require a Bearer token in the <code>Authorization</code> header.
+                <br><strong><i class="fas fa-key"></i> Get Your Developer Token:</strong> To generate or retrieve your secure token, please visit the centralized <a href="#" onclick="openTab(null, 'APIAccess'); return false;" style="font-weight:700; color:var(--primary); text-decoration:underline;">API Access</a> panel.
             </p>
-        </div>
-
-        <!-- Token Request -->
-        <div class="pf-demo-token-card" style="margin-bottom:20px;">
-            <div class="pf-demo-token-header">
-                <i class="fas fa-file-medical-alt" style="color:#14868C;"></i>
-                <span>Clinical Document API Token&nbsp;<small style="font-weight:400;color:#64748b;">(pdf2abdm)</small></span>
-                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-            </div>
-            <p style="font-size:0.8rem;color:#64748b;margin:0 0 12px;">ABDM FHIR bundle generation from clinical PDF reports.</p>
-            <form id="apiAbdmTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-                <div class="pf-demo-token-fields">
-                    <div class="pf-demo-token-field">
-                        <label for="apiAbdmTokenName">Full Name</label>
-                        <input type="text" id="apiAbdmTokenName" placeholder="Your name" required />
-                    </div>
-                    <div class="pf-demo-token-field">
-                        <label for="apiAbdmTokenEmail">Email Address</label>
-                        <input type="email" id="apiAbdmTokenEmail" placeholder="you@example.com" required />
-                    </div>
-                </div>
-                <button type="submit" class="pf-btn pf-btn-primary" id="apiAbdmTokenSubmit">
-                    <i class="fas fa-bolt"></i> Request Clinical Token
-                </button>
-            </form>
-            <div id="apiAbdmTokenResult" class="pf-demo-token-result hidden">
-                <div class="pf-demo-token-result-header">
-                    <span id="apiAbdmTokenGreeting"></span>
-                    <span id="apiAbdmTokenExpiry" class="pf-demo-token-expiry"></span>
-                </div>
-                <div class="pf-demo-token-output-wrap">
-                    <pre class="pf-demo-token-output" id="apiAbdmTokenOutput"></pre>
-                    <button class="pf-demo-token-copy pf-btn" id="apiAbdmTokenCopy"><i class="fas fa-copy"></i> Copy</button>
-                </div>
-            </div>
-            <div id="apiAbdmTokenError" class="pf-demo-token-error hidden"></div>
         </div>
 
         <!-- Endpoint Reference -->
@@ -782,7 +746,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2abdm/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT for the Clinical API</td></tr>
                     <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2abdm</code></td><td>Bearer</td><td>Sync: PDF to ABDM FHIR DocumentBundle</td></tr>
                     <tr><td><span class="api-method post">POST</span></td><td><code>/pdf2abdm/submit</code></td><td>Bearer</td><td>Async: submit PDF, returns <code>task_id</code> (202)</td></tr>
                     <tr><td><span class="api-method get">GET</span></td><td><code>/pdf2abdm/task-status/{id}</code></td><td>Open</td><td>Poll async task status</td></tr>
@@ -798,13 +761,8 @@
         <div class="api-section-box">
             <h4 style="margin:0 0 6px; font-size:0.8rem; color:var(--text-dark); font-weight:700;">curl</h4>
             <div class="api-code-block">
-                <pre style="margin:0; white-space:pre-wrap;">TOKEN=$(curl -s -X POST https://dpi-dev.tanuh.ai/pdf2abdm/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Your Name","email":"you@example.com"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-curl -X POST https://dpi-dev.tanuh.ai/pdf2abdm \
-  -H "Authorization: Bearer $TOKEN" \
+                <pre style="margin:0; white-space:pre-wrap;">curl -X POST https://dpi-dev.tanuh.ai/pdf2abdm \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@/path/to/clinical_report.pdf"</pre>
                 <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
             </div>
@@ -815,16 +773,10 @@ curl -X POST https://dpi-dev.tanuh.ai/pdf2abdm \
             <div class="api-code-block">
                 <pre style="margin:0; white-space:pre-wrap;">import requests
 
-resp = requests.post(
-    "https://dpi-dev.tanuh.ai/pdf2abdm/api/token",
-    json={"name": "Your Name", "email": "you@example.com"},
-)
-token = resp.json()["access_token"]
-
 with open("clinical_report.pdf", "rb") as f:
     r = requests.post(
         "https://dpi-dev.tanuh.ai/pdf2abdm",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": "Bearer YOUR_TOKEN"},
         files={"file": ("report.pdf", f, "application/pdf")},
         timeout=600,
     )

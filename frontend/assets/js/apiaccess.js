@@ -1,184 +1,300 @@
 /**
- * apiaccess.js - Logic for the API Access tab
- * Each service (ABDM, NHCX, Forgery) has its own form and token.
+ * apiaccess.js - Secure Centralized API Access Experience (Session 2)
+ * Manages token requests, view/hide toggles, storage persistence, and visual expiry highlighting.
  */
 (function() {
     "use strict";
 
-    // ── Generic token request handler ─────────────────────────────────────────
-    async function handleTokenRequest(config) {
-        const { formId, endpoint, storageKey, resultId, greetingId, expiryId, outputId, errorId, copyId } = config;
+    // ── Configuration for all four services ─────────────────────────────────
+    const SERVICES = [
+        {
+            id:         "pdf2abdm",
+            formId:     "apiAbdmTokenForm",
+            submitId:   "apiAbdmTokenSubmit",
+            resultId:   "apiAbdmTokenResult",
+            outputId:   "apiAbdmTokenOutput",
+            greetingId: "apiAbdmTokenGreeting",
+            expiryId:   "apiAbdmTokenExpiry",
+            errorId:    "apiAbdmTokenError",
+            viewId:     "apiAbdmTokenView",
+            copyId:     "apiAbdmTokenCopy",
+            storageKey: "dpi_token_pdf2abdm",
+            expiresKey: "dpi_token_expires_pdf2abdm",
+            statusKey:  "dpi_token_status_pdf2abdm"
+        },
+        {
+            id:         "pdf2nhcx",
+            formId:     "apiNhcxTokenForm",
+            submitId:   "apiNhcxTokenSubmit",
+            resultId:   "apiNhcxTokenResult",
+            outputId:   "apiNhcxTokenOutput",
+            greetingId: "apiNhcxTokenGreeting",
+            expiryId:   "apiNhcxTokenExpiry",
+            errorId:    "apiNhcxTokenError",
+            viewId:     "apiNhcxTokenView",
+            copyId:     "apiNhcxTokenCopy",
+            storageKey: "dpi_token_pdf2nhcx",
+            expiresKey: "dpi_token_expires_pdf2nhcx",
+            statusKey:  "dpi_token_status_pdf2nhcx"
+        },
+        {
+            id:         "privacy_filter",
+            formId:     "apiPrivacyTokenForm",
+            submitId:   "apiPrivacyTokenSubmit",
+            resultId:   "apiPrivacyTokenResult",
+            outputId:   "apiPrivacyTokenOutput",
+            greetingId: "apiPrivacyTokenGreeting",
+            expiryId:   "apiPrivacyTokenExpiry",
+            errorId:    "apiPrivacyTokenError",
+            viewId:     "apiPrivacyTokenView",
+            copyId:     "apiPrivacyTokenCopy",
+            storageKey: "dpi_token_privacy_filter",
+            expiresKey: "dpi_token_expires_privacy_filter",
+            statusKey:  "dpi_token_status_privacy_filter"
+        },
+        {
+            id:         "forgensic",
+            formId:     "apiForgeryTokenForm",
+            submitId:   "apiForgeryTokenSubmit",
+            resultId:   "apiForgeryTokenResult",
+            outputId:   "apiForgeryTokenOutput",
+            greetingId: "apiForgeryTokenGreeting",
+            expiryId:   "apiForgeryTokenExpiry",
+            errorId:    "apiForgeryTokenError",
+            viewId:     "apiForgeryTokenView",
+            copyId:     "apiForgeryTokenCopy",
+            storageKey: "dpi_token_forgensic",
+            expiresKey: "dpi_token_expires_forgensic",
+            statusKey:  "dpi_token_status_forgensic"
+        }
+    ];
 
-        const form = document.getElementById(formId);
-        if (!form) return;
+    // ── Expiry Formatter with Color Highlights ──────────────────────────────
+    function formatExpiry(expiryStr) {
+        const d = new Date(expiryStr);
+        if (isNaN(d.getTime())) return { text: "Unknown Expiry", color: "#64748b" };
 
-        // If we already have a token stored, show it as "active"
-        const existing = sessionStorage.getItem(storageKey);
-        if (existing) {
-            _showResult(config, existing, null, null, true);
+        const now = new Date();
+        const diffMs = d - now;
+        const diffHrs = diffMs / (1000 * 60 * 60);
+
+        let color = "#10b981"; // green
+        if (diffMs <= 0) {
+            color = "#ef4444"; // red
+        } else if (diffHrs < 6) {
+            color = "#f97316"; // orange
         }
 
-        // Wire up copy button
-        const copyBtn = document.getElementById(copyId);
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const dd = d.getDate();
+        const mon = months[d.getMonth()];
+        const yyyy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
+        
+        let tz = "";
+        try {
+            tz = " " + d.toLocaleDateString('en-US', { day: 'numeric', timeZoneName: 'short' }).split(', ').pop().split(' ').pop();
+        } catch {
+            tz = " UTC";
+        }
+
+        const formatted = `${dd} ${mon} ${yyyy} ${hh}:${mm}${tz}`;
+        return { text: formatted, color: color, expired: diffMs <= 0 };
+    }
+
+    // ── Local Resolve logger url helper ─────────────────────────────────────
+    function _resolveLoggerBase() {
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) {
+            return window.DPI_API_CONFIG.logger;
+        }
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002' : window.location.origin;
+    }
+
+    // ── Core Service Access Manager ─────────────────────────────────────────
+    function manageServiceCard(cfg) {
+        const form = document.getElementById(cfg.formId);
+        const resultEl = document.getElementById(cfg.resultId);
+        const outputEl = document.getElementById(cfg.outputId);
+        const greetingEl = document.getElementById(cfg.greetingId);
+        const expiryEl = document.getElementById(cfg.expiryId);
+        const errorEl = document.getElementById(cfg.errorId);
+        const viewBtn = document.getElementById(cfg.viewId);
+        const copyBtn = document.getElementById(cfg.copyId);
+
+        if (!form) return;
+
+        let activeToken = localStorage.getItem(cfg.storageKey);
+        let activeExpires = localStorage.getItem(cfg.expiresKey);
+        let activeStatus = localStorage.getItem(cfg.statusKey);
+        let isMasked = true;
+
+        // Masking helper
+        function updateMaskState() {
+            if (!outputEl) return;
+            if (isMasked) {
+                outputEl.textContent = "••••••••••••••••••••••••••••••••";
+                if (viewBtn) viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+            } else {
+                outputEl.textContent = activeToken;
+                if (viewBtn) viewBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+            }
+        }
+
+        // Render card results state
+        function renderResult(token, expires, status) {
+            activeToken = token;
+            activeExpires = expires;
+            activeStatus = status;
+
+            // Save variables to survive page refreshes
+            localStorage.setItem(cfg.storageKey, token);
+            localStorage.setItem(cfg.expiresKey, expires);
+            localStorage.setItem(cfg.statusKey, status);
+
+            isMasked = true;
+            updateMaskState();
+
+            // Handle greeting
+            if (greetingEl) {
+                if (status === "existing_token_returned" || status === "restored") {
+                    greetingEl.textContent = "Token already generated today.";
+                    greetingEl.style.color = "#0e6a6f";
+                } else {
+                    greetingEl.textContent = "🎉 Token generated successfully!";
+                    greetingEl.style.color = "var(--primary)";
+                }
+            }
+
+            // Expiry display with color highlighting
+            if (expiryEl && expires) {
+                const info = formatExpiry(expires);
+                expiryEl.textContent = `Expires: ${info.text}`;
+                expiryEl.style.backgroundColor = info.color;
+                expiryEl.style.color = "#fff";
+                expiryEl.style.padding = "4px 8px";
+                expiryEl.style.borderRadius = "4px";
+            }
+
+            // Hide the Request form and "Generate Token" button completely so no duplicate submission/regeneration is possible
+            form.style.display = "none";
+            resultEl?.classList.remove('hidden');
+            errorEl?.classList.add('hidden');
+        }
+
+        // Check if there is already an unexpired token in local storage on page refresh
+        if (activeToken && activeExpires) {
+            const expTime = new Date(activeExpires).getTime();
+            if (expTime > Date.now()) {
+                renderResult(activeToken, activeExpires, "restored");
+            } else {
+                // Expired — clear values
+                localStorage.removeItem(cfg.storageKey);
+                localStorage.removeItem(cfg.expiresKey);
+                localStorage.removeItem(cfg.statusKey);
+                form.style.display = "block";
+                resultEl?.classList.add('hidden');
+            }
+        } else {
+            form.style.display = "block";
+            resultEl?.classList.add('hidden');
+        }
+
+        // View/Hide button listener
+        if (viewBtn) {
+            viewBtn.replaceWith(viewBtn.cloneNode(true)); // remove duplicate listeners
+            const newViewBtn = document.getElementById(cfg.viewId);
+            newViewBtn.addEventListener('click', () => {
+                isMasked = !isMasked;
+                updateMaskState();
+            });
+        }
+
+        // Copy button listener
         if (copyBtn) {
-            copyBtn.addEventListener('click', async () => {
-                const output = document.getElementById(outputId);
-                if (!output) return;
+            copyBtn.replaceWith(copyBtn.cloneNode(true));
+            const newCopyBtn = document.getElementById(cfg.copyId);
+            newCopyBtn.addEventListener('click', async () => {
                 try {
-                    await navigator.clipboard.writeText(output.textContent.trim());
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
+                    await navigator.clipboard.writeText(activeToken);
+                    newCopyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => { newCopyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
                 } catch {
-                    copyBtn.textContent = 'Use Ctrl+C';
+                    alert("Copy failed. Please manually select the token.");
                 }
             });
         }
 
-        form.addEventListener('submit', async (e) => {
+        // Form Submit Handler (Generate Token)
+        form.replaceWith(form.cloneNode(true));
+        const newForm = document.getElementById(cfg.formId);
+        newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name  = form.querySelector('input[type="text"]')?.value?.trim();
-            const email = form.querySelector('input[type="email"]')?.value?.trim();
-            if (!name || !email) {
-                _showError(errorId, 'Please fill in both your name and email.');
-                return;
-            }
-
-            const btn = form.querySelector('button[type="submit"]');
+            const btn = newForm.querySelector('button[type="submit"]');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting…';
-            document.getElementById(errorId)?.classList.add('hidden');
-            document.getElementById(resultId)?.classList.add('hidden');
+            errorEl?.classList.add('hidden');
 
             try {
-                const base = _resolveBase(endpoint);
-                const isBaseLocal = base.includes('localhost') || base.includes('127.0.0.1');
-                const endpointPath = isBaseLocal
-                    ? endpoint.replace(/^\/forgensic(?=\/)/, '')
-                    : endpoint;
-                const r = await fetch(`${base}${endpointPath}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email })
-                });
-                if (!r.ok) {
-                    const errJson = await r.json().catch(() => ({}));
-                    throw new Error(errJson.detail || `HTTP ${r.status}`);
+                const firebaseToken = window.DPI_Auth ? DPI_Auth.getToken() : null;
+                if (!firebaseToken) {
+                    throw new Error("No active Firebase session found. Please sign in again.");
                 }
+
+                const base = _resolveLoggerBase();
+                const r = await fetch(`${base}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${firebaseToken}`
+                    },
+                    body: JSON.stringify({ service: cfg.id })
+                });
+
+                if (r.status === 401) {
+                    throw new Error("Authentication failed: invalid or expired Firebase session.");
+                }
+                if (r.status === 403) {
+                    throw new Error("Authorization failed: Account is not authorized to generate API developer tokens.");
+                }
+
                 const data = await r.json();
-                sessionStorage.setItem(storageKey, data.access_token);
-                _showResult(config, data.access_token, name, data.expires_in_days, false);
-                window.showToast('Token Issued', `${storageKey} saved to your session.`, 'success');
+                if (!r.ok) {
+                    throw new Error(data.detail || `HTTP Error ${r.status}`);
+                }
+
+                renderResult(data.access_token, data.expires_at, data.status);
+                window.showToast('Token Securely Issued', 'Save or copy your token below.', 'success');
+
             } catch (err) {
-                _showError(errorId, `Failed: ${err.message}`);
+                if (errorEl) {
+                    errorEl.textContent = err.message;
+                    errorEl.classList.remove('hidden');
+                }
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-bolt"></i> ' + btn.dataset.label;
+                btn.innerHTML = '<i class="fas fa-bolt"></i> Generate Token';
             }
         });
-
-        // Store original label for restore
-        const btn = form.querySelector('button[type="submit"]');
-        if (btn) btn.dataset.label = btn.textContent.trim();
     }
 
-    function _resolveBase(endpoint) {
-        if (window.DPI_API_CONFIG) {
-            if (endpoint.includes('privacy') && window.DPI_API_CONFIG.pf) return window.DPI_API_CONFIG.pf;
-            if (endpoint.includes('abdm') && window.DPI_API_CONFIG.abdm) return window.DPI_API_CONFIG.abdm;
-            if (endpoint.includes('nhcx') && window.DPI_API_CONFIG.nhcx) return window.DPI_API_CONFIG.nhcx;
-            if (endpoint.includes('forgensic') && window.DPI_API_CONFIG.forgensic) return window.DPI_API_CONFIG.forgensic;
-        }
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            if (endpoint.includes('privacy'))   return 'http://localhost:8003';
-            if (endpoint.includes('abdm'))      return 'http://localhost:8000';
-            if (endpoint.includes('nhcx'))      return 'http://localhost:8001';
-            if (endpoint.includes('forgensic')) return 'http://localhost:8004';
-        }
-        return window.location.origin;
-    }
-
-    function _showResult(config, token, name, expiresInDays, restored) {
-        const resultEl   = document.getElementById(config.resultId);
-        const outputEl   = document.getElementById(config.outputId);
-        const greetingEl = document.getElementById(config.greetingId);
-        const expiryEl   = document.getElementById(config.expiryId);
-
-        if (outputEl)   outputEl.textContent = token;
-        resultEl?.classList.remove('hidden');
-        document.getElementById(config.errorId)?.classList.add('hidden');
-
-        // Decode expiry from JWT if available
-        let expTs = null;
-        let displayName = name || '';
-        try {
-            const parts = token.split('.');
-            if (parts.length === 3) {
-                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-                expTs = payload.exp;
-                displayName = displayName || payload.name || '';
-            }
-        } catch {}
-
-        if (greetingEl && displayName) {
-            greetingEl.textContent = restored ? `Welcome back, ${displayName}!` : `🎉 Token issued for ${displayName}`;
-        }
-        if (expiryEl) {
-            if (expTs) {
-                expiryEl.textContent = `Expires ${new Date(expTs * 1000).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
-            } else if (expiresInDays) {
-                expiryEl.textContent = `Valid for ${expiresInDays} days`;
-            }
-        }
-    }
-
-    function _showError(errorId, msg) {
-        const el = document.getElementById(errorId);
-        if (el) { el.textContent = msg; el.classList.remove('hidden'); }
-    }
-
-    // ── Public init ───────────────────────────────────────────────────────────
+    // ── Public global initialization hook ───────────────────────────────────
     window.initApiAccess = function() {
-        // Clinical Document — ABDM
-        handleTokenRequest({
-            formId:     'apiAbdmTokenForm',
-            endpoint:   '/pdf2abdm/api/token',
-            storageKey: 'abdm_token',
-            resultId:   'apiAbdmTokenResult',
-            greetingId: 'apiAbdmTokenGreeting',
-            expiryId:   'apiAbdmTokenExpiry',
-            outputId:   'apiAbdmTokenOutput',
-            errorId:    'apiAbdmTokenError',
-            copyId:     'apiAbdmTokenCopy',
-        });
+        const isLoggedIn = window.DPI_Auth && window.DPI_Auth.isLoggedIn();
+        const gate = document.getElementById("apiAccessAuthGate");
+        const content = document.getElementById("apiAccessGatedContent");
 
-        // Insurance Policy — NHCX
-        handleTokenRequest({
-            formId:     'apiNhcxTokenForm',
-            endpoint:   '/pdf2nhcx/api/token',
-            storageKey: 'nhcx_token',
-            resultId:   'apiNhcxTokenResult',
-            greetingId: 'apiNhcxTokenGreeting',
-            expiryId:   'apiNhcxTokenExpiry',
-            outputId:   'apiNhcxTokenOutput',
-            errorId:    'apiNhcxTokenError',
-            copyId:     'apiNhcxTokenCopy',
-        });
-
-        // Forgery Detection — Forgensic
-        handleTokenRequest({
-            formId:     'apiForgeryTokenForm',
-            endpoint:   '/forgensic/api/token',
-            storageKey: 'forgensic_token',
-            resultId:   'apiForgeryTokenResult',
-            greetingId: 'apiForgeryTokenGreeting',
-            expiryId:   'apiForgeryTokenExpiry',
-            outputId:   'apiForgeryTokenOutput',
-            errorId:    'apiForgeryTokenError',
-            copyId:     'apiForgeryTokenCopy',
-        });
-
-        // Privacy Filter runs as a local Docker container (port 8003) with its own UI and token system.
-        // Token generation is handled at: /privacy-filter/api/demo-token
+        if (isLoggedIn) {
+            gate?.classList.add("hidden");
+            content?.classList.remove("hidden");
+            
+            // Manage and bootstrap all 4 service cards securely
+            SERVICES.forEach(manageServiceCard);
+        } else {
+            gate?.classList.remove("hidden");
+            content?.classList.add("hidden");
+        }
     };
 
     window.API_downloadPostman = function() {

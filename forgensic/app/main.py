@@ -45,6 +45,17 @@ from .models import JobCreateResponse, JobResultResponse, JobStatusResponse
 
 app = FastAPI(title="NHA PS3 Forensics API")
 
+from common.rate_limit import RateLimitMiddleware, RequestIDMiddleware, register_standard_error_handlers
+
+app.add_middleware(RequestIDMiddleware)
+register_standard_error_handlers(app)
+
+app.add_middleware(
+    RateLimitMiddleware,
+    service_name="forgensic",
+    limit=150
+)
+
 if CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
@@ -199,17 +210,11 @@ async def stats() -> Dict[str, Any]:
 
 @app.post("/api/token")
 async def create_token(body: TokenRequest, request: Request) -> Dict[str, Any]:
-    """Issue a signed demo JWT valid for N days (default 1)."""
-    expiry_days = int(os.getenv("FORGENSIC_TOKEN_EXPIRY_DAYS", "1"))
-    token = issue_demo_token(body.name, body.email, expiry_days)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in_days": expiry_days,
-        "name": body.name,
-        "email": body.email,
-        "service": "forgensic",
-    }
+    """Public token generation is disabled in production."""
+    raise HTTPException(
+        status_code=403,
+        detail="Public token generation on this service is disabled. Developer tokens must be requested via the centralized /auth/token endpoint on session_logger with a verified Firebase ID token."
+    )
 
 
 @app.post("/jobs", response_model=JobCreateResponse)

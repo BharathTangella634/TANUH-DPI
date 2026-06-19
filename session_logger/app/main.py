@@ -21,6 +21,7 @@ Endpoints:
   GET  /logs/stats       — aggregated counts (feeds dashboard cards)
 """
 
+import os
 import uuid
 import logging
 from typing import Optional, Literal
@@ -48,9 +49,66 @@ Base.metadata.create_all(bind=engine)
 logger.info("session_logger started — tables created/verified (%s).",
             "SQLite" if USE_SQLITE else "MySQL")
 
+# Programmatic schema migrations for existing tables
+try:
+    from sqlalchemy import inspect
+    inspector = inspect(engine)
+    columns = [col["name"] for col in inspector.get_columns("auth_tokens")]
+    
+    with engine.begin() as conn:
+        if "encrypted_token" not in columns:
+            logger.info("Migrating auth_tokens table: adding encrypted_token column")
+            conn.execute(text("ALTER TABLE auth_tokens ADD COLUMN encrypted_token TEXT"))
+            
+        if "created_date" not in columns:
+            logger.info("Migrating auth_tokens table: adding created_date column")
+            conn.execute(text("ALTER TABLE auth_tokens ADD COLUMN created_date VARCHAR(10)"))
+            
+            # Also attempt to add a unique composite constraint/index
+            try:
+                if USE_SQLITE:
+                    # SQLite doesn't support ALTER TABLE ADD CONSTRAINT directly.
+                    # We can index it or let the nested transaction handle it on SQLite.
+                    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_email_service_date ON auth_tokens (email, service, created_date)"))
+                else:
+                    logger.info("Migrating auth_tokens table: adding uq_email_service_date unique constraint")
+                    conn.execute(text("ALTER TABLE auth_tokens ADD CONSTRAINT uq_email_service_date UNIQUE (email, service, created_date)"))
+            except Exception as index_err:
+                logger.warning(f"Composite unique constraint creation bypassed/failed: {index_err}")
+except Exception as migration_err:
+    logger.warning(f"Table bootstrap migration warning: {migration_err}")
+
+# ── Production Auth Safety Check (Session 4) ───────────────────────────────
+def _check_production_auth_safety():
+    is_prod = os.getenv("ENV", "").lower() in ("prod", "production") or os.getenv("MYSQL_HOST") == "cloud-sql-proxy"
+    
+    bypass_flags = {
+        "ABDM_AUTH_ENABLED": os.getenv("ABDM_AUTH_ENABLED", "true"),
+        "NHCX_AUTH_ENABLED": os.getenv("NHCX_AUTH_ENABLED", "true"),
+        "KEYCLOAK_AUTH_ENABLED": os.getenv("KEYCLOAK_AUTH_ENABLED", "true"),
+        "FORGENSIC_AUTH_ENABLED": os.getenv("FORGENSIC_AUTH_ENABLED", "true"),
+    }
+    
+    for flag, val in bypass_flags.items():
+        if val.lower() in ("false", "0", "no"):
+            msg = f"CRITICAL SECURITY WARNING: Auth bypass is ACTIVE ({flag}={val})!"
+            if is_prod:
+                logger.critical(f"{msg} In production mode, auth bypass is STRICTLY FORBIDDEN. Startup aborted!")
+                raise RuntimeError(f"Production auth safety violation: {flag} is disabled.")
+            else:
+                logger.warning(f"{msg} Permitted ONLY because ENV is set to local/development mode.")
+
+_check_production_auth_safety()
+
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal, List
+import jwt
+import time
+import base64
+import hashlib
+from cryptography.fernet import Fernet
+from sqlalchemy.exc import IntegrityError
 
 import json as _json
 import firebase_admin
@@ -79,6 +137,11 @@ app = FastAPI(
     ),
 )
 
+from common.rate_limit import RequestIDMiddleware, register_standard_error_handlers
+
+app.add_middleware(RequestIDMiddleware)
+register_standard_error_handlers(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -89,6 +152,42 @@ app.add_middleware(
 
 from common.metrics import instrument_fastapi
 instrument_fastapi(app, service="session_logger")
+
+
+# ── Daily Expired Token Cleanup Loop (Session 4.1) ───────────────────────────
+import asyncio
+
+async def _token_cleanup_worker():
+    """Cooperative, non-blocking background task running within FastAPI's native event loop."""
+    logger.info("[cleanup] Cooperative token lifecycle scheduler started successfully")
+    try:
+        db = SessionLocal()
+        cutoff = datetime.now() - timedelta(days=30)
+        logger.info(f"[cleanup] Startup run: Purging developer tokens older than 30 days (created before {cutoff})")
+        deleted = db.query(AuthToken).filter(AuthToken.created_at < cutoff).delete()
+        db.commit()
+        db.close()
+        logger.info(f"[cleanup] Startup run: Purged {deleted} expired developer tokens successfully")
+    except Exception as exc:
+        logger.error(f"[cleanup] Startup expired token cleanup failed: {exc}")
+
+    while True:
+        await asyncio.sleep(86400)
+        try:
+            db = SessionLocal()
+            cutoff = datetime.now() - timedelta(days=30)
+            logger.info(f"[cleanup] Cooperative run: Purging developer tokens older than 30 days (created before {cutoff})")
+            deleted = db.query(AuthToken).filter(AuthToken.created_at < cutoff).delete()
+            db.commit()
+            db.close()
+            logger.info(f"[cleanup] Cooperative run: Purged {deleted} expired developer tokens successfully")
+        except Exception as exc:
+            logger.error(f"[cleanup] Cooperative expired token cleanup failed: {exc}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(_token_cleanup_worker())
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -670,4 +769,231 @@ def auth_sync(request: Request, db: Session = Depends(get_db)):
         "firebase_uid": user.firebase_uid,
         "email": user.email,
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Centralized API Developer Token Issuance (Session 1)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ServiceTokenRequest(BaseModel):
+    service: str  # must be one of pdf2abdm, pdf2nhcx, privacy_filter, forgensic
+
+
+def _get_fernet_cipher() -> Fernet:
+    key = os.getenv("TOKEN_ENCRYPTION_KEY", "")
+    if not key:
+        salt = os.getenv("MYSQL_PASSWORD", "tanuh-dpi-fallback-secret-salt-12345!")
+        key_bytes = hashlib.sha256(salt.encode()).digest()
+        key = base64.urlsafe_b64encode(key_bytes).decode()
+    try:
+        return Fernet(key.encode())
+    except Exception:
+        fallback_key = base64.urlsafe_b64encode(b"tanuh_fallback_fernet_key_32_bytes_!")
+        return Fernet(fallback_key)
+
+
+def _encrypt_token(raw_jwt: str) -> str:
+    cipher = _get_fernet_cipher()
+    return cipher.encrypt(raw_jwt.encode()).decode()
+
+
+def _decrypt_token(encrypted_jwt: str) -> str:
+    cipher = _get_fernet_cipher()
+    return cipher.decrypt(encrypted_jwt.encode()).decode()
+
+
+def _issue_jwt_for_service(service: str, name: str, email: str, expiry_days: int = 1) -> str:
+    if service == "pdf2abdm":
+        secret = os.getenv("ABDM_SECRET_KEY", "dev")
+    elif service == "pdf2nhcx":
+        secret = os.getenv("NHCX_SECRET_KEY", "dev")
+    elif service in ("privacy_filter", "privacy-filter"):
+        secret = os.getenv("SECRET_KEY", "dev")
+    elif service == "forgensic":
+        secret = os.getenv("FORGENSIC_SECRET_KEY", "dev")
+    else:
+        raise ValueError(f"Unknown service: {service}")
+
+    now = int(time.time())
+    payload = {
+        "sub": email,
+        "name": name,
+        "email": email,
+        "type": "demo",
+        "service": service,
+        "iat": now,
+        "exp": now + expiry_days * 86400,
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
+
+
+@app.post("/auth/token", tags=["User Auth"], summary="Request or retrieve a service developer token", status_code=201)
+def generate_service_token(payload: ServiceTokenRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Centralized secure endpoint to issue or retrieve developer tokens.
+    1. Validates the Firebase ID token in the Authorization header.
+    2. Checks whether the user's role is 'authorized' or 'admin'.
+    3. Guarantees that at most one token is issued per user per service per day.
+    4. Automatically returns the existing token if already generated today (200 OK).
+    5. Leverages transaction nested savepoints and unique DB constraints to handle concurrency safely.
+    """
+    # 1. Require authenticated Firebase user
+    claims = _verify_firebase_token(request)
+    user = _upsert_user(claims, db)
+
+    # 2. Check if user is authorized
+    if user.role not in ("authorized", "admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="Account is not authorized to generate API developer tokens."
+        )
+
+    # 3. Validate service
+    allowed_services = {"pdf2abdm", "pdf2nhcx", "privacy_filter", "privacy-filter", "forgensic"}
+    if payload.service not in allowed_services:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid service. Must be one of: {', '.join(allowed_services)}"
+        )
+
+    # Normalize service name (privacy_filter is table standard)
+    normalized_service = payload.service
+    if normalized_service == "privacy-filter":
+        normalized_service = "privacy_filter"
+
+    # Define today's date string for constraint
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    # Start a transaction-level locking savepoint
+    db.begin_nested()
+    try:
+        existing = (
+            db.query(AuthToken)
+            .filter(
+                AuthToken.email == user.email,
+                AuthToken.service == normalized_service,
+                AuthToken.created_date == today_str,
+                AuthToken.revoked == False
+            )
+            .with_for_update()
+            .first()
+        )
+
+        request_id = getattr(request.state, "request_id", "unknown")
+
+        if existing:
+            try:
+                decrypted = _decrypt_token(existing.encrypted_token)
+                from common.rate_limit import DPI_EXISTING_TOKEN_RETURNED_TOTAL
+                DPI_EXISTING_TOKEN_RETURNED_TOTAL.labels(service=payload.service).inc()
+                
+                logger.info(f"[auth] Existing token returned for {user.email} service={payload.service} request_id={request_id}")
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "existing_token_returned",
+                        "access_token": decrypted,
+                        "token_type": "bearer",
+                        "service": payload.service,
+                        "name": existing.name,
+                        "email": existing.email,
+                        "expires_at": str(existing.access_expires_at),
+                    }
+                )
+            except Exception as dec_err:
+                logger.error(f"[auth] Failed to decrypt existing token [request_id={request_id}]: {dec_err}")
+
+        # 4. Determine token expiry in days
+        expiry_env_map = {
+            "pdf2abdm": "ABDM_TOKEN_EXPIRY_DAYS",
+            "pdf2nhcx": "NHCX_TOKEN_EXPIRY_DAYS",
+            "privacy_filter": "DEMO_TOKEN_EXPIRY_DAYS",
+            "forgensic": "FORGENSIC_TOKEN_EXPIRY_DAYS"
+        }
+        expiry_days = int(os.getenv(expiry_env_map.get(normalized_service, "DEMO_TOKEN_EXPIRY_DAYS"), "1"))
+        
+        # 5. Generate and encrypt the new token
+        raw_token = _issue_jwt_for_service(normalized_service, user.full_name or "User", user.email, expiry_days)
+        encrypted_token = _encrypt_token(raw_token)
+        token_hash = AuthToken.hash_token(raw_token)
+
+        access_granted_at = datetime.now()
+        access_expires_at = access_granted_at + timedelta(days=expiry_days)
+
+        ip_address = request.headers.get("X-Forwarded-For", request.client.host if request.client else None)
+        user_agent = request.headers.get("User-Agent")
+
+        record = AuthToken(
+            name=user.full_name or "User",
+            email=user.email,
+            service=normalized_service,
+            token_hash=token_hash,
+            access_granted_at=access_granted_at,
+            access_expires_at=access_expires_at,
+            expiry_days=expiry_days,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            encrypted_token=encrypted_token,
+            created_date=today_str,
+        )
+
+        db.add(record)
+        db.commit()
+
+        from common.rate_limit import DPI_TOKENS_GENERATED_TOTAL
+        DPI_TOKENS_GENERATED_TOTAL.labels(service=payload.service).inc()
+
+        logger.info(f"[auth] Generated new developer token for {user.email} service={payload.service} request_id={request_id}")
+        return JSONResponse(
+            status_code=201,
+            content={
+                "status": "new_token_generated",
+                "access_token": raw_token,
+                "token_type": "bearer",
+                "service": payload.service,
+                "name": record.name,
+                "email": record.email,
+                "expires_at": str(record.access_expires_at),
+            }
+        )
+
+    except IntegrityError:
+        db.rollback()
+        # Fallback in case of concurrent insert race-condition
+        existing = (
+            db.query(AuthToken)
+            .filter(
+                AuthToken.email == user.email,
+                AuthToken.service == normalized_service,
+                AuthToken.created_date == today_str,
+                AuthToken.revoked == False
+            )
+            .first()
+        )
+        if existing:
+            try:
+                decrypted = _decrypt_token(existing.encrypted_token)
+                from common.rate_limit import DPI_EXISTING_TOKEN_RETURNED_TOTAL
+                DPI_EXISTING_TOKEN_RETURNED_TOTAL.labels(service=payload.service).inc()
+                
+                logger.info(f"[auth] Concurrent fallback: returning existing token for {user.email} service={payload.service} request_id={request_id}")
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "existing_token_returned",
+                        "access_token": decrypted,
+                        "token_type": "bearer",
+                        "service": payload.service,
+                        "name": existing.name,
+                        "email": existing.email,
+                        "expires_at": str(existing.access_expires_at),
+                    }
+                )
+            except Exception as dec_err:
+                raise HTTPException(500, f"Token was already generated today, but decryption failed [request_id={request_id}]: {dec_err}")
+        raise HTTPException(409, f"A developer token was already generated today for this service [request_id={request_id}].")
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"[auth] Centralized token generation error [request_id={request_id}]: {exc}")
+        raise HTTPException(500, f"Token generation failed [request_id={request_id}]: {exc}")
 

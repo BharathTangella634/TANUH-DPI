@@ -740,47 +740,11 @@
             </div>
         </div>
 
-        <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:20px;">
-            <p style="margin:0; font-size:0.92rem; color:#0e6a6f; line-height:1.5;">
-                <strong><i class="fas fa-info-circle"></i> Authentication:</strong> Uses JWT bearer tokens. Request a 1-day demo token via the form below, then pass it as <code>Authorization: Bearer &lt;token&gt;</code>.
-                <br><strong><i class="fas fa-magic"></i> UI Uploads:</strong> When using the Forgery Detection tab, tokens are fetched automatically.
+        <div style="background:#f0fafb; border-left:4px solid var(--primary); padding:16px 20px; border-radius:8px; margin-bottom:24px;">
+            <p style="margin:0; font-size:0.85rem; color:#0e6a6f; line-height:1.5;">
+                <strong><i class="fas fa-info-circle"></i> Secure Authentication:</strong> All API requests require a Bearer token in the <code>Authorization</code> header.
+                <br><strong><i class="fas fa-key"></i> Get Your Developer Token:</strong> To generate or retrieve your secure token, please visit the centralized <a href="#" onclick="openTab(null, 'APIAccess'); return false;" style="font-weight:700; color:var(--primary); text-decoration:underline;">API Access</a> panel.
             </p>
-        </div>
-
-        <!-- Token Request -->
-        <div class="pf-demo-token-card" style="margin-bottom:24px;">
-            <div class="pf-demo-token-header">
-                <i class="fas fa-search-plus" style="color:#14868C;"></i>
-                <span>Forgery Detection API Token&nbsp;<small style="font-weight:400;color:#64748b;">(forgensic)</small></span>
-                <span class="pf-demo-token-badge">1-DAY TOKEN</span>
-            </div>
-            <p style="font-size:0.88rem;color:#64748b;margin:0 0 14px;">Classical forensic analysis for tampering and manipulation detection.</p>
-            <form id="apiForgeryTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
-                <div class="pf-demo-token-fields">
-                    <div class="pf-demo-token-field">
-                        <label for="apiForgeryTokenName">Full Name</label>
-                        <input type="text" id="apiForgeryTokenName" placeholder="Your name" required />
-                    </div>
-                    <div class="pf-demo-token-field">
-                        <label for="apiForgeryTokenEmail">Email Address</label>
-                        <input type="email" id="apiForgeryTokenEmail" placeholder="you@example.com" required />
-                    </div>
-                </div>
-                <button type="submit" class="pf-btn pf-btn-primary" id="apiForgeryTokenSubmit">
-                    <i class="fas fa-bolt"></i> Request Forgery Token
-                </button>
-            </form>
-            <div id="apiForgeryTokenResult" class="pf-demo-token-result hidden">
-                <div class="pf-demo-token-result-header">
-                    <span id="apiForgeryTokenGreeting"></span>
-                    <span id="apiForgeryTokenExpiry" class="pf-demo-token-expiry"></span>
-                </div>
-                <div class="pf-demo-token-output-wrap">
-                    <pre class="pf-demo-token-output" id="apiForgeryTokenOutput"></pre>
-                    <button class="pf-demo-token-copy pf-btn" id="apiForgeryTokenCopy"><i class="fas fa-copy"></i> Copy</button>
-                </div>
-            </div>
-            <div id="apiForgeryTokenError" class="pf-demo-token-error hidden"></div>
         </div>
 
         <!-- Endpoints -->
@@ -796,7 +760,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td><span class="api-method post">POST</span></td><td><code>/forgensic/api/token</code></td><td>Open</td><td>Issue a 1-day demo JWT for the Forgery API</td></tr>
                     <tr><td><span class="api-method post">POST</span></td><td><code>/forgensic/jobs</code></td><td>Bearer</td><td>Upload a document and create a processing job</td></tr>
                     <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}</code></td><td>Bearer</td><td>Poll job status and progress (0.0 to 1.0)</td></tr>
                     <tr><td><span class="api-method get">GET</span></td><td><code>/forgensic/jobs/{job_id}/results</code></td><td>Bearer</td><td>Fetch complete forgery analysis results</td></tr>
@@ -812,31 +775,21 @@
 
         <div class="responsive-half-grid">
             <div class="api-section-box">
-                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">1. Request a token</h4>
-                <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Returns an <code>access_token</code> valid for 24 hours.</p>
-                <div class="api-code-block">
-                    <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/api/token" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Your Name", "email": "you@example.com"}'</pre>
-                    <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
-                </div>
-            </div>
-            <div class="api-section-box">
-                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">2. Upload a document</h4>
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">1. Upload a document</h4>
                 <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Send as <code>multipart/form-data</code>. Returns a <code>job_id</code>.</p>
                 <div class="api-code-block">
                     <pre style="margin:0; white-space:pre-wrap;">curl -X POST "https://dpi-dev.tanuh.ai/forgensic/jobs" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@/path/to/document.pdf" \
   -F "ocr_enabled=true"</pre>
                     <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
                 </div>
             </div>
             <div class="api-section-box">
-                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">3. Poll job status</h4>
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">2. Poll job status</h4>
                 <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Poll until <code>status</code> is <code>"complete"</code> or <code>"error"</code>.</p>
                 <div class="api-code-block">
-                    <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
+                    <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID"
 
 # Response:
@@ -849,13 +802,13 @@
                 </div>
             </div>
             <div class="api-section-box">
-                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">4. Fetch results + preview</h4>
+                <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--text-dark);">3. Fetch results + preview</h4>
                 <p style="font-size:0.82rem; color:#64748b; margin:0 0 8px;">Results include preview URLs; fetch them with the same token.</p>
                 <div class="api-code-block">
-                    <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer $TOKEN" \
+                    <pre style="margin:0; white-space:pre-wrap;">curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID/results"
 
-curl -L -H "Authorization: Bearer $TOKEN" \
+curl -L -H "Authorization: Bearer YOUR_TOKEN" \
   "https://dpi-dev.tanuh.ai/forgensic/jobs/JOB_ID/files/preview_document_page_1.jpg" \
   -o preview.png</pre>
                     <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
@@ -870,14 +823,7 @@ curl -L -H "Authorization: Bearer $TOKEN" \
                 <pre style="margin:0; white-space:pre-wrap;">import time, requests
 
 BASE = "https://dpi-dev.tanuh.ai/forgensic"
-
-token = requests.post(
-    f"{BASE}/api/token",
-    json={"name": "Your Name", "email": "you@example.com"},
-    timeout=20,
-).json()["access_token"]
-
-headers = {"Authorization": f"Bearer {token}"}
+headers = {"Authorization": "Bearer YOUR_TOKEN"}
 
 with open("document.pdf", "rb") as f:
     r = requests.post(
@@ -904,9 +850,9 @@ preview_url = first_page.get("preview_url") or first_page.get("image_url")
 if preview_url:
     img = requests.get(f"{BASE}{preview_url}", headers=headers)
     open("preview.jpg", "wb").write(img.content)</pre>
-                <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                    <button class="btn-copy" onclick="copyCodeBlock(this)">Copy</button>
+                </div>
             </div>
-        </div>
 
         <!-- Response Example -->
         <h3 style="margin:24px 0 14px;font-size:1.05rem;color:#0e6a6f;"><i class="fas fa-reply"></i> Response Example</h3>

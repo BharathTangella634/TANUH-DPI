@@ -255,6 +255,17 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+from common.rate_limit import RateLimitMiddleware, RequestIDMiddleware, register_standard_error_handlers
+
+app.add_middleware(RequestIDMiddleware)
+register_standard_error_handlers(app)
+
+app.add_middleware(
+    RateLimitMiddleware,
+    service_name="pdf2abdm",
+    limit=150
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -282,40 +293,20 @@ class TokenRequest(BaseModel):
 
 @app.post("/api/token", tags=["Auth"], summary="Request a demo bearer token")
 async def create_token(body: TokenRequest, request: Request):
-    """Issue a signed demo JWT valid for 1 day.
-
-    Pass the returned ``access_token`` as ``Authorization: Bearer <token>``
-    on all protected processing endpoints.
-    """
-    expiry_days = int(os.getenv("ABDM_TOKEN_EXPIRY_DAYS", "1"))
-    token = issue_demo_token(body.name, body.email, expiry_days)
-    ip_address = request.headers.get("X-Forwarded-For", request.client.host if request.client else None)
-    user_agent = request.headers.get("User-Agent")
-    # Fire-and-forget — non-blocking DB log
-    import asyncio
-    asyncio.create_task(log_token_to_session_logger(
-        raw_token=token,
-        name=body.name,
-        email=body.email,
-        expiry_days=expiry_days,
-        ip_address=ip_address,
-        user_agent=user_agent,
-    ))
-    logger.info("Demo token issued for %s (%s) — valid %d day(s)", body.name, body.email, expiry_days)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in_days": expiry_days,
-        "name": body.name,
-        "email": body.email,
-        "service": "pdf2abdm",
-    }
+    """Public token generation is disabled in production."""
+    raise HTTPException(
+        status_code=403,
+        detail="Public token generation on this service is disabled. Developer tokens must be requested via the centralized /auth/token endpoint on session_logger with a verified Firebase ID token."
+    )
 
 
 # Alias so Apache proxy can route /pdf2abdm/api/token → this app without stripping prefix
 @app.post("/pdf2abdm/api/token", tags=["Auth"], include_in_schema=False)
 async def create_token_prefixed(body: TokenRequest, request: Request):
-    return await create_token(body, request)
+    raise HTTPException(
+        status_code=403,
+        detail="Public token generation on this service is disabled. Developer tokens must be requested via the centralized /auth/token endpoint on session_logger with a verified Firebase ID token."
+    )
 
 
 # ---------------------------------------------------------------------------

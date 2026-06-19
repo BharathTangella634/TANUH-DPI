@@ -15,24 +15,41 @@
         const existing   = sessionStorage.getItem(storageKey);
         if (existing) return existing;
 
-        // Token endpoints differ per service
-        const tokenEndpoint = isClinical
-            ? `${base}/pdf2abdm/api/token`
-            : `${base}/pdf2nhcx/api/token`;
-
-        try {
-            const r = await fetch(tokenEndpoint, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ name: 'UI User', email: 'ui@nhcx.tanuh.ai' })
-            });
-            if (!r.ok) return null;
-            const { access_token } = await r.json();
-            sessionStorage.setItem(storageKey, access_token);
-            return access_token;
-        } catch {
-            return null;
+        // Try to reuse the developer token generated in the API Access tab
+        const centralKey = isClinical ? 'dpi_token_pdf2abdm' : 'dpi_token_pdf2nhcx';
+        const central = localStorage.getItem(centralKey);
+        if (central) {
+            sessionStorage.setItem(storageKey, central);
+            return central;
         }
+
+        // Silent centralized token fetch using logged-in Firebase session
+        if (window.DPI_Auth && window.DPI_Auth.isLoggedIn()) {
+            const firebaseToken = window.DPI_Auth.getToken();
+            const serviceId = isClinical ? 'pdf2abdm' : 'pdf2nhcx';
+            const loggerBase = window.DPI_API_CONFIG ? window.DPI_API_CONFIG.logger : 'http://localhost:8002';
+            try {
+                const r = await fetch(`${loggerBase}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${firebaseToken}`
+                    },
+                    body: JSON.stringify({ service: serviceId })
+                });
+                if (r.ok) {
+                    const data = await r.json();
+                    sessionStorage.setItem(storageKey, data.access_token);
+                    localStorage.setItem(centralKey, data.access_token);
+                    localStorage.setItem(`dpi_token_expires_${serviceId}`, data.expires_at);
+                    localStorage.setItem(`dpi_token_status_${serviceId}`, data.status);
+                    return data.access_token;
+                }
+            } catch (err) {
+                console.error("Silent token retrieval failed:", err);
+            }
+        }
+        return null;
     }
 
     // ── Main upload entry point ────────────────────────────────────────────────
