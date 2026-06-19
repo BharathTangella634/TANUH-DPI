@@ -162,19 +162,19 @@ Complete Technical & User Documentation</p>
 <div class="table-responsive"><table><thead><tr><th>Requirement</th><th>Specification</th></tr></thead><tbody><tr><td>Python</td><td>3.10+</td></tr><tr><td>RAM</td><td>8-16 GB (Vertex AI handles LLM inference remotely)</td></tr><tr><td>GCP Credentials</td><td>Service account JSON with Vertex AI access</td></tr><tr><td>Redis</td><td>Running instance for Celery broker/backend</td></tr><tr><td>Network</td><td>Outbound HTTPS to Vertex AI (aiplatform.googleapis.com)</td></tr></tbody></table></div>
 <!-- <h1>8. Configuration (Environment Variables)</h1>
 <div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection for Celery broker and result backend</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>URL of the session logging service</td></tr><tr><td>ABDM_SECRET_KEY</td><td>(required)</td><td>Secret key for HS256 JWT token signing</td></tr><tr><td>ABDM_AUTH_ENABLED</td><td>true</td><td>Set to 'false' to disable auth (dev only)</td></tr><tr><td>ABDM_TOKEN_EXPIRY_DAYS</td><td>1</td><td>Demo token validity in days</td></tr><tr><td>KEYCLOAK_REALM_URL</td><td>(optional)</td><td>Keycloak realm URL for RS256 token validation</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket for PDF and JSON uploads</td></tr><tr><td>GCS_CREDENTIALS_JSON</td><td>(optional)</td><td>Path to GCS-specific service account JSON</td></tr><tr><td>GOOGLE_APPLICATION_CREDENTIALS</td><td>(optional)</td><td>Path to shared Google service account JSON</td></tr><tr><td>LLM_MODEL</td><td>gemma-4-26b-a4b-it-maas</td><td>Vertex AI model identifier</td></tr><tr><td>LLM_PROJECT_ID</td><td>bcd-prototypes</td><td>GCP project for Vertex AI</td></tr><tr><td>LLM_LOCATION</td><td>us-central1</td><td>Vertex AI region</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result cache TTL in seconds (24h)</td></tr><tr><td>PDF_UPLOAD_DIR</td><td>/app/pdf_uploads/tmp</td><td>Shared volume for async temp files</td></tr><tr><td>WORKER_METRICS_PORT</td><td>9200</td><td>Prometheus metrics port for Celery workers</td></tr></tbody></table></div> -->
-<h1>7. Monitoring & Observability</h1>
+<!-- <h1>7. Monitoring & Observability</h1>
 <h2>7.1 Prometheus Metrics</h2>
 <div class="table-responsive"><table><thead><tr><th>Metric</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td>dpi_http_requests_total</td><td>Counter</td><td>Total HTTP requests (service, method, status_code)</td></tr><tr><td>dpi_http_request_duration_seconds</td><td>Histogram</td><td>Request latency (buckets: 0.05s to 300s)</td></tr><tr><td>dpi_tasks_started_total</td><td>Counter</td><td>Celery tasks started</td></tr><tr><td>dpi_tasks_completed_total</td><td>Counter</td><td>Celery tasks completed successfully</td></tr><tr><td>dpi_tasks_failed_total</td><td>Counter</td><td>Celery tasks failed</td></tr><tr><td>dpi_task_duration_seconds</td><td>Histogram</td><td>Task wall-clock duration</td></tr><tr><td>dpi_documents_processed_total</td><td>Counter</td><td>Documents successfully processed</td></tr><tr><td>dpi_documents_failed_total</td><td>Counter</td><td>Documents that failed processing</td></tr><tr><td>dpi_exceptions_total</td><td>Counter</td><td>Exceptions by type and severity</td></tr></tbody></table></div>
 <h2>7.2 Session Logging</h2>
-<p>Every processing event is logged to the session-logger service (fire-and-forget HTTP POST). Logged data includes: service name, filename, document type, model used, OCR engine, processing time, GCS URI, status (success/failed), client IP, and timestamp. This data is stored in Cloud SQL (MySQL) and queryable via the session-logger API.</p>
-<h1>8. Error Handling</h1>
+<p>Every processing event is logged to the session-logger service (fire-and-forget HTTP POST). Logged data includes: service name, filename, document type, model used, OCR engine, processing time, GCS URI, status (success/failed), client IP, and timestamp. This data is stored in Cloud SQL (MySQL) and queryable via the session-logger API.</p> -->
+<h1>7. Error Handling</h1>
 <div class="table-responsive"><table><thead><tr><th>Scenario</th><th>Response</th><th>Details</th></tr></thead><tbody><tr><td>File too large (&gt; 25 MB)</td><td>HTTP 413</td><td>File rejected at upload</td></tr><tr><td>Too many pages (&gt; 100)</td><td>HTTP 413</td><td>File rejected at upload</td></tr><tr><td>Invalid document type (INSURANCE)</td><td>HTTP 422</td><td>Rejected with 'use Insurance tab'</td></tr><tr><td>Invalid document type (OTHER)</td><td>HTTP 422</td><td>Rejected with 'invalid document'</td></tr><tr><td>LLM timeout/error</td><td>Fallback</td><td>Minimal resource generated with placeholder</td></tr><tr><td>OCR all engines fail</td><td>Partial</td><td>Returns minimal Markdown with warning</td></tr><tr><td>Task timeout (30 min)</td><td>FAILURE</td><td>Celery kills worker; stored as failed in Redis</td></tr><tr><td>Result expired (24h)</td><td>HTTP 404</td><td>Client must resubmit</td></tr><tr><td>GCS upload failure</td><td>Non-fatal</td><td>Pipeline completes; upload failure logged as warning</td></tr></tbody></table></div>
-<h1>9. Performance</h1>
+<h1>8. Performance</h1>
 <!-- <h2>11.1 Typical Processing Times</h2> -->
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Diagnostic Report (simple)</td><td>1-3</td><td>30-60 seconds</td></tr><tr><td>Discharge Summary</td><td>3-10</td><td>60-120 seconds</td></tr><tr><td>Lab Batch Report (multi-patient)</td><td>10-20</td><td>2-5 minutes (per patient group)</td></tr></tbody></table></div>
 <!-- <h2>11.2 Concurrency</h2>
 <p>The service supports 8 parallel processing slots (4 worker replicas x concurrency 2). Additional requests queue in Redis and are processed FIFO. The API server itself handles many concurrent HTTP connections (Uvicorn async).</p> -->
-<h1>10. FHIR Output Format</h1>
+<h1>9. FHIR Output Format</h1>
 <p>The service generates FHIR R4 Document Bundles compliant with ABDM/NDHM profiles. Each bundle contains:</p>
 <ul>
 <li>Bundle.resourceType = 'Bundle', Bundle.type = 'document'</li>
@@ -186,8 +186,8 @@ Complete Technical & User Documentation</p>
 <li>Meta.profile set to NDHM ABDM profile URLs</li>
 </ul>
 <p>The output can be validated against the HL7 FHIR Validator with IG nrces.in.ndhm#6.0.0 using the POST /validate endpoint.</p>
-<h1>11. User Guide</h1>
-<h2>11.1 Browser Usage</h2>
+<h1>10. User Guide</h1>
+<h2>10.1 Browser Usage</h2>
 <ol>
 <!-- <li>Navigate to the DPI Platform website (e.g., https://nhcxhackathon.tanuh.ai/)</li> -->
 <li>Click the 'Clinical Document' tab</li>
@@ -198,7 +198,7 @@ Complete Technical & User Documentation</p>
 <li>View the generated FHIR Bundle in the results panel</li>
 <li>Download the JSON bundle or validate it against HL7 standards</li>
 </ol>
-<h2>11.2 API Usage (curl)</h2>
+<h2>10.2 API Usage (curl)</h2>
 <p>Step 1 - Get a token:</p>
 <pre><code>curl -X POST http://<host>:8000/pdf2abdm/api/token -H "Content-Type: application/json" -d '{"name": "Your Name", "email": "you@example.com"}'</code></pre>
 <p>Step 2 - Submit a PDF (async):</p>
@@ -207,7 +207,7 @@ Complete Technical & User Documentation</p>
 <pre><code>curl http://<host>:8000/pdf2abdm/task-status/<task_id> -H "Authorization: Bearer <token>"</code></pre>
 <p>Step 4 - Get result:</p>
 <pre><code>curl http://<host>:8000/pdf2abdm/task-result/<task_id> -H "Authorization: Bearer <token>"</code></pre>
-<h2>11.3 API Usage (Python)</h2>
+<h2>10.3 API Usage (Python)</h2>
 <pre><code>import requests</code></pre>
 <p># Get token</p>
 <pre><code>resp = requests.post("http://<host>:8000/pdf2abdm/api/token", json={"name": "Test", "email": "test@example.com"})</code></pre>
@@ -219,8 +219,8 @@ Complete Technical & User Documentation</p>
 <p>task_id = resp.json()["task_id"]</p>
 <p># Poll until complete</p>
 <p>result = requests.get(f"http://<host>:8000/pdf2abdm/task-result/{task_id}", headers=headers).json()</p>
-<h1>12. Known Limitations & Future Enhancements</h1>
-<h2>12.1 Current Limitations</h2>
+<h1>11. Known Limitations & Future Enhancements</h1>
+<h2>11.1 Current Limitations</h2>
 <ul>
 <li>High latency due to multi-step LLM extraction (30-120 seconds per document)</li>
 <li>No automated FHIR validation correction loop (planned: LLM-in-the-loop)</li>
@@ -228,7 +228,7 @@ Complete Technical & User Documentation</p>
 <li>No rate limiting on API endpoints</li>
 <li>No email verification for token issuance</li>
 </ul>
-<h2>12.2 Planned Enhancements</h2>
+<h2>11.2 Planned Enhancements</h2>
 <ul>
 <li>LLM-in-the-loop validation: iterative FHIR validator → LLM fix cycle (3-4 iterations)</li>
 <li>Missing field resolver: compare extracted text vs generated JSON, regenerate missing resources</li>
