@@ -419,10 +419,10 @@
                 Secure &amp; CPU-Optimized
             </span>
             <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
-                Medical Document Anonymization &amp; Masking
+                Privacy Filter (Anonymization)
             </h2>
             <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
-                Privacy Filter is a high-performance, on-premises engine built to mask Personally Identifiable Information (PII) and Protected Health Information (PHI) from clinical documents, DICOM/NIfTI scans, and PDF claims. Fully compliant with DPDP Act, HIPAA Safe Harbor, and ABDM protocols.
+                Privacy Filter (Anonymization) is an automated, interactive, and on-premises-ready service for anonymizing Personal Identifiable Information (PII) and Protected Health Information (PHI) from clinical documents, medical images, and DICOM/NIfTI scans. Compliant with the DPDP Act and HIPAA Safe Harbor, it operates as a non-persistent service, processing data in real time and purging it automatically upon completion without retaining any information.
             </p>
             <div style="display: flex; flex-wrap: wrap; gap: 14px;">
                 <button onclick="PF_launchService()" class="process-btn" style="padding: 12px 24px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600;">
@@ -431,6 +431,10 @@
                 <button onclick="openTab(null, 'PrivacyDocs'); return false;" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
                     <i class="fas fa-book"></i> Read User Guide
                 </button>
+                <button onclick="window.open('https://github.com/TANUH-AI/TANUH-DPI/tree/main/privacy_filter', '_blank');" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fab fa-github"></i> Github
+                </button>
+
             </div>
         </div>
         
@@ -489,7 +493,7 @@
                 <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(139, 92, 246, 0.08); color: #8b5cf6; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
                     <i class="fas fa-user-shield"></i>
                 </div>
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">HIPAA &amp; DPDP Compliance</h4>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">DPDP &amp; HIPAA Compliance</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
                     Identifies and masks HIPAA Safe Harbor identifiers (names, dates, emails, phone numbers, identifiers, and location tags) within text and documents.
                 </p>
@@ -538,6 +542,14 @@
                     Constructs an overlay mask on coordinate values, rendering vector black boxes over raw characters or pixel arrays, and yields sanitised PDF, PNG, or JSON files.
                 </p>
             </div>
+            <!-- Phase 4 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">04</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Interactive</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Designed for expert review, the built in editor allows users to redact missing PII/PHI or remove incorrect redactions with instant visual re-rendering.
+                </p>
+            </div>
         </div>
     </div>
 
@@ -547,9 +559,10 @@
             <i class="fas fa-shield-alt"></i>
         </div>
         <div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 4px;">100% Confidential On-Premises Execution</h4>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 4px;">Plausible 100% Confidential On-Premises Execution</h4>
             <p style="font-size: 0.85rem; line-height: 1.5; color: #475569; margin: 0;">
-                All document files are parsed and anonymized directly on your server host CPU. No external API calls are made, no files are written to cloud storage, and zero patient data is retained post-process. Fully conforms to Indian healthcare DPDP Act requirements.
+            
+                Deploy the Privacy Filter service locally with a simple CPU-based installation. No external API calls, no cloud storage, and all processing occurs securely in memory. Designed to support compliance with the Indian DPDP Act for privacy-preserving healthcare applications.
             </p>
         </div>
     </div>
@@ -576,7 +589,7 @@
                 <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
                     <i class="fas fa-bullseye"></i>
                 </div>
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Not Fully Accurate</h4>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Manual Review Required</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
                     OCR and heuristic matching may fail on low-contrast scans or non-standard fonts. Use the built-in manual correction editor to review and finalize redactions.
                 </p>
@@ -621,7 +634,7 @@
                     <i class="fas fa-user-shield" style="color:var(--primary)"></i> Privacy Filter Tool
                 </h2>
                 <p style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
-                    Upload clinical scans, medical reports, or claim forms to de-identify and sanitize patient PII/PHI.
+                    Upload clinical documents/images, medical reports, or claim forms to de-identify and sanitize patient PII/PHI.
                 </p>
             </div>
         </div>
@@ -629,13 +642,13 @@
         <!-- Info banner styled as standard info-notes matching the other tabs but compact -->
         <div class="info-notes" style="margin-bottom: 16px; padding: 10px 14px; border-left: 4px solid #14868C; background-color: #f0fdfa; border-radius: 6px;">
             <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
-                <strong><i class="fas fa-clock"></i> Note:</strong> Processing time is typically <strong>10 to 30 seconds</strong>.
+                <strong><i class="fas fa-clock"></i> Note:</strong> Processing time is typically <strong>10 to 30 seconds per document/image.</strong>.
             </p>
             <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
-                <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use.
+                <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use. No data is stored.
             </p>
             <p style="margin: 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
-                <strong><i class="fas fa-check-circle"></i> Verification:</strong> You can edit redacted items in the preview window to correct any omissions.
+                <strong><i class="fas fa-check-circle"></i> Verification:</strong> You can edit redacted items in the preview window to correct any omissions and undo any redactions.
             </p>
         </div>
 
