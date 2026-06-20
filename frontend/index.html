@@ -239,10 +239,10 @@
                     <h4 class="footer-heading">Organization</h4>
                     <ul>
                         <li><a href="https://www.tanuh.ai" onclick="openTab(null,'AboutUs'); return false;">About TANUH</a></li>
-                        <li><a href="#" target="_blank" rel="noopener noreferrer">About DPI</a>
+                        <li><a href="#" onclick="openTab(null,'AboutUs'); return false;">About DPI</a>
                         </li>
                         <li><a href="#" onclick="openTab(null,'AboutUs'); setTimeout(function(){ var el = document.getElementById('team-section'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 300); return false;">Team</a></li>
-                        <li><a href="mailto:dpi@tanuh.ai">Contact Us</a></li>
+                        <li><a href="#" onclick="openTab(null,'AboutUs'); setTimeout(function(){ var el = document.getElementById('contact-section'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 300); return false;">Contact Us</a></li>
                     </ul>
                 </div>
 
@@ -250,7 +250,7 @@
                 <div class="footer-link-col">
                     <h4 class="footer-heading">Resources</h4>
                     <ul>
-                        <li><a href="#" target="_blank" rel="noopener noreferrer">Service</a></li>
+                        <li><a href="#" onclick="openTab(null,'PDF2FHIR'); return false;">Services</a></li>
                         <li><a href="docs/index.html" target="_blank" rel="noopener noreferrer">Documentation</a></li>
                         <li><a href="https://github.com/TANUH-AI/TANUH-DPI" target="_blank"
                                 rel="noopener noreferrer">GitHub</a></li>
