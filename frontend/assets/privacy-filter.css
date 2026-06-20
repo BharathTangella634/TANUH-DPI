@@ -263,9 +263,10 @@
   padding: 3px 10px;
   border-radius: 999px;
 }
-.pf-demo-token-output-wrap { display: flex; align-items: flex-start; gap: 10px; }
+.hidden { display: none !important; }
+.pf-demo-token-output-wrap { display: flex; flex-direction: column; gap: 10px; }
 .pf-demo-token-output {
-  flex: 1;
+  width: 100%;
   background: #0e1f21;
   color: #7ee8ea;
   font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -279,6 +280,21 @@
   margin: 0;
   border: 1px solid rgba(20,134,140,0.3);
   max-height: 90px;
+  box-sizing: border-box;
+}
+.pf-demo-token-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf-demo-token-expiry-text {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 .pf-demo-token-copy {
   flex-shrink: 0;

@@ -167,11 +167,6 @@
     async function openTab(evt, tabName, skipScroll) {
         if (evt) evt.preventDefault();
 
-        if (window.DPI_Auth && DPI_Auth.isGatedTab(tabName) && !DPI_Auth.isLoggedIn()) {
-            DPI_Auth.setPendingTab(tabName);
-            tabName = 'Login';
-        }
-
         document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
 
         // Hide site footer on the login page to keep it clean and non-scrollable
@@ -207,6 +202,7 @@
                 window.initApiAccess();
             }
             checkAllServiceBadges();
+            if (window.DPI_Auth) DPI_Auth.updateNavAuthState();
 
             // Handle pending direct service launch
             const pendingLaunch = sessionStorage.getItem('pendingLaunchService');

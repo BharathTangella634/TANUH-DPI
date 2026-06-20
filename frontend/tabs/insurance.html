@@ -742,25 +742,24 @@
                 <span>Insurance Policy API Token</span>
                 <span class="pf-demo-token-badge">1-DAY TOKEN</span>
             </div>
+            <p style="margin:0 0 14px; font-size:0.8rem; color:#64748b;">This token is specific to the Insurance Policy (PDF to NHCX) service.</p>
             <form id="apiNhcxTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
                 <button type="submit" class="pf-btn pf-btn-primary" id="apiNhcxTokenSubmit">
                     <i class="fas fa-bolt"></i> Generate Token
                 </button>
             </form>
             <div id="apiNhcxTokenResult" class="pf-demo-token-result hidden">
-                <div class="pf-demo-token-result-header">
-                    <span id="apiNhcxTokenGreeting"></span>
-                    <span id="apiNhcxTokenExpiry" class="pf-demo-token-expiry" style="font-weight:600; font-size:0.85rem; padding:4px 8px; border-radius:4px;"></span>
-                </div>
-                <div class="pf-demo-token-output-wrap" style="position:relative; margin-top:8px;">
-                    <pre class="pf-demo-token-output" id="apiNhcxTokenOutput" style="font-family:monospace; background:#f1f5f9; padding:12px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:pre; margin:0; max-height:48px; line-height:24px; font-size:0.82rem;"></pre>
-                    <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiNhcxTokenView" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-eye"></i> View</button>
-                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiNhcxTokenCopy" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-copy"></i> Copy</button>
+                <span id="apiNhcxTokenGreeting" style="display:none;"></span>
+                <div class="pf-demo-token-output-wrap">
+                    <pre class="pf-demo-token-output" id="apiNhcxTokenOutput"></pre>
+                    <div class="pf-demo-token-actions">
+                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiNhcxTokenView" style="height:34px; font-size:0.8rem; padding:0 14px;"><i class="fas fa-eye"></i> View</button>
+                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiNhcxTokenCopy" style="height:34px; font-size:0.8rem; padding:0 14px;"><i class="fas fa-copy"></i> Copy</button>
+                        <span id="apiNhcxTokenExpiry" class="pf-demo-token-expiry-text"></span>
                     </div>
                 </div>
             </div>
-            <div id="apiNhcxTokenError" class="pf-demo-token-error hidden" style="color:#ef4444; background:#fef2f2; padding:10px; border-radius:6px; font-size:0.85rem; margin-top:10px; border:1px solid #fee2e2;"></div>
+            <div id="apiNhcxTokenError" class="pf-demo-token-error hidden"></div>
         </div>
 
         <!-- Endpoint Reference -->

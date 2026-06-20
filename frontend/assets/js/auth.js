@@ -82,9 +82,7 @@
     // ── Auth gate ─────────────────────────────────────────────────────────────
 
     function isGatedTab(tabName) {
-        // Temporarily disabled for UI changes
-        // return GATED_TABS.has(tabName);
-        return false;
+        return GATED_TABS.has(tabName);
     }
 
     function setPendingTab(tabName) {

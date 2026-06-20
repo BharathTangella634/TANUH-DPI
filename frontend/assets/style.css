@@ -4621,15 +4621,15 @@ select:focus {
 }
 
 .login-panel-left {
-    flex: 0 0 30%;
-    max-width: 30%;
+    flex: 0 0 40%;
+    max-width: 40%;
     background: linear-gradient(160deg, #0c3b3e 0%, var(--brand-dark) 40%, var(--brand-primary) 100%);
     color: #fff;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    padding: 4rem 3.5rem;
+    padding: 4rem 3.5rem 3rem;
     position: relative;
     overflow: hidden;
 }
@@ -4657,26 +4657,26 @@ select:focus {
 }
 
 .login-brand {
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
     position: relative;
     z-index: 1;
 }
 .login-brand-logo {
-    height: 52px;
-    margin-bottom: 1.2rem;
+    height: 56px;
+    margin-bottom: 1.4rem;
     filter: brightness(0) invert(1);
 }
 .login-brand-title {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
 }
 .login-brand-subtitle {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 .login-features {
@@ -4685,38 +4685,44 @@ select:focus {
     margin: 0;
     position: relative;
     z-index: 1;
+    width: 100%;
 }
 .login-features li {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 0;
-    font-size: 0.92rem;
-    color: rgba(255, 255, 255, 0.85);
+    gap: 16px;
+    padding: 14px 0;
+    font-size: 0.94rem;
+    color: rgba(255, 255, 255, 0.88);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    line-height: 1.4;
 }
 .login-features li:last-child {
     border-bottom: none;
 }
 .login-features li i {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.1);
     color: rgba(45, 212, 191, 0.9);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     flex-shrink: 0;
 }
 
 .login-brand-copy {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: auto;
+    padding-top: 2.5rem;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* ── Right form panel ──────────────────────────────────────────────────── */

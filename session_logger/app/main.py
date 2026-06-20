@@ -727,6 +727,9 @@ def _upsert_user(claims: dict, db: Session) -> User:
         if claims.get("name") and user.full_name != claims.get("name"):
             user.full_name = claims.get("name")
             changed = True
+        if user.role == "user":
+            user.role = "authorized"
+            changed = True
         if changed:
             db.commit()
         return user

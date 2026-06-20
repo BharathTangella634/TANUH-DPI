@@ -162,19 +162,15 @@
                     greetingEl.textContent = "Token already generated today.";
                     greetingEl.style.color = "#0e6a6f";
                 } else {
-                    greetingEl.textContent = "🎉 Token generated successfully!";
+                    greetingEl.textContent = "Token is generated successfully!";
                     greetingEl.style.color = "var(--primary)";
                 }
             }
 
-            // Expiry display with color highlighting
             if (expiryEl && expires) {
                 const info = formatExpiry(expires);
-                expiryEl.textContent = `Expires: ${info.text}`;
-                expiryEl.style.backgroundColor = info.color;
-                expiryEl.style.color = "#fff";
-                expiryEl.style.padding = "4px 8px";
-                expiryEl.style.borderRadius = "4px";
+                expiryEl.innerHTML = '<i class="fas fa-clock" style="margin-right:4px;"></i>Expires: ' + info.text;
+                expiryEl.style.color = info.color;
             }
 
             // Hide the Request form and "Generate Token" button completely so no duplicate submission/regeneration is possible
