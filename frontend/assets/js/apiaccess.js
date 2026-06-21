@@ -72,7 +72,7 @@
     // ── Expiry Formatter with Color Highlights ──────────────────────────────
     function formatExpiry(expiryStr) {
         const d = new Date(expiryStr);
-        if (isNaN(d.getTime())) return { text: "Unknown Expiry", color: "#64748b" };
+        if (isNaN(d.getTime())) return { text: "Unknown Expiry", color: "#64748b", countdown: "" };
 
         const now = new Date();
         const diffMs = d - now;
@@ -91,7 +91,7 @@
         const yyyy = d.getFullYear();
         const hh = String(d.getHours()).padStart(2, "0");
         const mm = String(d.getMinutes()).padStart(2, "0");
-        
+
         let tz = "";
         try {
             tz = " " + d.toLocaleDateString('en-US', { day: 'numeric', timeZoneName: 'short' }).split(', ').pop().split(' ').pop();
@@ -100,7 +100,51 @@
         }
 
         const formatted = `${dd} ${mon} ${yyyy} ${hh}:${mm}${tz}`;
-        return { text: formatted, color: color, expired: diffMs <= 0 };
+        const countdown = _formatCountdown(diffMs);
+        return { text: formatted, color: color, expired: diffMs <= 0, countdown: countdown };
+    }
+
+    function _formatCountdown(diffMs) {
+        if (diffMs <= 0) return "Expired";
+        const totalMin = Math.floor(diffMs / 60000);
+        const hrs = Math.floor(totalMin / 60);
+        const mins = totalMin % 60;
+        return String(hrs).padStart(2, "0") + "h " + String(mins).padStart(2, "0") + "m remaining";
+    }
+
+    // ── Live countdown timers ──────────────────────────────────────────────
+    const _countdownTimers = {};
+
+    function _startCountdown(expiryEl, expiryStr) {
+        const elId = expiryEl.id;
+        if (_countdownTimers[elId]) clearInterval(_countdownTimers[elId]);
+
+        function tick() {
+            const d = new Date(expiryStr);
+            const diffMs = d - new Date();
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            const countdownSpan = expiryEl.querySelector('.token-countdown');
+            if (!countdownSpan) return;
+
+            const icon = countdownSpan.querySelector('i');
+            const iconHtml = icon ? icon.outerHTML : '';
+            countdownSpan.innerHTML = iconHtml + _formatCountdown(diffMs);
+
+            if (diffMs <= 0) {
+                countdownSpan.style.background = '#fef2f2';
+                countdownSpan.style.color = '#dc2626';
+                countdownSpan.style.borderColor = '#fecaca';
+                clearInterval(_countdownTimers[elId]);
+                expiryEl.style.color = '#ef4444';
+            } else if (diffHrs < 6) {
+                countdownSpan.style.background = '#fff7ed';
+                countdownSpan.style.color = '#ea580c';
+                countdownSpan.style.borderColor = '#fed7aa';
+            }
+        }
+
+        tick();
+        _countdownTimers[elId] = setInterval(tick, 60000);
     }
 
     // ── Local Resolve logger url helper ─────────────────────────────────────
@@ -169,8 +213,10 @@
 
             if (expiryEl && expires) {
                 const info = formatExpiry(expires);
-                expiryEl.innerHTML = '<i class="fas fa-clock" style="margin-right:4px;"></i>Expires: ' + info.text;
+                expiryEl.innerHTML = '<i class="fas fa-clock" style="margin-right:4px;"></i>Expires: ' + info.text +
+                    ' &nbsp;<span class="token-countdown" style="display:inline-flex; align-items:center; gap:4px; background:#eef2ff; color:#4f46e5; font-size:0.72rem; font-weight:700; padding:2px 10px; border-radius:999px; border:1px solid #c7d2fe;"><i class="fas fa-hourglass-half" style="font-size:0.6rem;"></i>' + info.countdown + '</span>';
                 expiryEl.style.color = info.color;
+                _startCountdown(expiryEl, expires);
             }
 
             // Hide the Request form and "Generate Token" button completely so no duplicate submission/regeneration is possible

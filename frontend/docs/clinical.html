@@ -199,26 +199,32 @@ Complete Technical & User Documentation</p>
 <li>Download the JSON bundle or validate it against HL7 standards</li>
 </ol>
 <h2>10.2 API Usage (curl)</h2>
-<p>Step 1 - Get a token:</p>
-<pre><code>curl -X POST http://<host>:8000/pdf2abdm/api/token -H "Content-Type: application/json" -d '{"name": "Your Name", "email": "you@example.com"}'</code></pre>
-<p>Step 2 - Submit a PDF (async):</p>
-<pre><code>curl -X POST http://<host>:8000/pdf2abdm/submit -H "Authorization: Bearer <token>" -F "file=@report.pdf"</code></pre>
-<p>Step 3 - Poll status:</p>
-<pre><code>curl http://<host>:8000/pdf2abdm/task-status/<task_id> -H "Authorization: Bearer <token>"</code></pre>
-<p>Step 4 - Get result:</p>
-<pre><code>curl http://<host>:8000/pdf2abdm/task-result/<task_id> -H "Authorization: Bearer <token>"</code></pre>
+<p><strong>Step 1 - Obtain a Token:</strong> Visit the web portal, log in, and generate your API token from the API Access tab.</p>
+<p><strong>Step 2 - Submit a PDF (async):</strong></p>
+<pre><code>curl -X POST http://localhost:8000/pdf2abdm/submit -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;" -F "file=@report.pdf"</code></pre>
+<p><strong>Step 3 - Poll status:</strong></p>
+<pre><code>curl http://localhost:8000/pdf2abdm/task-status/&lt;TASK_ID&gt; -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+<p><strong>Step 4 - Get result:</strong></p>
+<pre><code>curl http://localhost:8000/pdf2abdm/task-result/&lt;TASK_ID&gt; -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
 <h2>10.3 API Usage (Python)</h2>
-<pre><code>import requests</code></pre>
-<p># Get token</p>
-<pre><code>resp = requests.post("http://<host>:8000/pdf2abdm/api/token", json={"name": "Test", "email": "test@example.com"})</code></pre>
-<p>token = resp.json()["access_token"]</p>
-<p># Submit PDF</p>
-<p>headers = {"Authorization": f"Bearer {token}"}</p>
-<p>with open("report.pdf", "rb") as f:</p>
-<pre><code>    resp = requests.post("http://<host>:8000/pdf2abdm/submit", headers=headers, files={"file": f})</code></pre>
-<p>task_id = resp.json()["task_id"]</p>
-<p># Poll until complete</p>
-<p>result = requests.get(f"http://<host>:8000/pdf2abdm/task-result/{task_id}", headers=headers).json()</p>
+<pre><code>import time
+import requests
+
+TOKEN = "YOUR_TOKEN"
+headers = {"Authorization": f"Bearer {TOKEN}"}
+
+# Submit PDF
+with open("report.pdf", "rb") as f:
+    resp = requests.post("http://localhost:8000/pdf2abdm/submit", headers=headers, files={"file": f})
+task_id = resp.json()["task_id"]
+
+# Poll until complete
+while True:
+    result = requests.get(f"http://localhost:8000/pdf2abdm/task-result/{task_id}", headers=headers).json()
+    if result.get("status") in ["completed", "failed", "rejected"]:
+        print(result)
+        break
+    time.sleep(2)</code></pre>
 <h1>11. Known Limitations & Future Enhancements</h1>
 <h2>11.1 Current Limitations</h2>
 <ul>

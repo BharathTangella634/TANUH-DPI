@@ -99,12 +99,30 @@ Complete Technical & User Documentation</p>
 <li>View and download the generated NHCX FHIR Bundle</li>
 </ol>
 <h2>6.2 API Usage (curl)</h2>
-<p># Get token</p>
-<pre><code>curl -X POST http://<host>:8001/pdf2nhcx/api/token -H "Content-Type: application/json" -d '{"name": "Name", "email": "email@example.com"}'</code></pre>
-<p># Submit PDF</p>
-<pre><code>curl -X POST http://<host>:8001/pdf2nhcx/submit -H "Authorization: Bearer <token>" -F "file=@policy.pdf"</code></pre>
-<p># Poll and fetch result</p>
-<pre><code>curl http://<host>:8001/pdf2nhcx/task-result/<task_id> -H "Authorization: Bearer <token>"</code></pre>
+<p><strong>Step 1 - Obtain a Token:</strong> Visit the web portal, log in, and generate your API token from the API Access tab.</p>
+<p><strong>Step 2 - Submit a PDF (async):</strong></p>
+<pre><code>curl -X POST http://localhost:8001/pdf2nhcx/submit -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;" -F "file=@policy.pdf"</code></pre>
+<p><strong>Step 3 - Poll and fetch result:</strong></p>
+<pre><code>curl http://localhost:8001/pdf2nhcx/task-result/&lt;TASK_ID&gt; -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+<h2>6.3 API Usage (Python)</h2>
+<pre><code>import time
+import requests
+
+TOKEN = "YOUR_TOKEN"
+headers = {"Authorization": f"Bearer {TOKEN}"}
+
+# Submit PDF (async)
+with open("policy.pdf", "rb") as f:
+    resp = requests.post("http://localhost:8001/pdf2nhcx/submit", headers=headers, files={"file": f})
+task_id = resp.json()["task_id"]
+
+# Poll until complete
+while True:
+    result = requests.get(f"http://localhost:8001/pdf2nhcx/task-result/{task_id}", headers=headers).json()
+    if result.get("status") in ["completed", "failed", "rejected"]:
+        print(result)
+        break
+    time.sleep(2)</code></pre>
 <h1>7. Performance</h1>
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Simple insurance policy</td><td>5-10</td><td>60-90 seconds</td></tr><tr><td>Complex multi-benefit policy</td><td>20-50</td><td>90-180 seconds</td></tr><tr><td>Large comprehensive policy</td><td>50-100</td><td>3-5 minutes</td></tr></tbody></table></div>
 <p>The distillation step (4 parallel LLM calls) accounts for approximately 40-50% of total processing time. The LangGraph extraction accounts for another 40%. OCR and assembly are relatively fast.</p>

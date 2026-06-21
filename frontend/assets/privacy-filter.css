@@ -504,21 +504,26 @@
 .pf-entity-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   font-size: 0.73rem;
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 999px;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1.1;
+  word-break: break-word;
 }
 
 .pf-conf-bar-wrap {
   display: flex;
   align-items: center;
-  gap: 7px;
-  min-width: 90px;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 .pf-conf-bar {
   flex: 1;
@@ -526,6 +531,7 @@
   border-radius: 999px;
   background: #e2e8f0;
   overflow: hidden;
+  min-width: 15px;
 }
 .pf-conf-bar-fill {
   height: 100%;

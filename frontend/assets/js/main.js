@@ -356,7 +356,7 @@
                     console.error(`Failed to load doc tab ${tabId}: ${response.status}`);
                 }
             } else {
-                const response = await fetch(`tabs/${fileName}.html?v=14`);
+                const response = await fetch(`tabs/${fileName}.html?v=15`);
                 if (response.ok) {
                     el.innerHTML = await response.text();
                 } else {

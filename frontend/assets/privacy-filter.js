@@ -157,6 +157,7 @@
     phone_number:      { bg: "#ede9fe", color: "#6d28d9", icon: "fa-phone",           accent: "#7c3aed" },
     email:             { bg: "#e0f2fe", color: "#0369a1", icon: "fa-envelope",        accent: "#0284c7" },
     id_number:         { bg: "#fee2e2", color: "#991b1b", icon: "fa-id-card",         accent: "#dc2626" },
+    burned_in_text:    { bg: "#fee2e2", color: "#991b1b", icon: "fa-image",           accent: "#dc2626" },
   };
   function PF_entityStyle(group) {
     const key = (group || "").replace(/^private_/, "");
@@ -173,6 +174,9 @@
     const resultsEl = pfQ("pfResults");
     if (!resultsEl) return;
     resultsEl.classList.remove("hidden");
+
+    const teaser = document.getElementById("pfEditorTeaser");
+    if (teaser) teaser.style.display = "none";
 
     // ── 1. Meta bar ──────────────────────────────────────────────────────────
     const setChip = (id, text, show = true) => {
@@ -271,15 +275,19 @@
       } else {
         entities.forEach((ent, idx) => {
           const style   = PF_entityStyle(ent.entity_group);
-          const label   = (ent.entity_group || "unknown").replace(/^private_/, "").replace(/_/g, " ");
+          let label     = (ent.entity_group || "unknown").replace(/^private_/, "").replace(/_/g, " ");
+          if (label === "burned in text") {
+            label = "image pii";
+          }
           const pct     = Math.round((ent.score || 0) * 100);
           const confCls = pct >= 80 ? "pf-conf-high" : pct >= 55 ? "pf-conf-mid" : "pf-conf-low";
           const word    = (ent.word || "").trim();
+          const displayWord = word ? escHtml(word) : `<span style="color:#94a3b8; font-style:italic; font-weight:normal;">[Image Region]</span>`;
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td style="color:#94a3b8; font-size:0.78rem;">${idx + 1}</td>
-            <td><span class="pf-entity-word">${escHtml(word)}</span></td>
+            <td style="color:#94a3b8; font-size:0.78rem; white-space: nowrap;">${idx + 1}</td>
+            <td><span class="pf-entity-word">${displayWord}</span></td>
             <td>
               <span class="pf-entity-badge"
                     style="background:${style.bg}; color:${style.color};">
@@ -432,10 +440,12 @@
     const resultsEl = pfQ("pfResults");
     const loader    = pfQ("pfLoader");
     const btnText   = pfQ("pfProcessBtn")?.querySelector("span");
+    const teaser    = pfQ("pfEditorTeaser");
 
     if (resultsEl) resultsEl.classList.add("hidden");
     if (loader)    loader.style.display = "block";
     if (btnText)   btnText.textContent  = "Redacting…";
+    if (teaser)    teaser.style.display = "none";
 
     PF_setStatus(`Uploading ${file.name}…`);
 
@@ -564,6 +574,8 @@
     if (btn) btn.setAttribute('disabled', 'true');
     const resultsSec = document.getElementById('pfResults');
     if (resultsSec) resultsSec.classList.add('hidden');
+    const teaser = document.getElementById('pfEditorTeaser');
+    if (teaser) teaser.style.display = 'flex';
   };
 
   window.PF_processRedaction = function () {

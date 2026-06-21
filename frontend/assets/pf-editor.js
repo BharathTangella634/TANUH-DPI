@@ -46,8 +46,8 @@
     red: "#ef4444",
     purple: "#8b5cf6",
     purpleBg: "rgba(139,92,246,0.15)",
-    aiBg: "rgba(239,68,68,0.15)",
-    aiBorder: "rgba(239,68,68,0.85)",
+    toolBg: "rgba(239,68,68,0.15)",
+    toolBorder: "rgba(239,68,68,0.85)",
     userBg: "rgba(139,92,246,0.15)",
     userBorder: "rgba(139,92,246,0.85)",
     toolbar: "#1e293b",
@@ -258,7 +258,7 @@
           <div style="padding:14px 18px;border-top:1px solid #e2e8f0;background:#ffffff;flex-shrink:0;">
             <div style="font-size:0.7rem;color:${CLR.muted};line-height:1.6;">
               <div style="margin-bottom:6px;font-weight:700;color:${CLR.accentDark};">Quick Controls:</div>
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${CLR.red};"></span> AI detected redaction</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${CLR.red};"></span> TOOL detected redaction</div>
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${CLR.purple};"></span> User added redaction</div>
               <div>• Click on any overlay box or cross button to remove it</div>
               <div>• canvas background shows original text details</div>
@@ -330,6 +330,37 @@
   function _placeholder(icon, text, color) {
     return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:${color || CLR.muted};gap:10px;">
       <i class="fas ${icon}" style="font-size:2rem;"></i><span style="font-size:0.85rem;font-weight:600;">${text}</span></div>`;
+  }
+
+  const LBL_MAP = {
+    private_person: "PERSON NAME",
+    private_date: "DATE",
+    address_location: "ADDRESS",
+    org_name: "ORGANIZATION",
+    phone_number: "PHONE NUMBER",
+    email: "EMAIL",
+    id_number: "IDENTIFIER",
+    burned_in_text: "BURN IN TEXT",
+    person: "PERSON NAME",
+    date: "DATE",
+    address: "ADDRESS",
+    organization: "ORGANIZATION",
+    phone: "PHONE NUMBER",
+    identifier: "IDENTIFIER",
+    phi: "PHI"
+  };
+
+  function _formatBoxLabel(box) {
+    if (box.source === "user") return "USER ADDED";
+    const directKey = (box.label || "").trim().toLowerCase();
+    const key = directKey.replace(/^private_/, "").replace(/_/g, " ");
+    
+    if (LBL_MAP[box.label]) return LBL_MAP[box.label];
+    if (LBL_MAP[directKey]) return LBL_MAP[directKey];
+    if (LBL_MAP[key]) return LBL_MAP[key];
+    
+    if (!key || key === "ai" || key === "unknown") return "REDACTED";
+    return key.toUpperCase();
   }
 
   // ── Close Editor ───────────────────────────────────────────────────────
@@ -567,7 +598,7 @@
         pointer-events:none; letter-spacing:0.4px; opacity: 0;
         transition: opacity 0.15s ease-in-out;
       `;
-      lbl.textContent = isUser ? `USER` : (box.label || "AI").toUpperCase();
+      lbl.textContent = isUser ? `USER` : _formatBoxLabel(box);
       el.appendChild(lbl);
 
       el.onmouseenter = () => {
@@ -617,35 +648,34 @@
         padding:10px 14px; margin-bottom:8px; border-radius:10px;
         border:1.5px solid #e2e8f0; border-left:4px solid ${color};
         background:#ffffff; box-shadow:0 2px 4px rgba(0,0,0,0.02);
-        transition:all 0.15s ease; cursor:pointer;
+        transition:border-color 0.15s ease, box-shadow 0.15s ease; cursor:pointer;
       `;
 
       row.onmouseenter = () => {
-        row.style.transform = "translateY(-1px)";
         row.style.boxShadow = "0 4px 10px rgba(0,0,0,0.06)";
         row.style.borderColor = color;
         const b = document.querySelector(`[data-pfebox="${box.id}"]`);
-        if (b) { b.style.borderWidth = "3px"; b.style.background = isUser ? "rgba(139,92,246,0.15)" : "rgba(239,68,68,0.15)"; b.style.borderColor = color; }
+        if (b) { b.style.background = isUser ? CLR.userBg : CLR.toolBg; b.style.borderColor = color; }
       };
       
       row.onmouseleave = () => {
-        row.style.transform = "";
         row.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
         row.style.borderColor = "#e2e8f0";
         row.style.background = "#ffffff";
         const b = document.querySelector(`[data-pfebox="${box.id}"]`);
-        if (b) { b.style.borderWidth = "1.5px"; b.style.background = "rgba(15, 23, 42, 0.92)"; b.style.borderColor = "#000"; }
+        if (b) { b.style.background = "rgba(15, 23, 42, 0.92)"; b.style.borderColor = "#000"; }
       };
 
+      const labelText = _formatBoxLabel(box);
       row.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;padding-right:8px;">
           <div style="display:flex;align-items:center;gap:7px;">
             <span style="font-size:0.74rem;font-weight:700;color:${CLR.dark};">#${box.id}</span>
-            <span style="font-size:0.6rem;font-weight:700;color:#fff;background:${color};padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;">${isUser ? "User" : "AI"}</span>
+            <span style="font-size:0.6rem;font-weight:700;color:#fff;background:${color};padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;">${isUser ? "USER" : "TOOL"}</span>
           </div>
-          <span style="font-size:0.64rem;color:${CLR.muted};font-family:'SF Mono',Consolas,monospace;">P${box.page + 1} · ${box.w}×${box.h} at (${box.x}, ${box.y})</span>
+          <span style="font-size:0.68rem;color:${CLR.muted};font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="P${box.page + 1} · ${labelText}">P${box.page + 1} · ${labelText}</span>
         </div>
-        <button style="background:none;border:1px solid transparent;cursor:pointer;color:#cbd5e1;padding:6px 8px;border-radius:6px;font-size:0.8rem;transition:all 0.12s;" title="Remove this box">
+        <button style="flex-shrink:0;background:none;border:1px solid transparent;cursor:pointer;color:#cbd5e1;padding:6px 8px;border-radius:6px;font-size:0.85rem;display:inline-flex;align-items:center;justify-content:center;transition:all 0.12s;" title="Remove this box">
           <i class="fas fa-times-circle"></i>
         </button>`;
 

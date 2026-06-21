@@ -158,7 +158,8 @@
 
 @media (min-width: 1024px) {
     .pf-dashboard-grid {
-        grid-template-columns: 7fr 3fr;
+        grid-template-columns: 55fr 45fr;
+        height: 750px;
     }
 }
 
@@ -169,6 +170,8 @@
     padding: 16px;
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.015);
     box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .pf-panel-header {
@@ -217,6 +220,8 @@
     font-size: 0.78rem;
     color: #334155;
     vertical-align: middle;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .pf-table tr:hover {
@@ -515,7 +520,7 @@
     <!-- ── How It Works (Pipeline Steps) ────────────────────────────────────── -->
     <div style="margin-bottom: 48px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
         <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
-        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Four layered processing phases executing fully on local CPU</p>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Four layered processing phases executing securely on the privacy filter platform</p>
         
         <div class="pf-pipeline-grid">
             <!-- Phase 1 -->
@@ -583,18 +588,7 @@
                 </p>
             </div>
             
-            <!-- Limit 2: Not Fully Accurate -->
-            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
-                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
-                    <i class="fas fa-bullseye"></i>
-                </div>
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Manual Review Required</h4>
-                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    OCR and heuristic matching may fail on low-contrast scans or non-standard fonts. Use the built-in manual correction editor to review and finalize redactions.
-                </p>
-            </div>
-            
-            <!-- Limit 3: Processing Time -->
+            <!-- Limit 2: Processing Time -->
             <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
                 <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
                     <i class="fas fa-clock"></i>
@@ -604,6 +598,34 @@
                     Multi-page PDFs requiring deep OCR text extraction may take longer (up to 30 seconds) to render completely on CPU resources.
                 </p>
             </div>
+
+            <!-- Limit 3: Manual Review Required -->
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Manual Review Required</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    OCR and heuristic matching may fail on low-contrast scans or non-standard fonts. Use the built-in manual correction editor to review and finalize redactions.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Continuous Improvement & Feedback ──────────────────────────────── -->
+    <div class="service-feedback-card">
+        <div class="service-feedback-content">
+            <h4>
+                <i class="fas fa-comment-dots" style="color: var(--brand-primary, #14868C); font-size: 1.1rem;"></i> Help Us Improve
+            </h4>
+            <p>
+                Automated tools can make mistakes. We warmly welcome your feedback, inputs, and bug reports. Your contributions directly help us refine extraction rules and enhance the platform's accuracy.
+            </p>
+        </div>
+        <div class="service-feedback-action">
+            <a href="mailto:dpi@tanuh.ai?subject=Feedback / Bug Report - Privacy Filter" class="service-feedback-btn">
+                <i class="fas fa-envelope-open-text"></i> Give Feedback & Report Bugs
+            </a>
         </div>
     </div>
 </div>
@@ -647,7 +669,10 @@
                 <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use. No data is stored.
             </p>
             <p style="margin: 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
-                <strong><i class="fas fa-check-circle"></i> Verification:</strong> You can edit redacted items in the preview window to correct any omissions and undo any redactions.
+                <strong><i class="fas fa-file-pdf"></i> Limit:</strong> Maximum allowed file size is <strong>25 MB</strong>. Supported format: PDF, DICOM, NIfTI, and PNG/JPG images.
+            </p>
+            <p style="margin: 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-check-circle"></i> Verification:</strong> You can edit original/redacted items in the preview window to correct any omissions and undo any redactions.
             </p>
         </div>
 
@@ -691,12 +716,31 @@
             </div>
         </div>
 
+        <!-- Interactive Editor Teaser — visible before processing, hidden after -->
+        <div id="pfEditorTeaser" style="margin-top: 18px; padding: 14px 18px; background: linear-gradient(135deg, #f0f9ff 0%, #f0fdfa 100%); border: 1.5px dashed #99d5d9; border-radius: 10px; display: flex; align-items: center; gap: 14px;">
+            <div style="flex-shrink: 0; width: 38px; height: 38px; background: #e0f2fe; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-pen-fancy" style="font-size: 1rem; color: #0e6a6f;"></i>
+            </div>
+            <div>
+                <p style="margin: 0 0 2px; font-size: 0.82rem; font-weight: 700; color: #0f766e;">Interactive Editor</p>
+                <p style="margin: 0; font-size: 0.74rem; color: #64748b; line-height: 1.45;">Once processed, click "Edit" on any preview to manually draw or remove redaction boxes.</p>
+            </div>
+        </div>
+
         <!-- Processing status -->
         <div id="pfStatus" class="pf-status-text hidden" style="margin-bottom: 24px; font-size: 0.9rem; color: var(--primary); font-weight: 600;"></div>
 
         <!-- Results Area -->
         <div class="output-wrapper">
             <section id="pfResults" class="hidden">
+                <!-- Editor Usage Hint — shown after processing -->
+                <div id="pfEditorHint" style="margin-bottom: 14px; padding: 10px 14px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-lightbulb" style="color: #0ea5e9; font-size: 0.9rem; flex-shrink: 0;"></i>
+                    <p style="margin: 0; font-size: 0.76rem; color: #475569; line-height: 1.45;">
+                        <strong>Editor Tip:</strong> Click <strong>Edit</strong> on any preview to open the interactive editor. Draw bounding boxes to redact missed PII, or click existing redactions to remove them.
+                    </p>
+                </div>
+
                 <!-- Metadata Info Bar -->
                 <div id="pfMetaBar" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-bottom: 16px;">
                     <span id="pfMetaJobId" class="pf-meta-chip"><i class="fas fa-fingerprint"></i> <span></span></span>
@@ -759,20 +803,20 @@
                     </div>
 
                     <!-- Right Workspace: Entities List Table Scroller -->
-                    <div class="pf-dashboard-panel" style="display: flex; flex-direction: column;">
-                        <div class="pf-panel-header" style="margin: 0; padding-bottom: 8px;">
+                    <div class="pf-dashboard-panel" style="display: flex; flex-direction: column; overflow: hidden;">
+                        <div class="pf-panel-header" style="margin: 0; padding-bottom: 8px; flex-shrink: 0;">
                             <h4 class="pf-panel-title"><i class="fas fa-shield-virus"></i> Detected PII Entities</h4>
                             <span id="pfEntityTotal" style="font-size:0.7rem; font-weight:700; color:var(--primary); background:#e6f7f8; padding:2px 8px; border-radius:999px;">0</span>
                         </div>
-                        
-                        <div style="flex: 1; overflow-y: auto; max-height: 540px;">
-                            <table class="pf-table">
+
+                        <div style="flex: 1; overflow-y: auto; overflow-x: hidden;">
+                            <table class="pf-table" style="table-layout: fixed; width: 100%;">
                                 <thead>
                                     <tr style="position: sticky; top:0; z-index:1;">
-                                        <th>#</th>
-                                        <th>Entity Value</th>
-                                        <th>PII Category</th>
-                                        <th>Confidence</th>
+                                        <th style="width: 10%;">#</th>
+                                        <th style="width: 36%; word-break: break-word;">Entity Value</th>
+                                        <th style="width: 32%;">PII Category</th>
+                                        <th style="width: 22%;">Confidence</th>
                                     </tr>
                                 </thead>
                                 <tbody id="pfEntityTbody">

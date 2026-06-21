@@ -40,6 +40,23 @@ from .core.config import settings
 from .db.session import Base, engine, get_db, USE_SQLITE
 from .models.models import SessionLog, AuthToken, Feedback, User
 
+# ── Indian states & UTs (for geo-filtering) ──────────────────────────────────
+INDIAN_STATES = {
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
+    "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand",
+    "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+    "Ladakh", "Lakshadweep", "Puducherry",
+}
+_INDIAN_STATES_LOWER = {s.lower() for s in INDIAN_STATES}
+
+
+def _is_indian_state(name: str) -> bool:
+    return name.strip().lower() in _INDIAN_STATES_LOWER
+
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -486,19 +503,23 @@ def log_stats(db: Session = Depends(get_db)):
         .scalar() or 0
     )
 
-    states = [
+    all_states = [
         r[0] for r in db.query(SessionLog.state)
         .filter(SessionLog.state.isnot(None), SessionLog.state != "")
         .distinct()
         .all()
     ]
-    
-    districts = [
-        r[0] for r in db.query(SessionLog.city)
-        .filter(SessionLog.city.isnot(None), SessionLog.city != "")
+    states = [s for s in all_states if _is_indian_state(s)]
+    indian_state_rows = (
+        db.query(SessionLog.city)
+        .filter(
+            SessionLog.city.isnot(None), SessionLog.city != "",
+            SessionLog.state.in_(states),
+        )
         .distinct()
         .all()
-    ]
+    )
+    districts = [r[0] for r in indian_state_rows]
 
     # Token holders from auth_tokens table (Page Users — registered)
     token_holders = 0
@@ -620,16 +641,23 @@ def visit_stats(db: Session = Depends(get_db)):
     """Returns total NHCX website page views and unique locations."""
     try:
         total = db.execute(text("SELECT COUNT(*) FROM page_visits")).scalar() or 0
-        states = [
+        all_states = [
             r[0] for r in db.execute(
                 text("SELECT DISTINCT state FROM page_visits WHERE state IS NOT NULL AND state != ''")
             ).fetchall()
         ]
-        cities = [
-            r[0] for r in db.execute(
-                text("SELECT DISTINCT city FROM page_visits WHERE city IS NOT NULL AND city != ''")
-            ).fetchall()
-        ]
+        states = [s for s in all_states if _is_indian_state(s)]
+        if states:
+            placeholders = ", ".join(f":s{i}" for i in range(len(states)))
+            params = {f"s{i}": s for i, s in enumerate(states)}
+            cities = [
+                r[0] for r in db.execute(
+                    text(f"SELECT DISTINCT city FROM page_visits WHERE state IN ({placeholders}) AND city IS NOT NULL AND city != ''"),
+                    params,
+                ).fetchall()
+            ]
+        else:
+            cities = []
         return {"nhcx_page_visits": total, "states": states, "cities": cities}
     except Exception as exc:
         logger.warning("[visit-stats] query failed: %s", exc)
