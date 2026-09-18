@@ -721,13 +721,13 @@
     }
 
     function CT_getReportCheckerEndpoints() {
-        return ['http://34.180.46.162/verify'];
+        return ['https://request-brussels-amaze.ngrok-free.dev/verify'];
     }
 
     function CT_buildReportCheckerFormData(scanFile, reportFile) {
         const formData = new FormData();
-        formData.append('scan_file', scanFile, scanFile.name);
-        formData.append('report_file', reportFile, reportFile.name);
+        formData.append('image', scanFile, scanFile.name);
+        formData.append('report', reportFile, reportFile.name);
         return formData;
     }
 
