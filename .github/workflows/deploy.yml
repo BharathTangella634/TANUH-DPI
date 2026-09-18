@@ -1,75 +1,178 @@
-# Pull pre-built images and restart Docker on all MIG VMs.
+# Auto-deploy to GCP MIG VMs on every merge to main.
 #
-# Manually triggered only — go to GitHub Actions → "Deploy to GCP" → "Run workflow".
-# Does NOT destroy/recreate VMs. Just SSHs into each running VM via IAP,
-# pulls the latest images from Artifact Registry, and restarts containers.
+# Triggers:
+#   - Push to main (covers merged PRs and direct pushes)
+#   - Manual trigger via GitHub Actions UI (workflow_dispatch)
 #
-# Prerequisites (one-time GCP setup — same as build.yml):
-#   1. Workload Identity Federation pool + GitHub OIDC provider
-#   2. sa-dpi-app-prod granted workloadIdentityUser for this repo
-#   3. GitHub secrets: GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT
-#   4. sa-dpi-app-prod needs roles/iap.tunnelResourceAccessor + roles/compute.instanceAdmin.v1
+# What it does:
+#   1. Authenticates to GCP via Workload Identity Federation (preferred)
+#      or JSON key fallback (GCP_SERVICE_ACCOUNT_JSON_B64)
+#   2. Discovers all VMs in the dpi-mig managed instance group
+#   3. SSHs into each VM via IAP tunnel
+#   4. Pulls latest code, rebuilds changed images, restarts containers
+#   5. Also restarts the monitoring stack (Prometheus, Grafana, Loki, etc.)
+#
+# Prerequisites (one-time GCP setup):
+#   1. Service account sa-dpi-github-deploy@proj-dpi-shared.iam.gserviceaccount.com
+#      with roles:
+#        - roles/compute.instanceAdmin.v1   (SSH to VMs)
+#        - roles/iap.tunnelResourceAccessor  (IAP tunnel)
+#        - roles/compute.viewer              (list MIG instances)
+#        - roles/iam.serviceAccountUser      (already granted)
+#   2. Workload Identity Federation pool + GitHub OIDC provider (preferred auth)
+#      OR GCP_SERVICE_ACCOUNT_JSON_B64 secret (fallback)
+#   3. GitHub secrets:
+#        GCP_WORKLOAD_IDENTITY_PROVIDER  (WIF provider resource name)
+#        GCP_SERVICE_ACCOUNT             (SA email)
+#        GCP_SERVICE_ACCOUNT_JSON_B64    (base64-encoded JSON key, fallback)
 
 name: Deploy to GCP
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 concurrency:
   group: deploy-prod
   cancel-in-progress: false
 
+env:
+  GCP_PROJECT: proj-dpi-shared
+  GCP_REGION: asia-south1
+  MIG_NAME: dpi-mig
+  APP_DIR: /opt/tanuh-dpi
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Authenticate to GCP
+      # ── Auth: try WIF first, fall back to JSON key ────────────────────────
+      - name: Check auth method
+        id: auth-check
+        run: |
+          if [ -n "$WIF_PROVIDER" ]; then
+            echo "method=wif" >> "$GITHUB_OUTPUT"
+          else
+            echo "method=json-key" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        if: steps.auth-check.outputs.method == 'wif'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+      - name: Authenticate to GCP (JSON key fallback)
+        if: steps.auth-check.outputs.method == 'json-key'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON_B64 }}
+
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Pull and restart on all MIG instances
+      # ── Discover MIG instances ────────────────────────────────────────────
+      - name: Discover MIG instances
+        id: discover
         run: |
           set -euo pipefail
 
-          INSTANCES=$(gcloud compute instance-groups managed list-instances dpi-mig \
-            --region=asia-south1 \
-            --project=proj-dpi-shared \
+          INSTANCES=$(gcloud compute instance-groups managed list-instances ${{ env.MIG_NAME }} \
+            --region=${{ env.GCP_REGION }} \
+            --project=${{ env.GCP_PROJECT }} \
             --format='csv[no-heading](instance,zone)')
 
           if [ -z "$INSTANCES" ]; then
-            echo "No instances found in MIG dpi-mig"
+            echo "::error::No instances found in MIG ${{ env.MIG_NAME }}"
             exit 1
           fi
 
-          DEPLOY_CMD="sudo bash -c 'cd /opt/tanuh-dpi && gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet && docker compose pull && docker compose up -d --remove-orphans && echo Deploy_complete'"
+          echo "Found instances:"
+          echo "$INSTANCES"
+          echo "instances<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$INSTANCES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      # ── Deploy to all VMs ─────────────────────────────────────────────────
+      - name: Deploy to all MIG instances
+        run: |
+          set -euo pipefail
 
           FAILED=0
+          TOTAL=0
+          SUCCESS=0
+
           while IFS=',' read -r NAME ZONE; do
             ZONE_SHORT=$(basename "$ZONE")
-            echo "--- Deploying to $NAME ($ZONE_SHORT) ---"
+            TOTAL=$((TOTAL + 1))
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  Deploying to $NAME ($ZONE_SHORT)  [$TOTAL]"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            PULL_CMD="cd ${{ env.APP_DIR }} && git pull origin main"
+            DEPLOY_CMD="bash ${{ env.APP_DIR }}/.github/scripts/deploy-on-vm.sh"
+
             if gcloud compute ssh "$NAME" \
               --zone="$ZONE_SHORT" \
-              --project=proj-dpi-shared \
+              --project=${{ env.GCP_PROJECT }} \
               --tunnel-through-iap \
-              --command="$DEPLOY_CMD"; then
-              echo "Done: $NAME"
+              --command="sudo bash -c '${PULL_CMD} && ${DEPLOY_CMD}'"; then
+              echo "✓ SUCCESS: $NAME"
+              SUCCESS=$((SUCCESS + 1))
             else
-              echo "FAILED: $NAME"
+              echo "✗ FAILED: $NAME"
               FAILED=1
             fi
-          done <<< "$INSTANCES"
+          done <<< "${{ steps.discover.outputs.instances }}"
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Summary: $SUCCESS/$TOTAL instances deployed"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           if [ "$FAILED" -eq 1 ]; then
-            echo "Some instances failed to deploy"
+            echo "::error::Some instances failed to deploy"
             exit 1
           fi
-          echo "All instances updated successfully"
+
+      # ── Health check ──────────────────────────────────────────────────────
+      - name: Health check
+        if: always()
+        run: |
+          echo "Running health checks against dpi.tanuh.ai..."
+          FAILED=0
+          for endpoint in \
+            "/pdf2abdm/health" \
+            "/pdf2nhcx/health" \
+            "/forgensic/health" \
+            "/privacy-filter/api/health" \
+            "/session-logger/health"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://dpi.tanuh.ai${endpoint}" --max-time 10 || echo "000")
+            if [ "$CODE" = "200" ]; then
+              echo "  ✓ $endpoint → $CODE"
+            else
+              echo "  ✗ $endpoint → $CODE"
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::warning::Some health checks failed — services may still be starting"
+          else
+            echo "All health checks passed"
+          fi
