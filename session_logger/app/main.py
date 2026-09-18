@@ -182,6 +182,14 @@ PERSISTED_DOCUMENT_TODAY_COUNT = Gauge(
     "Documents recorded in the session-log database since the start of the local day.",
     ["service"],
 )
+# Mirrors dpi_queue_exporter_redis_up: the counts above are only meaningful while
+# the session-log DB is actually readable. Without this, a failing refresh leaves
+# the count gauges at their last value with nothing to say they went stale.
+PERSISTED_DOCUMENT_METRICS_UP = Gauge(
+    "dpi_persisted_document_metrics_up",
+    "Whether the last document-count refresh from the session-log DB succeeded "
+    "(1=ok, 0=failed).",
+)
 
 _DOCUMENT_METRIC_TYPES = {
     "pdf2abdm": "clinical_document",
@@ -220,8 +228,10 @@ def refresh_persisted_document_metrics() -> None:
             PERSISTED_DOCUMENT_TODAY_COUNT.labels(service=service).set(
                 today_totals.get(document_type, 0)
             )
+        PERSISTED_DOCUMENT_METRICS_UP.set(1)
     except Exception as exc:
         # A temporary DB issue must not make /metrics or the API unavailable.
+        PERSISTED_DOCUMENT_METRICS_UP.set(0)
         logger.warning("[metrics] failed to refresh persisted document counts: %s", exc)
     finally:
         db.close()

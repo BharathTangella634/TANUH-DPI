@@ -31,12 +31,28 @@ Container restart monitoring:
 import os
 import time
 import logging
+import urllib.parse
 
 import redis
 from prometheus_client import start_http_server, Gauge
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("queue-exporter")
+
+# Memorystore has AUTH enabled and the password lives only in Secret Manager
+# (deploy/DEPLOYMENT.md §1-2), so REDIS_URL as written in compose carries no
+# credentials. Resolve REDIS_PASSWORD_SECRET into the URL exactly the way every
+# app service does — before REDIS_URL is read below. Without this the exporter
+# connects unauthenticated, Redis answers NOAUTH, and every queue gauge reports
+# the -1 sentinel instead of a real depth.
+try:
+    from common.secrets import load_secrets
+
+    load_secrets()
+except Exception as exc:  # image built without common/, or ADC unavailable
+    logger.warning(
+        "Secret Manager resolution unavailable (%s) — using REDIS_URL as provided", exc
+    )
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL_SECONDS", "15"))
@@ -96,6 +112,22 @@ redis_up_gauge = Gauge(
 # ── Collection functions ──────────────────────────────────────────────────────
 
 
+def _redacted(url: str) -> str:
+    """Mask any injected Redis password so it never reaches a log line."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        if parts.password is None:
+            return url
+        netloc = f"{parts.username or ''}:***@{parts.hostname or ''}"
+        if parts.port:
+            netloc = f"{netloc}:{parts.port}"
+        return urllib.parse.urlunsplit(
+            (parts.scheme, netloc, parts.path, parts.query, parts.fragment)
+        )
+    except Exception:
+        return "<redacted>"
+
+
 def _get_redis_client() -> redis.Redis:
     return redis.from_url(REDIS_URL, decode_responses=False, socket_connect_timeout=3)
 
@@ -152,7 +184,7 @@ def main():
     logger.info("Queue + container-state exporter starting on port %d", METRICS_PORT)
     logger.info("Monitoring queues: %s", QUEUES)
     logger.info("Monitoring Compose projects: %s", sorted(MONITORED_COMPOSE_PROJECTS))
-    logger.info("Redis URL: %s", REDIS_URL)
+    logger.info("Redis URL: %s", _redacted(REDIS_URL))
     logger.info("Poll interval: %ds", POLL_INTERVAL)
 
     start_http_server(METRICS_PORT)

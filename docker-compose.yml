@@ -155,13 +155,22 @@ services:
       - "9100:9100"
 
   queue-exporter:
+    # Built from the repo root so the image can carry common/secrets.py — the
+    # exporter needs the Memorystore AUTH password resolved the same way the
+    # app services resolve it (env_file below supplies PROJECT_ID + the
+    # pointer). Without it Redis answers NOAUTH and every queue reads -1.
     build:
-      context: ./monitoring/queue-exporter
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: monitoring/queue-exporter/Dockerfile
     container_name: queue-exporter
     restart: unless-stopped
     environment:
+      # Only the Redis pointer is passed, not the whole .env — the exporter has
+      # no business holding the MySQL or JWT secrets. PROJECT_ID is interpolated
+      # from .env by Compose itself and tells common/secrets.py where to look.
+      - PROJECT_ID=${PROJECT_ID}
       - REDIS_URL=redis://10.250.123.43:6379/0
+      - REDIS_PASSWORD_SECRET=redis-password
       - POLL_INTERVAL_SECONDS=15
       - METRICS_PORT=9101
     volumes:

@@ -22,7 +22,7 @@ groups:
       # A depth of 25 held for 10 minutes indicates worker throughput is insufficient
       # for the current document submission rate. Investigate before backlog grows further.
       - alert: QueueDepthHigh
-        expr: dpi_queue_depth > 25
+        expr: max by (queue) (dpi_queue_depth) > 25
         for: 10m
         labels:
           severity: warning
@@ -39,7 +39,7 @@ groups:
       # documents submitted by users will face unacceptable latency.
       # Immediate action: scale workers or investigate blocking errors.
       - alert: QueueDepthCritical
-        expr: dpi_queue_depth > 100
+        expr: max by (queue) (dpi_queue_depth) > 100
         for: 10m
         labels:
           severity: critical
