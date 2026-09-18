@@ -494,7 +494,7 @@
         } else if (!r.ok && r.status !== 202) {
           if (r.status === 500) {
             PF_setStatus(
-              "The Privacy Filter (Anonymization) service encountered an internal error. " +
+              "The Privacy Filter (Anonymisation) service encountered an internal error. " +
               "The document may be too large, or the service is still initializing. Please try again.",
               true
             );

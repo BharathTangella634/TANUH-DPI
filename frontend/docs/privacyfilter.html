@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Filter (Anonymization) Documentation | TANUH DPI</title>
+    <title>Privacy Filter (Anonymisation) Documentation | TANUH DPI</title>
     <link rel="icon" type="image/png" href="../assets/tanuh.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,20 +26,20 @@
     
         <main class="docs-main">
             <div class="docs-content-inner">
-            <!-- <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Privacy Filter (Anonymization) Documentation</span> -->
-            <h1 style="margin-top:0.25rem;">Privacy Filter (Anonymization) Documentation</h1>
+            <!-- <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Privacy Filter (Anonymisation) Documentation</span> -->
+            <h1 style="margin-top:0.25rem;">Privacy Filter (Anonymisation) Documentation</h1>
             <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Redaction &amp; DPDP Compliance -
 Complete Technical & User Documentation</p>
             
             <h1>1. Summary</h1>
-<p>The Privacy Filter (Anonymization) service is a comprehensive medical document anonymization engine that detects and removes Personally Identifiable Information (PII) and Protected Health Information (PHI) from a wide range of file formats including DICOM medical images, NIfTI volumes, standard images (PNG, JPG, TIFF, BMP), PDFs, and text documents.</p>
+<p>The Privacy Filter (Anonymisation) service is a comprehensive medical document anonymisation engine that detects and removes Personally Identifiable Information (PII) and Protected Health Information (PHI) from a wide range of file formats including DICOM medical images, NIfTI volumes, standard images (PNG, JPG, TIFF, BMP), PDFs, and text documents.</p>
 <p>The service employs a multi-layered detection strategy combining metadata analysis, connected-component text region detection, OCR (Tesseract/PaddleOCR), regex-based PHI classification, and Safe Harbor pattern matching. It supports three redaction methods: masking (black rectangles), cropping (border removal), and inpainting (appearance-preserving fill). Post-redaction validation ensures no residual PHI remains.</p>
 <!-- <p>It runs as a FastAPI application on port 8003, with asynchronous task processing via Celery workers on the dedicated 'privacy_filter' queue.</p> -->
 <h1>2. Service Overview</h1>
 <h2>2.1 Supported File Formats</h2>
 <div class="table-responsive"><table><thead><tr><th>Format</th><th>Extensions</th><th>Redaction Method</th></tr></thead><tbody><tr><td>DICOM</td><td>.dcm</td><td>Metadata tag stripping + UID regeneration + pixel redaction</td></tr><tr><td>NIfTI</td><td>.nii, .nii.gz</td><td>Header field clearing + per-slice pixel redaction</td></tr><tr><td>Images</td><td>.png, .jpg, .jpeg, .tiff, .bmp</td><td>EXIF stripping + pixel redaction</td></tr><tr><td>PDF</td><td>.pdf</td><td>Native text redaction (PyMuPDF) + metadata scrubbing</td></tr><tr><td>Documents</td><td>.docx, .txt, .md, .csv</td><td>Text span replacement with [REDACTED:LABEL]</td></tr></tbody></table></div>
 <h2>2.2 PHI Categories Detected</h2>
-<div class="table-responsive"><table><thead><tr><th>Category</th><th>Examples</th><th>Detection Method</th></tr></thead><tbody><tr><td>PERSON_NAME</td><td>Patient names, doctor names</td><td>Regex + keyword patterns</td></tr><tr><td>DATE</td><td>Birth dates, admission dates</td><td>Date format regex patterns</td></tr><tr><td>IDENTIFIER</td><td>Patient IDs, accession numbers</td><td>Numeric/alphanumeric patterns</td></tr><tr><td>AADHAAR</td><td>12-digit Aadhaar numbers</td><td>Aadhaar-specific regex</td></tr><tr><td>PAN</td><td>Indian PAN card numbers</td><td>PAN format regex (XXXXX0000X)</td></tr><tr><td>SSN</td><td>Social Security Numbers</td><td>SSN format regex</td></tr><tr><td>EMAIL</td><td>Email addresses</td><td>Email regex pattern</td></tr><tr><td>LABELED_PHI</td><td>Key-value labeled data (Age:, DOB:)</td><td>Label-value regex</td></tr><tr><td>BARCODE / QR Code</td><td>Barcodes and QR codes in documents</td><td>Aspect ratio heuristics</td></tr></tbody></table></div>
+<div class="table-responsive"><table><thead><tr><th>Category</th><th>Examples</th><th>Detection Method</th></tr></thead><tbody><tr><td>PERSON_NAME</td><td>Patient names, doctor names</td><td>Regex + keyword patterns</td></tr><tr><td>DATE</td><td>Birth dates, admission dates</td><td>Date format regex patterns</td></tr><tr><td>IDENTIFIER</td><td>Patient IDs, accession numbers</td><td>Numeric/alphanumeric patterns</td></tr><tr><td>AADHAAR</td><td>12-digit Aadhaar numbers</td><td>Aadhaar-specific regex</td></tr><tr><td>PAN</td><td>Indian PAN card numbers</td><td>PAN format regex (XXXXX0000X)</td></tr><tr><td>SSN</td><td>Social Security Numbers</td><td>SSN format regex</td></tr><tr><td>EMAIL</td><td>Email addresses</td><td>Email regex pattern</td></tr><tr><td>LABELED_PHI</td><td>Key-value labelled data (Age:, DOB:)</td><td>Label-value regex</td></tr><tr><td>BARCODE / QR Code</td><td>Barcodes and QR codes in documents</td><td>Aspect ratio heuristics</td></tr></tbody></table></div>
 <h2>2.3 Technology Stack</h2>
 <div class="table-responsive"><table><thead><tr><th>Component</th><th>Technology</th></tr></thead><tbody><tr><td>Web Framework</td><td>FastAPI (Python 3.10+)</td></tr><tr><td>Task Queue</td><td>Celery 5.x with Redis</td></tr><tr><td>OCR</td><td>Tesseract / PaddleOCR</td></tr><tr><td>PDF Processing</td><td>PyMuPDF (fitz)</td></tr><tr><td>Medical Imaging</td><td>pydicom (DICOM), nibabel (NIfTI), OpenCV</td></tr><tr><td>Image Processing</td><td>OpenCV, Pillow</td></tr>
     <!-- <tr><td>Authentication</td><td>PyJWT (HS256 + RS256 Keycloak)</td></tr> -->
@@ -105,7 +105,7 @@ Complete Technical & User Documentation</p>
 <li>Metadata stripping removes all identifying tags before output</li>
 <li>Post-redaction validation ensures no residual PHI remains</li>
 <li>Session logger stores only metadata - never the document content or detected PHI text</li>
-<li>Compliant with HIPAA Safe Harbor anonymization standard (18 identifier categories)</li>
+<li>Compliant with HIPAA Safe Harbor anonymisation standard (18 identifier categories)</li>
 </ul>
 <!-- <h1>8. Configuration (Environment Variables)</h1>
 <div class="table-responsive"><table><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>REDIS_URL</td><td>redis://localhost:6379/0</td><td>Redis connection</td></tr><tr><td>SESSION_LOGGER_URL</td><td>http://session-logger:8002</td><td>Session logger URL</td></tr><tr><td>SECRET_KEY</td><td>(required)</td><td>HS256 JWT signing key</td></tr><tr><td>KEYCLOAK_AUTH_ENABLED</td><td>true</td><td>Auth toggle</td></tr><tr><td>STORAGE_BACKEND</td><td>local</td><td>Storage backend (local or gcs)</td></tr><tr><td>LOCAL_DATA_DIR</td><td>./data</td><td>Local storage directory</td></tr><tr><td>GCS_BUCKET</td><td>tanuh-bcd-bucket</td><td>GCS bucket name</td></tr><tr><td>GCS_PREFIX</td><td>privacy-app</td><td>GCS path prefix</td></tr><tr><td>TASK_RESULT_TTL</td><td>86400</td><td>Redis result TTL (24h)</td></tr><tr><td>PF_FILE_TTL_SECONDS</td><td>1800</td><td>Temp file cleanup TTL (30 min)</td></tr><tr><td>PF_CLEANUP_INTERVAL_SECONDS</td><td>300</td><td>Cleanup interval (5 min)</td></tr></tbody></table></div> -->
@@ -113,7 +113,7 @@ Complete Technical & User Documentation</p>
 <h2>6.1 Browser Usage</h2>
 <ol>
 <li>Navigate to the DPI Platform website</li>
-<li>Click the 'Privacy Filter (Anonymization)' tab</li>
+<li>Click the 'Privacy Filter (Anonymisation)' tab</li>
 <li>Upload a file (DICOM, NIfTI, image, PDF, or text document)</li>
 <li>View detected entities in the entities table (text, type, confidence, position)</li>
 <li>Compare original vs. redacted preview side-by-side</li>
@@ -161,8 +161,8 @@ print("Redacted file URL:", data.get("redacted_url"))</code></pre>
 <p>PatientName, PatientID, OtherPatientIDs, PatientBirthDate, PatientAge, PatientAddress, AccessionNumber, StudyID, InstitutionName, ReferringPhysicianName, OperatorsName, PerformingPhysicianName, StationName, DeviceSerialNumber, ProtocolName.</p>
 <h2>8.2 UIDs Regenerated</h2>
 <p>StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID - regenerated via pydicom.uid.generate_uid() to prevent cross-referencing with original studies.</p>
-<h2>8.3 Anonymization Flag</h2>
-<p>The DICOM dataset is marked as anonymized (PatientIdentityRemoved = YES) after processing.</p>
+<h2>8.3 Anonymisation Flag</h2>
+<p>The DICOM dataset is marked as anonymised (PatientIdentityRemoved = YES) after processing.</p>
 <h1>9. Known Limitations & Future Enhancements</h1>
 <ul>
 <li>No burned-in pixel annotation OCR for DICOM (relies on corner text detection)</li>

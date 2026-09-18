@@ -132,10 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const statusMap = {
                             'UPLOADED': 'Uploaded',
                             'QUEUED': 'Queued',
-                            'DIARIZING': 'Diarization',
+                            'DIARIZING': 'Diarisation',
                             'TRANSCRIBING': 'ASR and transcription',
                             'TOPIC_EXTRACTION': 'Topic',
-                            'SUMMARIZING': 'Summarization',
+                            'SUMMARIZING': 'Summarisation',
                             'COMPLETED': 'Completed',
                             'FAILED': 'Failed'
                         };

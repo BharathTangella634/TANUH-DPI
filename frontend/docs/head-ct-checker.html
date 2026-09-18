@@ -43,14 +43,14 @@
                     <li>Combines outputs from two to three selected models using an ensemble, mixture-of-experts strategy</li>
                     <li>Generates structured finding-level decisions with PASS and Needs Review tags</li>
                     <li>Provides confidence scores and explanatory reasoning to support clinical quality assurance</li>
-                    <li>Creates standardized model cards covering model capabilities, input requirements, limitations, and deployment characteristics</li>
+                    <li>Creates standardised model cards covering model capabilities, input requirements, limitations, and deployment characteristics</li>
                 </ul>
 
                 <h1>3. Architecture</h1>
                 <p>The framework follows a modular inference pipeline for scan-report verification. A paired Head CT scan and report are prepared, processed through a unified preprocessing layer, evaluated by a selected ensemble of medical foundation models, and converted into a consensus verification output.</p>
                 <ol>
                     <li>Input: CT image in NIfTI format and corresponding report PDF</li>
-                    <li>Preprocessing: standardize CT volume inputs so selected models can process clinical partner data</li>
+                    <li>Preprocessing: standardise CT volume inputs so selected models can process clinical partner data</li>
                     <li>Model inference: run multiple pretrained medical foundation models on the Head CT scan and report context</li>
                     <li>Finding comparison: compare model-generated imaging observations with the corresponding report findings</li>
                     <li>Consensus generation: combine model outputs to improve robustness and reliability</li>

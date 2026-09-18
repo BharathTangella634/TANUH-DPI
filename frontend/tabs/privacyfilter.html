@@ -421,13 +421,13 @@
     <div class="tab-hero-grid">
         <div>
             <span style="display: inline-block; background: rgba(20, 134, 140, 0.08); color: var(--primary); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;">
-                Secure &amp; CPU-Optimized
+                Secure &amp; CPU-Optimised
             </span>
             <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
-                Privacy Filter (Anonymization)
+                Privacy Filter (Anonymisation)
             </h2>
             <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
-                Privacy Filter (Anonymization) is an automated, interactive, and on-premises-ready service for anonymizing Personal Identifiable Information (PII) and Protected Health Information (PHI) from clinical documents, medical images, and DICOM/NIfTI scans. Compliant with the DPDP Act and HIPAA Safe Harbor, it operates as a non-persistent service, processing data in real time and purging it automatically upon completion without retaining any information.
+                Privacy Filter (Anonymisation) is an automated, interactive, and on-premises-ready service for anonymising Personal Identifiable Information (PII) and Protected Health Information (PHI) from clinical documents, medical images, and DICOM/NIfTI scans. Compliant with the DPDP Act and HIPAA Safe Harbor, it operates as a non-persistent service, processing data in real time and purging it automatically upon completion without retaining any information.
             </p>
             <div style="display: flex; flex-wrap: wrap; gap: 14px;">
                 <button onclick="directLaunchService('PrivacyFilter')" class="process-btn" style="padding: 12px 24px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600;">
@@ -489,7 +489,7 @@
                 </div>
                 <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Burned-in Text Removal</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    Utilizes advanced connected-component analysis and Tesseract OCR to target, detect, and mask patient credentials overlaid directly on pixel scans.
+                    Utilises advanced connected-component analysis and Tesseract OCR to target, detect, and mask patient credentials overlaid directly on pixel scans.
                 </p>
             </div>
             
@@ -544,7 +544,7 @@
                 <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">03</div>
                 <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Masking &amp; Fluid Redaction</h4>
                 <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    Constructs an overlay mask on coordinate values, rendering vector black boxes over raw characters or pixel arrays, and yields sanitised PDF, PNG, or JSON files.
+                    Constructs an overlay mask on coordinate values, rendering vector black boxes over raw characters or pixel arrays, and yields sanitized PDF, PNG, or JSON files.
                 </p>
             </div>
             <!-- Phase 4 -->
@@ -606,7 +606,7 @@
                 </div>
                 <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Manual Review Required</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    OCR and heuristic matching may fail on low-contrast scans or non-standard fonts. Use the built-in manual correction editor to review and finalize redactions.
+                    OCR and heuristic matching may fail on low-contrast scans or non-standard fonts. Use the built-in manual correction editor to review and finalise redactions.
                 </p>
             </div>
         </div>
@@ -637,7 +637,7 @@
     <!-- Sub Navigation inside tool page -->
     <div class="sub-nav-bar">
         <button class="sub-tab-btn active" id="btn-pf-launch" onclick="openSubTab('PrivacyFilter','pf-sub-main',this)">
-            <i class="fas fa-user-shield"></i> Privacy Filter (Anonymization)
+            <i class="fas fa-user-shield"></i> Privacy Filter (Anonymisation)
         </button>
         <button class="sub-tab-btn" onclick="openSubTab('PrivacyFilter','pf-sub-api',this)">
             <i class="fas fa-code"></i> API Access
@@ -652,10 +652,10 @@
         <div class="tab-header" style="margin-bottom: 16px;">
             <div class="tab-header-text">
                 <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-user-shield" style="color:var(--primary)"></i> Privacy Filter (Anonymization) Tool
+                    <i class="fas fa-user-shield" style="color:var(--primary)"></i> Privacy Filter (Anonymisation) Tool
                 </h2>
                 <p style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
-                    Upload clinical documents/images, medical reports, or claim forms to anonymize and sanitize patient PII/PHI.
+                    Upload clinical documents/images, medical reports, or claim forms to anonymise and sanitize patient PII/PHI.
                 </p>
             </div>
         </div>
@@ -851,8 +851,8 @@
     <div id="pf-sub-api" class="sub-content" style="display:none">
         <div class="tab-header">
             <div class="tab-header-text">
-                <h2><i class="fas fa-code" style="color:var(--primary)"></i> Privacy Filter (Anonymization) API</h2>
-                <p>How to call the Privacy Filter (Anonymization) service from your own code or pipeline.</p>
+                <h2><i class="fas fa-code" style="color:var(--primary)"></i> Privacy Filter (Anonymisation) API</h2>
+                <p>How to call the Privacy Filter (Anonymisation) service from your own code or pipeline.</p>
             </div>
         </div>
 
@@ -869,7 +869,7 @@
                 <span>Privacy Filter API Token</span>
                 <span class="pf-demo-token-badge">1-DAY TOKEN</span>
             </div>
-            <p style="margin:0 0 14px; font-size:0.8rem; color:#64748b;">This token is specific to the Privacy Filter (PII Anonymization) service.</p>
+            <p style="margin:0 0 14px; font-size:0.8rem; color:#64748b;">This token is specific to the Privacy Filter (PII Anonymisation) service.</p>
             <form id="apiPrivacyTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
                 <button type="submit" class="pf-btn pf-btn-primary" id="apiPrivacyTokenSubmit">
                     <i class="fas fa-bolt"></i> Generate Token
