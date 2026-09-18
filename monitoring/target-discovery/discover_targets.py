@@ -60,6 +60,7 @@ WORKER_PORT_RANGES = {
     "celery_abdm_workers": range(9200, 9204),
     "celery_nhcx_workers": range(9210, 9214),
     "celery_forgensic_workers": range(9220, 9224),
+    "celery_privacy_workers": range(9230, 9238),
 }
 
 

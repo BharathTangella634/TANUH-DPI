@@ -24,12 +24,15 @@ Endpoints:
 import os
 import uuid
 import logging
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from prometheus_client import Gauge
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 
@@ -37,7 +40,7 @@ from common.secrets import load_secrets
 load_secrets()
 
 from .core.config import settings
-from .db.session import Base, engine, get_db, USE_SQLITE
+from .db.session import Base, engine, get_db, USE_SQLITE, SessionLocal
 from .models.models import SessionLog, AuthToken, Feedback, User
 
 # ── Indian states & UTs (for geo-filtering) ──────────────────────────────────
@@ -118,7 +121,6 @@ def _check_production_auth_safety():
 _check_production_auth_safety()
 
 import os
-from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal, List
 import jwt
 import time
@@ -170,6 +172,67 @@ app.add_middleware(
 from common.metrics import instrument_fastapi
 instrument_fastapi(app, service="session_logger")
 
+PERSISTED_DOCUMENT_COUNT = Gauge(
+    "dpi_persisted_document_count",
+    "Documents recorded in the session-log database, grouped by DPI service.",
+    ["service"],
+)
+PERSISTED_DOCUMENT_TODAY_COUNT = Gauge(
+    "dpi_persisted_document_today_count",
+    "Documents recorded in the session-log database since the start of the local day.",
+    ["service"],
+)
+
+_DOCUMENT_METRIC_TYPES = {
+    "pdf2abdm": "clinical_document",
+    "pdf2nhcx": "insurance_document",
+    "privacy_filter": "privacy_document",
+    "forgensic": "forgery_document",
+}
+
+
+def refresh_persisted_document_metrics() -> None:
+    """Refresh durable document-count gauges from the shared session-log DB."""
+    db = SessionLocal()
+    try:
+        document_types = tuple(_DOCUMENT_METRIC_TYPES.values())
+        totals = dict(
+            db.query(SessionLog.document_type, func.count(SessionLog.session_id))
+            .filter(SessionLog.document_type.in_(document_types))
+            .group_by(SessionLog.document_type)
+            .all()
+        )
+        # SessionLog.created_at is stored as a naive IST timestamp in MySQL.
+        start_of_day = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            tzinfo=None, hour=0, minute=0, second=0, microsecond=0
+        )
+        today_totals = dict(
+            db.query(SessionLog.document_type, func.count(SessionLog.session_id))
+            .filter(
+                SessionLog.document_type.in_(document_types),
+                SessionLog.created_at >= start_of_day,
+            )
+            .group_by(SessionLog.document_type)
+            .all()
+        )
+        for service, document_type in _DOCUMENT_METRIC_TYPES.items():
+            PERSISTED_DOCUMENT_COUNT.labels(service=service).set(totals.get(document_type, 0))
+            PERSISTED_DOCUMENT_TODAY_COUNT.labels(service=service).set(
+                today_totals.get(document_type, 0)
+            )
+    except Exception as exc:
+        # A temporary DB issue must not make /metrics or the API unavailable.
+        logger.warning("[metrics] failed to refresh persisted document counts: %s", exc)
+    finally:
+        db.close()
+
+
+async def _persisted_document_metrics_worker() -> None:
+    """Keep Grafana's durable record counts fresh between document submissions."""
+    while True:
+        refresh_persisted_document_metrics()
+        await asyncio.sleep(15)
+
 
 # ── Daily Expired Token Cleanup Loop (Session 4.1) ───────────────────────────
 import asyncio
@@ -204,7 +267,9 @@ async def _token_cleanup_worker():
 
 @app.on_event("startup")
 async def startup_event():
+    refresh_persisted_document_metrics()
     asyncio.create_task(_token_cleanup_worker())
+    asyncio.create_task(_persisted_document_metrics_worker())
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1027,4 +1092,3 @@ def generate_service_token(payload: ServiceTokenRequest, request: Request, db: S
         db.rollback()
         logger.error(f"[auth] Centralized token generation error [request_id={request_id}]: {exc}")
         raise HTTPException(500, f"Token generation failed [request_id={request_id}]: {exc}")
-
