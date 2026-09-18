@@ -72,3 +72,21 @@ groups:
             The logging and analytics API is unreachable. All services
             that fire-and-forget to /log will start silently failing.
             Check: docker logs session-logger
+
+      # session-logger can be up and serving /metrics while its Cloud SQL
+      # connection is broken, in which case the document-count gauges go stale
+      # with nothing on the dashboard to say so. Alert on the dependency
+      # explicitly rather than letting a frozen count read as real.
+      - alert: PersistedDocumentMetricsUnavailable
+        expr: dpi_persisted_document_metrics_up == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: session_logger
+        annotations:
+          summary: "session-logger cannot read document counts from the session-log DB"
+          description: >
+            dpi_persisted_document_count / dpi_persisted_document_today_count are
+            stale because the refresh query against dpi_session_logger is failing.
+            Check the cloud-sql-proxy container and the mysql-password secret.
+            Check: docker logs session-logger | grep '\[metrics\]'
