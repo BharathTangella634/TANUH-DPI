@@ -189,7 +189,7 @@
 
         if (!skipHistory) {
             if (!history.state || history.state.tab !== tabName) {
-                history.pushState({ tab: tabName }, "", "#" + tabName);
+                history.pushState({ tab: tabName }, "", "/" + tabName);
             }
         }
 
@@ -741,7 +741,7 @@
 
     // ── Init & History ──────────────────────────────────────────────────────────
     window.addEventListener('popstate', (e) => {
-        const tab = e.state ? e.state.tab : (window.location.hash ? window.location.hash.substring(1) : 'Home');
+        const tab = e.state ? e.state.tab : (window.location.pathname.replace(/^\/+|\/+$/g, '') || 'Home');
         openTab(null, tab, false, true);
     });
 
@@ -753,8 +753,13 @@
         handleNavbarScroll();
         window.addEventListener('scroll', handleNavbarScroll);
         
-        const initialTab = window.location.hash ? window.location.hash.substring(1) : 'Home';
-        history.replaceState({ tab: initialTab }, "", "#" + initialTab);
+        // Support old #Hash bookmarks: redirect to clean /Path URL
+        if (window.location.hash && window.location.hash.length > 1) {
+            const hashTab = window.location.hash.substring(1);
+            history.replaceState({ tab: hashTab }, "", "/" + hashTab);
+        }
+        const initialTab = window.location.pathname.replace(/^\/+|\/+$/g, '') || 'Home';
+        history.replaceState({ tab: initialTab }, "", "/" + initialTab);
         openTab(null, initialTab, false, true);
         setInterval(checkAllServiceBadges, 30000);
         if (window.DPI_Auth) {
