@@ -39,7 +39,7 @@ Complete Technical & User Documentation</p>
 <p>Key capabilities include multi-engine OCR extraction, intelligent document classification, dependency-aware FHIR resource generation using LangGraph workflows, and rulebook-driven structural enforcement.</p>
 <h1>2. Service Overview</h1>
 <h2>2.1 Purpose</h2>
-<p>The service addresses the challenge of converting unstructured clinical PDF documents into structured, interoperable FHIR data. It enables healthcare systems to digitize paper-based clinical records into standardized ABDM-compliant bundles that can be exchanged across the Indian healthcare ecosystem.</p>
+<p>The service addresses the challenge of converting unstructured clinical PDF documents into structured, interoperable FHIR data. It enables healthcare systems to digitise paper-based clinical records into standardised ABDM-compliant bundles that can be exchanged across the Indian healthcare ecosystem.</p>
 <h2>2.2 Key Features</h2>
 <ul>
 <li>Privacy-first architecture: all processing runs on-premises with zero external data leakage</li>
@@ -82,7 +82,7 @@ Complete Technical & User Documentation</p>
 <li>Document Type Classification: LLM analyzes text to select between DischargeSummaryRecord or DiagnosticReportRecord. Determines mandatory and optional FHIR resources to extract.</li>
 <li>LangGraph Dynamic Workflow: Resources are topologically sorted by dependency order. A LangGraph workflow is dynamically constructed with one node per resource type. Each node calls the LLM with the resource's rulebook (StructureDefinition JSON) as structural constraint.</li>
 <li>Per-Resource LLM Extraction: Each FHIR resource is extracted independently via dedicated LLM calls.</li>
-<li>Sanitization & Normalization: Fix hallucinated fields, ensure UUIDs, set NDHM ABDM profile URLs, enforce correct statuses and required fields.</li>
+<li>Sanitization & Normalisation: Fix hallucinated fields, ensure UUIDs, set NDHM ABDM profile URLs, enforce correct statuses and required fields.</li>
 <li>Bundle Assembly: Composition resource placed first (index 0), remaining resources in dependency order, DocumentReference last. All entries get fullUrl as urn:uuid:{id}.</li>
 <li>PDF Embedding: Original PDF base64-encoded and injected into DocumentReference.content[0].attachment.data.</li>
 <!-- <li>Result Storage: For async mode, result is stored in Redis with 24-hour TTL. For sync mode, returned directly in HTTP response.</li> -->
@@ -91,7 +91,7 @@ Complete Technical & User Documentation</p>
 </ol>
 <h2>3.3 OCR Engine Waterfall</h2>
 <div class="table-responsive"><table><thead><tr><th>Priority</th><th>Engine</th><th>Strength</th><th>Speed</th><th>Trigger</th></tr></thead><tbody><tr><td>1</td><td>PyPDF</td><td>Native text extraction (digital PDFs)</td><td>&lt; 1s</td><td>Always tried first</td></tr><tr><td>2</td><td>Docling</td><td>LaTeX-based layout understanding</td><td>3-10s</td><td>If PyPDF &lt; 50 chars/page</td></tr><tr><td>3</td><td>LightOn</td><td>Fast OCR for scanned documents</td><td>2-5s</td><td>If Docling fails/unavailable</td></tr></tbody></table></div>
-<p>The OCR output is normalized into AI-ready Markdown with YAML front-matter (source, engine, pages, extraction timestamp) and <!-- PAGE N --> markers for page boundaries.</p>
+<p>The OCR output is normalised into AI-ready Markdown with YAML front-matter (source, engine, pages, extraction timestamp) and <!-- PAGE N --> markers for page boundaries.</p>
 <!-- <h2>3.4 LLM Configuration</h2>
 <div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Model</td><td>Google Gemma 4 26B (gemma-4-26b-a4b-it-maas)</td></tr><tr><td>Provider</td><td>Vertex AI MaaS</td></tr><tr><td>Project</td><td>bcd-prototypes</td></tr><tr><td>Region</td><td>us-central1</td></tr><tr><td>Temperature</td><td>0.3</td></tr><tr><td>Max Retries</td><td>3 (exponential backoff: 1s, 2s, 4s)</td></tr><tr><td>Timeout</td><td>120 seconds per request</td></tr><tr><td>Cache TTL</td><td>55 minutes (OAuth2 token refresh at 60 min)</td></tr><tr><td>Authentication</td><td>Service account JSON (gcp-service-account.json) or ADC</td></tr></tbody></table></div> -->
 <h1>4. API Reference</h1>

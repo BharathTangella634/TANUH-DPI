@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Audio Summarization Documentation | TANUH DPI</title>
+    <title>Medical Audio Summarisation Documentation | TANUH DPI</title>
     <link rel="icon" type="image/png" href="../assets/tanuh.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,19 +27,19 @@
         <main class="docs-main">
             <div class="docs-content-inner">
 
-<h1 style="margin-top:0.25rem;">Medical Audio Summarization Documentation</h1>
-<p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Medical Audio Speech-to-Text &amp; Summarization Service</p>
+<h1 style="margin-top:0.25rem;">Medical Audio Summarisation Documentation</h1>
+<p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Medical Audio Speech-to-Text &amp; Summarisation Service</p>
 
 <h1>1. Overview</h1>
-<p>The <strong>Medical Audio Summarization Service</strong> is a GPU-accelerated application designed to transcribe and summarize medical audio recordings. It takes raw <code>.wav</code> audio files as input, identifies different speakers (Diarization), transcribes the conversation (ASR), and leverages Large Language Models (LLMs) to generate structured clinical summaries.</p>
-<p>This tool is built specifically to handle the heavy computational loads of modern AI models while maintaining a lightweight footprint, achieved via state-of-the-art <strong>4-bit NF4 quantization</strong>.</p>
+<p>The <strong>Medical Audio Summarisation Service</strong> is a GPU-accelerated application designed to transcribe and summarise medical audio recordings. It takes raw <code>.wav</code> audio files as input, identifies different speakers (Diarisation), transcribes the conversation (ASR), and leverages Large Language Models (LLMs) to generate structured clinical summaries.</p>
+<p>This tool is built specifically to handle the heavy computational loads of modern AI models while maintaining a lightweight footprint, achieved via state-of-the-art <strong>4-bit NF4 quantisation</strong>.</p>
 
 <h1>2. Key Features</h1>
 <ul>
-<li><strong>Speaker Diarization:</strong> Accurately distinguishes between different speakers (e.g., Doctor vs. Patient) using <code>pyannote.audio</code>.</li>
+<li><strong>Speaker Diarisation:</strong> Accurately distinguishes between different speakers (e.g., Doctor vs. Patient) using <code>pyannote.audio</code>.</li>
 <li><strong>Automatic Speech Recognition (ASR):</strong> Highly accurate multilingual transcription powered by OpenAI's Whisper model.</li>
-<li><strong>Clinical Summarization:</strong> Extracts critical medical context and outputs structured summaries using LLMs (e.g., Qwen / LLaMA).</li>
-<li><strong>VRAM Optimized:</strong> Implements <code>bitsandbytes</code> 4-bit NormalFloat (NF4) double quantization, allowing massive 3B+ parameter models to run smoothly on consumer GPUs (8GB VRAM).</li>
+<li><strong>Clinical Summarisation:</strong> Extracts critical medical context and outputs structured summaries using LLMs (e.g., Qwen / LLaMA).</li>
+<li><strong>VRAM Optimised:</strong> Implements <code>bitsandbytes</code> 4-bit NormalFloat (NF4) double quantisation, allowing massive 3B+ parameter models to run smoothly on consumer GPUs (8GB VRAM).</li>
 <li><strong>Privacy-First Design:</strong> Fully non-persistent. Audio files and summaries are processed in memory and purged entirely once the session ends. No sensitive patient data is permanently stored.</li>
 </ul>
 
@@ -49,9 +49,9 @@
 <li><strong>Pipeline Components:</strong>
   <ol>
     <li><strong>Audio Validation:</strong> Checks format (16kHz <code>.wav</code>) and size constraints.</li>
-    <li><strong>Diarization Engine:</strong> <code>pyannote/speaker-diarization-3.1</code>.</li>
+    <li><strong>Diarisation Engine:</strong> <code>pyannote/speaker-diarization-3.1</code>.</li>
     <li><strong>ASR Engine:</strong> <code>openai/whisper-small</code> (or variants).</li>
-    <li><strong>Summarization Engine:</strong> Transformer-based causal language models (e.g., <code>Qwen/Qwen2.5-3B-Instruct</code>), heavily optimized with 4-bit quantization.</li>
+    <li><strong>Summarisation Engine:</strong> Transformer-based causal language models (e.g., <code>Qwen/Qwen2.5-3B-Instruct</code>), heavily optimised with 4-bit quantisation.</li>
   </ol>
 </li>
 </ul>
@@ -61,7 +61,7 @@
 <li><strong>Prepare Audio:</strong> Ensure your audio is a <code>.wav</code> file, ideally sampled at 16kHz, and is under 25 MB in size.</li>
 <li><strong>Upload:</strong> Click the "Choose Audio file..." box on the web interface to select your recording.</li>
 <li><strong>Select Language:</strong> Choose the primary language (Hindi or Kannada) from the dropdown.</li>
-<li><strong>Process:</strong> Click <strong>Process</strong>. The backend will sequentially run Diarization -&gt; ASR -&gt; Summarization. This typically takes <strong>7 to 10 minutes</strong> depending on your GPU. <em>Do not refresh the tab during this time.</em></li>
+<li><strong>Process:</strong> Click <strong>Process</strong>. The backend will sequentially run Diarisation -&gt; ASR -&gt; Summarisation. This typically takes <strong>7 to 10 minutes</strong> depending on your GPU. <em>Do not refresh the tab during this time.</em></li>
 <li><strong>Export:</strong> Once complete, the output window will display the Clinical Summary and Transcript. Click the <strong>Download Results</strong> button to save a <code>.txt</code> file of the insights directly to your computer.</li>
 </ol>
 
