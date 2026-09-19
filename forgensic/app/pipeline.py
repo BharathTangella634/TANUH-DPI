@@ -183,15 +183,21 @@ def _merge_boxes(boxes: List[Tuple[int, int, int, int]], gap: int) -> List[Dict[
 def _scaled_merge_gap(
     width: Optional[int],
     height: Optional[int],
-    frac: float = 0.09,
-    min_gap: int = 15,
-    max_gap: int = 90,
+    frac: float = 0.02,
+    min_gap: int = 8,
+    max_gap: int = 40,
 ) -> int:
     """
     Pixel gap under which two same-category boxes get merged, scaled to the
     page size. A fixed pixel gap (e.g. 8px) merges almost nothing on a large
     scan but over-merges on a small one — this keeps the *relative* closeness
     consistent across page resolutions.
+
+    Kept deliberately small (~2% of page size). At 9% a 612x792 page merged
+    anything within 63px, which glued unrelated findings into page-spanning
+    blobs and made the annotated preview look like the whole document was
+    flagged. 2% stays close to the original fixed 8px on a small page while
+    still scaling up for large scans.
     """
     if not width or not height:
         return min_gap
@@ -703,7 +709,7 @@ def build_document_pages(input_dir: Path, render_dir: Path) -> List[DocumentPage
     pages: List[DocumentPage] = []
     render_dir.mkdir(parents=True, exist_ok=True)
 
-    supported_image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+    supported_image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
     supported_pdf_exts = {".pdf"}
 
     for file_path in sorted(input_dir.iterdir()):
@@ -1433,8 +1439,8 @@ def _build_npv_focus_tuning() -> Dict[str, Any]:
     base = DETECTOR_TUNING.get("strict", DETECTOR_TUNING["normal"])
     tuned = copy.deepcopy(base)
     tuned["c2"].update({
-        "edge_z": 3.6,
-        "stroke_z": 3.6,
+        "edge_z": 5.0,
+        "stroke_z": 5.0,
         "ocr_edge_density": 0.35,
         "min_region_area": 260,
         # MAD-based robust z-scores are noisy below roughly 8 samples -- on a line
@@ -1504,13 +1510,13 @@ def _build_npv_focus_tuning() -> Dict[str, Any]:
         "text_density_min": 0.012,
     })
     tuned["c9"].update({
-        "z_edge": 3.0,
-        "z_grad": 3.0,
-        "z_res": 3.0,
-        "z_var": 3.0,
-        "z_stroke": 3.0,
+        "z_edge": 4.0,
+        "z_grad": 4.0,
+        "z_res": 4.0,
+        "z_var": 4.0,
+        "z_stroke": 4.0,
         "z_height": 3.2,
-        "score_threshold": 3.2,
+        "score_threshold": 4.5,
         "min_region_area": 200,
         # Same reasoning as C2's min_line_components -- a robust z-score over only 3
         # tokens is dominated by small-sample noise, not a reliable outlier signal.

@@ -104,7 +104,7 @@ def _parse_iso(value: Optional[str]) -> Optional[datetime]:
 
 def _allowed_suffix(name: str) -> bool:
     suffix = Path(name).suffix.lower()
-    return suffix in {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+    return suffix in {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
 
 def _save_upload(upload: UploadFile, dest: Path) -> int:
