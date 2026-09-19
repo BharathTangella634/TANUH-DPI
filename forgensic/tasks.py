@@ -314,14 +314,17 @@ def process_forgensic_job(
         # directory; the bucket lifecycle rule is the final safety net for output.
         # In local mode the output dir IS the serving path, so it must survive
         # until the job's Redis TTL expires (see _cleanup_jobs in app/main.py).
-        if input_gcs_uri:
-            delete_gcs_object(input_gcs_uri)
         if STORAGE_BACKEND != "local":
+            if input_gcs_uri:
+                delete_gcs_object(input_gcs_uri)
             shutil.rmtree(job_dir, ignore_errors=True)
-        else:
-            input_dir = job_dir / "input"
-            if input_dir.exists():
-                shutil.rmtree(input_dir, ignore_errors=True)
+        # In local mode nothing is removed here. The job directory IS the
+        # serving path, and that includes input/: for an image upload (unlike a
+        # PDF, which is re-rendered into output/) the page's image_path is the
+        # uploaded file itself, so deleting input/ left image_url returning 404
+        # and broke the findings "View area" crop, which resolves image_url
+        # before preview_url. _cleanup_jobs() in app/main.py removes the whole
+        # directory once the job's Redis TTL expires.
 
         _task_elapsed = perf_counter() - _task_start
         TASKS_COMPLETED_TOTAL.labels(service="forgensic").inc()
