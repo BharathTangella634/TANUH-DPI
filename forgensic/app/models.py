@@ -59,6 +59,9 @@ class JobResultResponse(BaseModel):
     requires_manual_review: Optional[bool] = None
     total_regions: Optional[int] = None
     review_min_regions: Optional[int] = None
+    # Categories that flagged a page without producing a box (e.g. C8); their
+    # presence forces REVIEW regardless of the region count.
+    unlocalized_categories: List[str] = []
     export_urls: Dict[str, Any]
     findings_summary: Optional[Dict[str, Any]] = None
     inference_seconds: Optional[float] = None

@@ -65,12 +65,28 @@ def build_verdict(results: List[PageAnalysisResult]) -> Dict[str, Any]:
     slightly more documents to review than the report did.
     """
     total_regions = sum(len(r.detected_regions) for r in results)
-    review = total_regions >= REVIEW_MIN_REGIONS
+
+    # Safety net for page-level categories. Counting regions alone silently
+    # clears any category that fires without localising: C8 (fully
+    # AI-generated document) is classified per page and has no branch in
+    # localize_tampered_regions_sync, so a C8 page yields zero regions and
+    # would score as PASS -- "requires no manual review" on a document the
+    # pipeline just called machine-generated. A category that flagged a page
+    # but could not draw a box still means a human should look.
+    unlocalized: List[str] = []
+    for r in results:
+        flagged = [c for c in r.predicted_categories if c != "C10"]
+        if flagged and not r.detected_regions:
+            unlocalized.extend(flagged)
+    unlocalized = sorted(set(unlocalized))
+
+    review = total_regions >= REVIEW_MIN_REGIONS or bool(unlocalized)
     return {
         "verdict": "REVIEW" if review else "PASS",
         "requires_manual_review": review,
         "total_regions": total_regions,
         "review_min_regions": REVIEW_MIN_REGIONS,
+        "unlocalized_categories": unlocalized,
     }
 
 
