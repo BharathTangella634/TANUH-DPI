@@ -62,7 +62,7 @@ cat <<EOF > .env
 FORGENSIC_SECRET_KEY=generate_a_secure_random_key_here
 REDIS_URL=redis://redis:6379/0
 OCR_ENABLED=true
-PIPELINE_PRESET=super_loose
+PIPELINE_PRESET=npv_focus
 EOF
 ```
 

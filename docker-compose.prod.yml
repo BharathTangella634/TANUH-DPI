@@ -227,7 +227,7 @@ services:
       - GCS_BUCKET=dpi-transient-processing
       - STORAGE_BACKEND=gcs
       - OCR_ENABLED=true
-      - PIPELINE_PRESET=super_loose
+      - PIPELINE_PRESET=npv_focus
       - FORGENSIC_AUTH_ENABLED=${FORGENSIC_AUTH_ENABLED:-true}
       - FORGENSIC_TOKEN_EXPIRY_DAYS=${FORGENSIC_TOKEN_EXPIRY_DAYS:-1}
       - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
@@ -256,7 +256,7 @@ services:
       - GCS_BUCKET=dpi-transient-processing
       - STORAGE_BACKEND=gcs
       - OCR_ENABLED=true
-      - PIPELINE_PRESET=super_loose
+      - PIPELINE_PRESET=npv_focus
       - REDIS_URL=redis://${REDIS_HOST:-10.250.123.43}:6379/0
       - JOB_TTL_SECONDS=3600
       - WORKER_METRICS_PORT=9200

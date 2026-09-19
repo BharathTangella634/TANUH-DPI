@@ -180,6 +180,26 @@ def _merge_boxes(boxes: List[Tuple[int, int, int, int]], gap: int) -> List[Dict[
     return clusters
 
 
+def _scaled_merge_gap(
+    width: Optional[int],
+    height: Optional[int],
+    frac: float = 0.09,
+    min_gap: int = 15,
+    max_gap: int = 90,
+) -> int:
+    """
+    Pixel gap under which two same-category boxes get merged, scaled to the
+    page size. A fixed pixel gap (e.g. 8px) merges almost nothing on a large
+    scan but over-merges on a small one — this keeps the *relative* closeness
+    consistent across page resolutions.
+    """
+    if not width or not height:
+        return min_gap
+    scale = (width + height) / 2.0
+    gap = int(round(scale * frac))
+    return max(min_gap, min(gap, max_gap))
+
+
 def _pad_box(
     box: Tuple[int, int, int, int],
     pad: int,
@@ -281,8 +301,8 @@ def _parse_context(text: str) -> str:
 def build_findings_summary(
     pages: List[DocumentPage],
     results: List[PageAnalysisResult],
-    merge_gap: int = 8,
-    padding: int = 10,
+    merge_gap: Optional[int] = None,
+    padding: Optional[int] = None,
     ocr_config: str = "--oem 3 --psm 6",
     max_per_page: int = 5,
     min_area_ratio: float = 0.003,
@@ -310,19 +330,22 @@ def build_findings_summary(
             with Image.open(image_path).convert("RGB") as image:
                 width, height = image.width, image.height
                 page_area = float(width * height) if width and height else 0.0
+                page_merge_gap = merge_gap if merge_gap is not None else _scaled_merge_gap(width, height)
+                page_padding = padding if padding is not None else max(6, page_merge_gap // 3)
                 boxes_by_category: Dict[str, List[Tuple[int, int, int, int]]] = {}
                 for region in res.detected_regions:
                     box = (region.x, region.y, region.x + region.w, region.y + region.h)
                     boxes_by_category.setdefault(region.category_id, []).append(box)
 
                 for category_id, boxes in boxes_by_category.items():
-                    clusters = _merge_boxes(boxes, merge_gap)
+                    clusters = _merge_boxes(boxes, page_merge_gap)
                     merge_stats.append(
                         {
                             "page": res.page_number,
                             "category": category_id,
                             "original": len(boxes),
                             "merged": len(clusters),
+                            "merge_gap": page_merge_gap,
                         }
                     )
 
@@ -334,7 +357,7 @@ def build_findings_summary(
                         box_area = max(0, (box[2] - box[0]) * (box[3] - box[1]))
                         area_ratio = box_area / page_area if page_area else 0.0
 
-                        padded = _pad_box(box, padding, width, height)
+                        padded = _pad_box(box, page_padding, width, height)
                         ocr_text = _ocr_text_for_box(image, padded, ocr_config) if ocr_active else ""
                         snippet = _short_phrase(_clean_snippet(ocr_text))
                         if snippet:
@@ -409,8 +432,8 @@ def build_findings_summary(
     sanity = {
         "ocr_active": ocr_active,
         "tesseract_cmd": tesseract_cmd,
-        "merge_gap": merge_gap,
-        "padding": padding,
+        "merge_gap": merge_gap if merge_gap is not None else "dynamic (scaled to page size)",
+        "padding": padding if padding is not None else "dynamic (scaled to page size)",
         "max_per_page": max_per_page,
         "min_area_ratio": min_area_ratio,
         "pages": len(pages),
@@ -527,8 +550,8 @@ def render_preview_image(
     page: DocumentPage,
     result: PageAnalysisResult,
     output_dir: Path,
-    merge_gap: int = 8,
-    padding: int = 10,
+    merge_gap: Optional[int] = None,
+    padding: Optional[int] = None,
 ) -> Optional[str]:
     if Image is None:
         return None
@@ -548,6 +571,11 @@ def render_preview_image(
         base = Image.open(path).convert("RGBA")
     except Exception:
         return None
+
+    if merge_gap is None:
+        merge_gap = _scaled_merge_gap(base.width, base.height)
+    if padding is None:
+        padding = max(6, merge_gap // 3)
 
     overlay = Image.new("RGBA", base.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
@@ -763,22 +791,88 @@ def _robust_z(value: float, values: np.ndarray) -> float:
     return 0.6745 * (value - med) / mad
 
 
+def _split_dense_line_block(
+    row_density: np.ndarray, s: int, e: int, reference_height: float
+) -> List[Tuple[int, int]]:
+    """Split an over-tall merged 'line' range at local density valleys.
+
+    Dense/close-set handwriting often never lets row density fully hit zero between
+    physical lines, so the caller's zero-density gap detection sees one giant blob.
+    Valleys (local minima well below the segment's own median) are a much weaker but
+    still usable signal of where one line ends and the next begins. Falls back to
+    fixed-height chunks if no clear valley exists.
+    """
+    segment = row_density[s : e + 1]
+    n = len(segment)
+    win = max(3, int(reference_height // 3))
+    seg_median = float(np.median(segment))
+    valleys = []
+    for i in range(win, n - win):
+        window = segment[i - win : i + win + 1]
+        if segment[i] == window.min() and segment[i] < seg_median * 0.6:
+            valleys.append(i)
+
+    filtered: List[int] = []
+    for v in valleys:
+        if not filtered or v - filtered[-1] > reference_height * 0.5:
+            filtered.append(v)
+
+    if not filtered:
+        n_chunks = max(1, round(n / reference_height))
+        chunk = n / n_chunks
+        cuts = [int(round(i * chunk)) for i in range(n_chunks + 1)]
+    else:
+        cuts = [0] + filtered + [n]
+
+    ranges = []
+    for i in range(len(cuts) - 1):
+        y1 = s + cuts[i]
+        y2 = s + cuts[i + 1] - 1
+        if y2 > y1:
+            ranges.append((y1, y2))
+    return ranges
+
+
 def _extract_text_lines(mask: np.ndarray) -> List[Tuple[int, int, int, int]]:
     if mask is None:
         return []
     row_density = (mask > 0).mean(axis=1)
     active = row_density > 0.02
-    lines = []
+    raw_ranges = []
     start = None
     for idx, val in enumerate(active):
         if val and start is None:
             start = idx
         elif not val and start is not None:
-            end = idx - 1
-            lines.append((start, end))
+            raw_ranges.append((start, idx - 1))
             start = None
     if start is not None:
-        lines.append((start, len(active) - 1))
+        raw_ranges.append((start, len(active) - 1))
+
+    if not raw_ranges:
+        return []
+
+    # Reference height must come from individual ink blobs (characters/words), not
+    # from the median of raw_ranges -- when the whole page collapses into a single
+    # merged range (dense handwriting), that median degenerates to the oversized
+    # block's own height, so it could never be judged "too tall" against itself.
+    reference_height = 14.0
+    if cv2 is not None:
+        num_labels, _labels, stats, _centroids = cv2.connectedComponentsWithStats(
+            (mask > 0).astype(np.uint8), connectivity=8
+        )
+        comp_heights = [int(stats[i][3]) for i in range(1, num_labels) if stats[i][4] >= 3]
+        if comp_heights:
+            reference_height = max(float(np.median(comp_heights)) * 1.6, 14.0)
+    max_reasonable_height = reference_height * 2.5
+
+    lines = []
+    for s, e in raw_ranges:
+        h = e - s + 1
+        if h <= max_reasonable_height or h <= 30:
+            lines.append((s, e))
+        else:
+            lines.extend(_split_dense_line_block(row_density, s, e, reference_height))
 
     boxes = []
     for y1, y2 in lines:
@@ -930,6 +1024,11 @@ def _block_energy(gray: np.ndarray, box: Tuple[int, int, int, int]) -> float:
 
 def _jpeg_block_bonus(page: DocumentPage, gray: np.ndarray, box: Tuple[int, int, int, int]) -> float:
     if page.image_path is None:
+        return 0.0
+    if page.is_pdf:
+        # PDF pages are re-rendered to .jpg by render_pdf_to_images() as an internal
+        # implementation detail -- that JPEG-ness reflects our own rendering step, not
+        # the original document's provenance, so it carries no recompression evidence.
         return 0.0
     suffix = Path(page.image_path).suffix.lower()
     if suffix not in {".jpg", ".jpeg"}:
@@ -1338,7 +1437,10 @@ def _build_npv_focus_tuning() -> Dict[str, Any]:
         "stroke_z": 3.6,
         "ocr_edge_density": 0.35,
         "min_region_area": 260,
-        "min_line_components": 5,
+        # MAD-based robust z-scores are noisy below roughly 8 samples -- on a line
+        # with only 5 components, one ordinarily-bolder character can look like an
+        # extreme outlier purely from small-sample variance, not genuine overwrite.
+        "min_line_components": 8,
         "component_min_area": 170,
     })
     tuned["c3"].update({
@@ -1359,7 +1461,13 @@ def _build_npv_focus_tuning() -> Dict[str, Any]:
         "smooth_percentile": 20,
         "smooth_min_area": 320,
         "smooth_min_dim": 10,
-        "score_threshold": 3.2,
+        # The four cheap ring-comparison checks (var+grad+res+fg) cap out at 3.25 on
+        # their own -- and any ordinary blank patch next to handwriting/ink can trivially
+        # clear all four, since ink-vs-paper contrast is universal, not evidence of erasure.
+        # Threshold must sit above that 3.25 ceiling so a candidate needs genuine
+        # corroborating evidence (erased_text_bonus or a real recompression signature) to
+        # pass, not just "this patch is emptier than a ring that happens to contain ink".
+        "score_threshold": 3.5,
         "min_region_area": 240,
         "ring_var_ratio": 0.55,
         "ring_grad_ratio": 0.55,
@@ -1404,7 +1512,12 @@ def _build_npv_focus_tuning() -> Dict[str, Any]:
         "z_height": 3.2,
         "score_threshold": 3.2,
         "min_region_area": 200,
-        "min_line_tokens": 3,
+        # Same reasoning as C2's min_line_components -- a robust z-score over only 3
+        # tokens is dominated by small-sample noise, not a reliable outlier signal.
+        # Capped at 5 (not 8, like C2) because raising it further drops the labeled
+        # forged reference from 4 raw regions to 3, which then fails npv_focus's
+        # separate "needs >=4 regions" filter and erases the true positive entirely.
+        "min_line_tokens": 5,
     })
     return tuned
 
@@ -1864,6 +1977,14 @@ def _c6_watermark_removal_regions(page: DocumentPage) -> List[DetectedRegion]:
             continue
         boxes.append((x, y, x + w, y + h))
     height, width = gray.shape[:2]
+    # A genuine removed-watermark ghost is localized (where the watermark used to sit),
+    # not a page-wide texture. A repeating diagonal pattern covering most of the page is
+    # far more consistent with an intact, still-printed background (e.g. security paper,
+    # ECG grid stock) than with removal evidence -- cap box size so we don't flag the
+    # entire page as "watermark removed" just because it has a strong repeating texture.
+    page_area = float(width * height)
+    max_c6_box_area = 0.20 * page_area
+    boxes = [b for b in boxes if (b[2] - b[0]) * (b[3] - b[1]) <= max_c6_box_area]
     regions: List[DetectedRegion] = []
     if boxes:
         for box in boxes:
@@ -1883,7 +2004,10 @@ def _c6_watermark_removal_regions(page: DocumentPage) -> List[DetectedRegion]:
             )
     else:
         x, y, w, h = cv2.boundingRect(candidate)
-        if w * h >= float(c6["fallback_box_area_min"]):
+        # Same page-coverage cap as above -- the bounding rect of the whole candidate
+        # mask can span nearly the full page even when actual fill density is low
+        # (scattered blobs from top to bottom), so this fallback needs the ceiling too.
+        if float(c6["fallback_box_area_min"]) <= w * h <= max_c6_box_area:
             clipped = _clip_box((x, y, x + w, y + h), width, height)
             if clipped is not None:
                 x1, y1, x2, y2 = clipped

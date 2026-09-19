@@ -38,7 +38,7 @@ from common.metrics import (
 logger = logging.getLogger(__name__)
 
 SESSION_LOGGER_URL = os.getenv("SESSION_LOGGER_URL", "http://session-logger:8002")
-STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").lower()
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "gcs").lower()
 GCS_BUCKET = os.getenv("GCS_BUCKET", "dpi-transient-processing")
 GCS_PREFIX = os.getenv("GCS_PREFIX", "forgensic")
 
@@ -245,12 +245,17 @@ def process_forgensic_job(
                 file_map[yp.name] = str(yp)
                 file_url_map[yp.name] = f"/jobs/{job_id}/files/{yp.name}"
 
-        gcs_file_map: Dict[str, str] = {}
-        for name, local_path in file_map.items():
-            uri = upload_file(local_path, f"forgensic/{job_id}/output/{name}")
-            if uri:
-                gcs_file_map[name] = uri
-        file_map = gcs_file_map
+        if STORAGE_BACKEND == "local":
+            # Single-machine dev/test path — keep files on the shared volume and
+            # let the API serve them straight off disk (see get_job_file).
+            pass
+        else:
+            gcs_file_map: Dict[str, str] = {}
+            for name, local_path in file_map.items():
+                uri = upload_file(local_path, f"forgensic/{job_id}/output/{name}")
+                if uri:
+                    gcs_file_map[name] = uri
+            file_map = gcs_file_map
 
         # ── 5. Build the complete result payload ──────────────────────────────
         # Read created_at from the existing Redis record so we preserve it
@@ -305,9 +310,16 @@ def process_forgensic_job(
         # Output now lives in GCS (uploaded above), so nothing on local disk needs
         # to survive for serving. Delete the input GCS object and the local job
         # directory; the bucket lifecycle rule is the final safety net for output.
+        # In local mode the output dir IS the serving path, so it must survive
+        # until the job's Redis TTL expires (see _cleanup_jobs in app/main.py).
         if input_gcs_uri:
             delete_gcs_object(input_gcs_uri)
-        shutil.rmtree(job_dir, ignore_errors=True)
+        if STORAGE_BACKEND != "local":
+            shutil.rmtree(job_dir, ignore_errors=True)
+        else:
+            input_dir = job_dir / "input"
+            if input_dir.exists():
+                shutil.rmtree(input_dir, ignore_errors=True)
 
         _task_elapsed = perf_counter() - _task_start
         TASKS_COMPLETED_TOTAL.labels(service="forgensic").inc()

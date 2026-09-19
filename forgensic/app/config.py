@@ -19,6 +19,9 @@ PIPELINE_VERSION = os.getenv("PIPELINE_VERSION", "ps3-cv-1.0.0")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # ── Storage ───────────────────────────────────────────────────────────────────
-STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").lower()
+# Defaults to "gcs" to preserve existing production behaviour (multi-VM MIG
+# deployments always went through GCS unconditionally). Set STORAGE_BACKEND=local
+# for local dev runs without GCP credentials.
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "gcs").lower()
 GCS_BUCKET = os.getenv("GCS_BUCKET", "dpi-transient-processing")
 GCS_PREFIX = os.getenv("GCS_PREFIX", "forgensic")

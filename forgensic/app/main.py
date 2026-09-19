@@ -39,6 +39,7 @@ from .config import (
     PIPELINE_PRESET,
     PIPELINE_VERSION,
     REDIS_URL,
+    STORAGE_BACKEND,
 )
 from .auth import require_bearer, issue_demo_token
 from .models import JobCreateResponse, JobResultResponse, JobStatusResponse
@@ -241,14 +242,21 @@ async def create_job(
     if size > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File exceeds 25 MB limit")
 
-    from forgensic.app.gcs_storage import upload_bytes  # noqa: PLC0415
-    import mimetypes  # noqa: PLC0415
-    content_type, _ = mimetypes.guess_type(file.filename)
-    input_blob = f"forgensic/{job_id}/input/{file.filename}"
-    try:
-        input_gcs_uri = upload_bytes(file_bytes, input_blob, content_type)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to upload input to GCS: {exc}")
+    if STORAGE_BACKEND == "local":
+        # Single-machine dev/test path — no GCP credentials required.
+        input_path = DATA_DIR / job_id / "input" / file.filename
+        input_path.parent.mkdir(parents=True, exist_ok=True)
+        input_path.write_bytes(file_bytes)
+        input_gcs_uri = str(input_path)
+    else:
+        from forgensic.app.gcs_storage import upload_bytes  # noqa: PLC0415
+        import mimetypes  # noqa: PLC0415
+        content_type, _ = mimetypes.guess_type(file.filename)
+        input_blob = f"forgensic/{job_id}/input/{file.filename}"
+        try:
+            input_gcs_uri = upload_bytes(file_bytes, input_blob, content_type)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to upload input to GCS: {exc}")
 
     resolved_ocr = OCR_ENABLED if ocr_enabled is None else bool(ocr_enabled)
 
