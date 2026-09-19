@@ -74,6 +74,19 @@
                 }
             } catch (_) {}
         }
+
+        // Local development only. The forgensic API runs with
+        // FORGENSIC_AUTH_ENABLED=false here, and session_logger/Firebase (the
+        // only real token source -- POST /api/token is disabled on purpose)
+        // are not running, so no genuine token can be minted. Send a
+        // placeholder so the upload actually reaches the API. The server is
+        // still the one that decides: against a deployment with auth enabled
+        // this just comes back 401, exactly as an absent token would.
+        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+            fgStoreToken("local-dev");
+            return "local-dev";
+        }
+
         return "";
     }
 
