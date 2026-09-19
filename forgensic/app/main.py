@@ -102,6 +102,22 @@ def _parse_iso(value: Optional[str]) -> Optional[datetime]:
         return None
 
 
+def _safe_upload_name(name: str) -> Optional[str]:
+    """Reduce a client-supplied filename to a bare, safe basename.
+
+    The uploaded name reaches both a filesystem path (local backend) and a GCS
+    blob name, so it must not be able to carry directory components: a name
+    like "../../etc/cron.d/x" would otherwise escape the job directory, since
+    Path() joins such a value without complaint.
+    """
+    candidate = Path(name.replace("\\", "/")).name.strip()
+    if not candidate or candidate in {".", ".."}:
+        return None
+    if any(ch in candidate for ch in ("/", "\\", "\x00")):
+        return None
+    return candidate
+
+
 def _allowed_suffix(name: str) -> bool:
     suffix = Path(name).suffix.lower()
     return suffix in {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
@@ -230,7 +246,8 @@ async def create_job(
     """
     _cleanup_jobs()
 
-    if not file.filename or not _allowed_suffix(file.filename):
+    safe_name = _safe_upload_name(file.filename or "")
+    if not safe_name or not _allowed_suffix(safe_name):
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
     job_id = uuid.uuid4().hex
@@ -244,15 +261,15 @@ async def create_job(
 
     if STORAGE_BACKEND == "local":
         # Single-machine dev/test path — no GCP credentials required.
-        input_path = DATA_DIR / job_id / "input" / file.filename
+        input_path = DATA_DIR / job_id / "input" / safe_name
         input_path.parent.mkdir(parents=True, exist_ok=True)
         input_path.write_bytes(file_bytes)
         input_gcs_uri = str(input_path)
     else:
         from forgensic.app.gcs_storage import upload_bytes  # noqa: PLC0415
         import mimetypes  # noqa: PLC0415
-        content_type, _ = mimetypes.guess_type(file.filename)
-        input_blob = f"forgensic/{job_id}/input/{file.filename}"
+        content_type, _ = mimetypes.guess_type(safe_name)
+        input_blob = f"forgensic/{job_id}/input/{safe_name}"
         try:
             input_gcs_uri = upload_bytes(file_bytes, input_blob, content_type)
         except Exception as exc:
@@ -268,7 +285,7 @@ async def create_job(
             "job_id": job_id,
             "status": "queued",
             "progress": 0.0,
-            "file_name": file.filename,
+            "file_name": safe_name,
             "file_size": size,
             "ocr_enabled": resolved_ocr,
             "created_at": _now_iso(),
