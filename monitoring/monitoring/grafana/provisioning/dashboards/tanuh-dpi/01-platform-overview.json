@@ -176,10 +176,10 @@
       "id": 11,
       "type": "stat",
       "title": "Clinical Records",
-      "description": "ABDM clinical documents processed in the selected time range. Measures real-world throughput for healthcare record extraction.",
+      "description": "All ABDM clinical documents recorded in the durable session-log database.",
       "gridPos": { "x": 0, "y": 5, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2abdm\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "max(dpi_persisted_document_count{service=\"pdf2abdm\"})", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "orientation": "auto",
@@ -200,10 +200,10 @@
       "id": 12,
       "type": "stat",
       "title": "Insurance Claims",
-      "description": "NHCX insurance policy documents processed in the selected time range.",
+      "description": "All NHCX insurance policies recorded in the durable session-log database.",
       "gridPos": { "x": 6, "y": 5, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"pdf2nhcx\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "max(dpi_persisted_document_count{service=\"pdf2nhcx\"})", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "textMode": "value",
@@ -223,10 +223,10 @@
       "id": 13,
       "type": "stat",
       "title": "Privacy Filtered",
-      "description": "Documents processed through MedDeID PII redaction pipeline in the selected time range.",
+      "description": "All MedDeID redaction documents recorded in the durable session-log database.",
       "gridPos": { "x": 12, "y": 5, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"privacy_filter\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "max(dpi_persisted_document_count{service=\"privacy_filter\"})", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "textMode": "value",
@@ -246,10 +246,10 @@
       "id": 14,
       "type": "stat",
       "title": "Forensic Analyses",
-      "description": "Forgery detection analyses completed in the selected time range.",
+      "description": "All forgery analyses recorded in the durable session-log database.",
       "gridPos": { "x": 18, "y": 5, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total{service=\"forgensic\"}[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "max(dpi_persisted_document_count{service=\"forgensic\"})", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "textMode": "value",
@@ -277,10 +277,10 @@
       "id": 21,
       "type": "stat",
       "title": "Docs Today",
-      "description": "Total documents processed across all services in the selected time range. \"Today\" reflects the active time-range selector, not a fixed calendar day.",
+      "description": "Documents recorded across all services since midnight India Standard Time.",
       "gridPos": { "x": 0, "y": 10, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(increase(dpi_documents_processed_total[$__range])) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "sum(max by (service) (dpi_persisted_document_today_count))", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "textMode": "value",
@@ -327,7 +327,7 @@
       "description": "Documents currently queued across all three worker pipelines (Clinical Records + Insurance Claims + Forensic Analysis), waiting to be picked up by a worker. Sustained values above 10 mean workers are falling behind incoming volume.",
       "gridPos": { "x": 8, "y": 10, "w": 8, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(dpi_queue_depth) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "sum(max by (queue) (dpi_queue_depth))", "legendFormat": "", "refId": "A" }],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "textMode": "value",
@@ -590,9 +590,10 @@
       "gridPos": { "x": 16, "y": 21, "w": 8, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM Queue", "refId": "A" },
-        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX Queue", "refId": "B" },
-        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forensic Queue", "refId": "C" }
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"abdm\"})", "legendFormat": "ABDM Queue", "refId": "A" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"nhcx\"})", "legendFormat": "NHCX Queue", "refId": "B" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"privacy_filter\"})", "legendFormat": "Privacy Filter Queue", "refId": "C" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"forgensic\"})", "legendFormat": "Forensic Queue", "refId": "D" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },

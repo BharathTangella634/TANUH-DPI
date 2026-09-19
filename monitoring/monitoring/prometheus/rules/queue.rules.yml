@@ -2,12 +2,27 @@ groups:
   - name: queue_depth
     rules:
 
+      # The exporter process can be up while Redis is unreachable. Its queue
+      # gauges are set to -1 in that state, so alert on the dependency failure
+      # explicitly instead of presenting a healthy zero-depth queue.
+      - alert: QueueExporterRedisUnavailable
+        expr: dpi_queue_exporter_redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Queue exporter cannot reach Redis"
+          description: >
+            Queue-depth data is unavailable because the queue exporter cannot
+            connect to its configured Redis instance. Check REDIS_URL, VPC
+            firewall rules, and Memorystore availability.
+
       # Queue depth > 25 sustained for 10 minutes — workers are falling behind.
       # Threshold rationale: each queue normally drains to 0 between bursts.
       # A depth of 25 held for 10 minutes indicates worker throughput is insufficient
       # for the current document submission rate. Investigate before backlog grows further.
       - alert: QueueDepthHigh
-        expr: dpi_queue_depth > 25
+        expr: max by (queue) (dpi_queue_depth) > 25
         for: 10m
         labels:
           severity: warning
@@ -24,7 +39,7 @@ groups:
       # documents submitted by users will face unacceptable latency.
       # Immediate action: scale workers or investigate blocking errors.
       - alert: QueueDepthCritical
-        expr: dpi_queue_depth > 100
+        expr: max by (queue) (dpi_queue_depth) > 100
         for: 10m
         labels:
           severity: critical

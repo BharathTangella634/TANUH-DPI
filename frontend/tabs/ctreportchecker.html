@@ -1,0 +1,811 @@
+<style>
+.ct-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.ct-workspace-card {
+    background: #ffffff;
+    border: 1px solid rgba(20, 134, 140, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.015);
+    margin-bottom: 16px;
+}
+
+.ct-btn-modern {
+    background: #14868C !important;
+    color: #ffffff !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 14px rgba(20, 134, 140, 0.22) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    transition: all 200ms ease !important;
+}
+
+.ct-btn-modern:hover {
+    background: #117378 !important;
+    box-shadow: 0 6px 20px rgba(20, 134, 140, 0.28) !important;
+    transform: translateY(-1px) !important;
+}
+
+.ct-btn-modern:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.ct-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.ct-panel,
+.ct-upload-panel,
+.ct-result-panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    background: #ffffff;
+}
+
+.ct-upload-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.ct-panel-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(20, 134, 140, 0.1);
+    color: #14868C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.ct-panel h3,
+.ct-upload-panel h3,
+.ct-result-panel h3 {
+    font-size: 0.9rem;
+    margin: 0 0 6px;
+    color: #0f172a;
+}
+
+.ct-panel p,
+.ct-upload-panel p,
+.ct-result-panel p {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #64748b;
+    margin: 0;
+}
+
+.ct-upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.ct-dropzone {
+    border: 2px dashed rgba(20, 134, 140, 0.25);
+    border-radius: 12px;
+    background: #f0fdfa;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    min-height: 176px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    transition: all 220ms ease;
+}
+
+.ct-dropzone:hover {
+    border-color: #14868C;
+    box-shadow: 0 0 0 4px rgba(20, 134, 140, 0.06);
+}
+
+.ct-dropzone-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(20, 134, 140, 0.1);
+    color: #14868C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.ct-dropzone-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.ct-dropzone-subtitle {
+    font-size: 0.74rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.ct-selected-card {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 176px;
+    flex: 1;
+    box-sizing: border-box;
+}
+
+.ct-selected-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.ct-upload-panel .ct-dropzone,
+.ct-upload-panel .ct-selected-card {
+    margin-top: 12px;
+}
+
+.ct-selected-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: rgba(20, 134, 140, 0.1);
+    color: #14868C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ct-selected-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.ct-selected-name {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #0f172a;
+    word-break: break-all;
+}
+
+.ct-selected-size {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 3px;
+}
+
+.ct-remove-file-btn {
+    border: none;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.ct-remove-file-btn:hover {
+    background: #fee2e2;
+}
+
+.ct-view-file-btn {
+    border: 1px solid rgba(20, 134, 140, 0.25);
+    background: #ffffff;
+    color: #14868C;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 6px 9px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ct-view-file-btn:hover {
+    background: #f0fdfa;
+    border-color: rgba(20, 134, 140, 0.45);
+}
+
+.ct-preview-panel {
+    display: none;
+    margin-top: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.ct-preview-panel.active {
+    display: block;
+}
+
+.ct-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.ct-preview-title {
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ct-preview-meta {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.ct-preview-close {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+.ct-preview-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.ct-preview-body {
+    min-height: 340px;
+    background: #f8fafc;
+}
+
+.ct-preview-pane {
+    display: none;
+}
+
+.ct-preview-pane.active {
+    display: block;
+}
+
+.ct-pdf-frame {
+    display: block;
+    width: 100%;
+    height: 520px;
+    border: none;
+    background: #ffffff;
+}
+
+.ct-scan-viewer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 14px;
+    padding: 14px;
+    align-items: start;
+}
+
+.ct-scan-canvas-wrap {
+    min-height: 480px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.ct-scan-canvas-wrap canvas {
+    width: 100%;
+    height: auto;
+    max-height: 620px;
+    object-fit: contain;
+}
+
+.ct-scan-sidebar {
+    display: grid;
+    gap: 10px;
+}
+
+.ct-scan-meta-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 10px;
+    font-size: 0.74rem;
+    color: #475569;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.ct-scan-meta-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+}
+
+.ct-slice-control {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 10px;
+}
+
+.ct-slice-control label {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: #0f172a;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.ct-slice-control input {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.ct-slice-play-btn {
+    width: 100%;
+    margin-top: 10px;
+    border: 1px solid rgba(20, 134, 140, 0.25);
+    background: #f0fdfa;
+    color: #14868C;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 8px 10px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.ct-slice-play-btn:hover {
+    border-color: rgba(20, 134, 140, 0.5);
+    background: #e0f5f5;
+}
+
+.ct-preview-message {
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 18px;
+    color: #64748b;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.ct-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.ct-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.ct-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #94a3b8;
+}
+
+.ct-result-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.ct-result-chip {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8fafc;
+    transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.ct-result-chip strong {
+    display: block;
+    color: #0f172a;
+    font-size: 0.84rem;
+    margin-bottom: 3px;
+}
+
+.ct-result-chip span {
+    color: #64748b;
+    font-size: 0.72rem;
+}
+
+.ct-result-chip.ct-result-pass-active {
+    background: #ecfdf5;
+    border-color: rgba(22, 163, 74, 0.35);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.06);
+}
+
+.ct-result-chip.ct-result-pass-active strong {
+    color: #15803d;
+}
+
+.ct-result-chip.ct-result-review-active {
+    background: #fff7ed;
+    border-color: rgba(217, 119, 6, 0.35);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.06);
+}
+
+.ct-result-chip.ct-result-review-active strong {
+    color: #d97706;
+}
+
+@media (max-width: 860px) {
+    .ct-panel-grid,
+    .ct-upload-grid,
+    .ct-result-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ct-selected-card {
+        align-items: flex-start;
+    }
+
+    .ct-selected-actions {
+        flex-direction: column;
+    }
+
+    .ct-scan-viewer {
+        grid-template-columns: 1fr;
+    }
+
+    .ct-pdf-frame {
+        height: 420px;
+    }
+}
+</style>
+
+<div id="ctreportchecker-landing-view" class="ct-container">
+    <div class="tab-hero-grid">
+        <div>
+            <span style="display: inline-block; background: rgba(20, 134, 140, 0.1); color: #14868C; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;">
+                Radiology Review
+            </span>
+            <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
+                Head CT Report Checker
+            </h2>
+            <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
+                Compare a Non-Contrast Head CT scan with its corresponding report and verify whether each reported finding is visible in the imaging. The checker will tag findings as PASS or Needs Review with support from medical foundation models.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+                <button onclick="directLaunchService('HeadCTReportChecker')" class="ct-btn-modern" style="padding: 12px 24px !important; font-size: 0.95rem !important; border-radius: 8px !important;">
+                    <i class="fas fa-rocket"></i> Launch Interactive Service
+                </button>
+                <button onclick="window.open('docs/head-ct-checker.html', '_blank');" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fas fa-book"></i> Read User Guide
+                </button>
+                <button onclick="window.open('https://github.com/TANUH-AI/TANUH-DPI', '_blank');" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fab fa-github"></i> Github
+                </button>
+            </div>
+        </div>
+
+        <div style="position: relative; border-radius: 16px; overflow: hidden; border: 1.5px dashed rgba(20, 134, 140, 0.25); background: #ffffff; padding: 20px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02); min-height: 260px; display: flex; flex-direction: column; justify-content: center; gap: 10px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(20, 134, 140, 0.1); color: #14868C; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-x-ray"></i>
+                </div>
+                <div>
+                    <div style="font-size: 0.82rem; font-weight: 800; color: #0f172a;">Head CT Evidence Review</div>
+                    <div style="font-size: 0.7rem; color: #64748b;">Scan-report finding verification</div>
+                </div>
+            </div>
+            <div style="display: grid; gap: 8px; font-size: 0.78rem;">
+                <div style="display: flex; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 10px;">
+                    <span style="color: #475569;">Non-Contrast Head CT scan input</span>
+                    <span style="font-weight: 700; color: #14868C;">NIfTI / DICOM</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 10px;">
+                    <span style="color: #475569;">Report input</span>
+                    <span style="font-weight: 700; color: #14868C;">PDF</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 10px;">
+                    <span style="color: #475569;">Finding tags</span>
+                    <span style="font-weight: 700; color: #64748b;">PASS / Needs Review</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ct-panel-grid">
+        <div class="ct-panel">
+            <div class="ct-panel-icon"><i class="fas fa-file-medical-alt"></i></div>
+            <h3>Scan and Report Intake</h3>
+            <p>Accepts a paired Non-Contrast Head CT scan and report for finding-level verification.</p>
+        </div>
+        <div class="ct-panel">
+            <div class="ct-panel-icon"><i class="fas fa-brain"></i></div>
+            <h3>Foundation Model Ensemble</h3>
+            <p>Designed for medical model assisted comparison between report findings and CT evidence.</p>
+        </div>
+        <div class="ct-panel">
+            <div class="ct-panel-icon"><i class="fas fa-clipboard-check"></i></div>
+            <h3>Review Tags</h3>
+            <p>Prepared to show PASS and Needs Review tags with confidence and reasoning.</p>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 48px; margin-top: 32px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Inference-only scan-report verification workflow</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative;">
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #14868C; opacity: 0.15; margin-bottom: -10px;">01</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Pair Inputs</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">Upload one Non-Contrast Head CT scan and its corresponding radiology report PDF.</p>
+            </div>
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #14868C; opacity: 0.15; margin-bottom: -10px;">02</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Compare Findings</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">Medical foundation models check if report findings are visible in the scan.</p>
+            </div>
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #14868C; opacity: 0.15; margin-bottom: -10px;">03</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Flag Review</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">The result will summarise tags, confidence, reasoning, and PASS or REVIEW status.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Service Limitations ────────────────────────────────────────────── -->
+    <div style="margin-bottom: 40px; margin-top: 32px;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 24px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 1.15rem;"></i> Service Limitations
+        </h3>
+        <div class="limitations-grid">
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-file-medical"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Input Pairing Required</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    The Non-Contrast Head CT scan and report must belong to the same study. Mismatched studies can lead to unreliable verification tags.
+                </p>
+            </div>
+
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-image"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Image Quality Dependency</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Motion artifacts, incomplete volumes, missing slices, or low-quality scans may reduce finding-level confidence.
+                </p>
+            </div>
+
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Clinical Review Required</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Verification tags are intended to assist quality review and should not replace radiologist judgment or clinical decision-making.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Continuous Improvement & Feedback ──────────────────────────────── -->
+    <div class="service-feedback-card">
+        <div class="service-feedback-content">
+            <h4>
+                <i class="fas fa-comment-dots" style="color: var(--brand-primary, #14868C); font-size: 1.1rem;"></i> Help Us Improve
+            </h4>
+            <p>
+                Automated tools can make mistakes. We warmly welcome your feedback, inputs, and bug reports. Your contributions directly help us refine verification workflows and enhance the platform's accuracy.
+            </p>
+        </div>
+        <div class="service-feedback-action">
+            <a href="mailto:dpi@tanuh.ai?subject=Feedback / Bug Report - Head CT Report Checker" class="service-feedback-btn">
+                <i class="fas fa-envelope-open-text"></i> Give Feedback & Report Bugs
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="ctreportchecker-interactive-view" class="ct-container" style="display:none;">
+    <div class="ct-workspace-card">
+        <div class="tab-header" style="margin-bottom: 16px;">
+            <div class="tab-header-text">
+                <h2>Head CT Report Checker</h2>
+                <p>Upload one Non-Contrast Head CT scan and the corresponding report PDF for scan-report verification.</p>
+            </div>
+            <div class="tab-header-logos">
+                <img src="assets/cbr.jpeg" alt="Centre for Brain Research" class="logo">
+            </div>
+        </div>
+
+        <div class="ct-info-notes" style="margin-bottom: 16px; padding: 10px 14px; border-left: 4px solid #14868C; background-color: #f0fdfa; border-radius: 6px;">
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-clock"></i> Note:</strong> Upload exactly one Non-Contrast Head CT scan and its matching radiology report. The checker compares report findings against imaging evidence and returns PASS or Needs Review tags.
+            </p>
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-user-shield"></i> Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use. No data is stored.
+            </p>
+            <p style="margin: 0 0 6px 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-file-medical"></i> Limit:</strong> One scan-report pair per check. Supported Head CT input: NIfTI GZ (.nii.gz) or DICOM ZIP (.zip); report input: PDF.
+            </p>
+            <p style="margin: 0; color: #b45309; font-size: 0.78rem; line-height: 1.4;">
+                <strong><i class="fas fa-exclamation-circle"></i> Disclosures:</strong> AI generated, Research use only, Not approved tool, Should not be used for clinical judgement.
+            </p>
+        </div>
+
+        <div class="ct-upload-grid">
+            <div class="ct-upload-panel">
+                <h3><i class="fas fa-x-ray" style="color:#14868C; margin-right:6px;"></i> Non-Contrast Head CT Scan</h3>
+                <p>Upload the Non-Contrast Head CT scan as a NIfTI GZ (.nii.gz) or DICOM ZIP (.zip) volume for review.</p>
+                <input id="ctScanInput" type="file" accept=".nii.gz,.zip" style="display:none;" onchange="CT_handleFileChange('scan')">
+                <label id="ctScanDropzone" class="ct-dropzone" for="ctScanInput">
+                    <span class="ct-dropzone-icon"><i class="fas fa-file-medical"></i></span>
+                    <span class="ct-dropzone-title">Choose Head CT Scan</span>
+                    <span class="ct-dropzone-subtitle">NIfTI GZ (.nii.gz) or DICOM ZIP (.zip)</span>
+                </label>
+                <div id="ctScanCard" class="ct-selected-card">
+                    <div class="ct-selected-icon"><i class="fas fa-file-medical"></i></div>
+                    <div class="ct-selected-details">
+                        <div id="ctScanFileName" class="ct-selected-name">No scan selected</div>
+                        <div id="ctScanFileSize" class="ct-selected-size">0 MB</div>
+                    </div>
+                    <div class="ct-selected-actions">
+                        <button type="button" class="ct-view-file-btn" onclick="CT_showUploadPreview('scan', event)" aria-label="Preview Head CT scan">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button type="button" class="ct-remove-file-btn" onclick="CT_removeFile('scan', event)" aria-label="Remove Head CT scan">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ct-upload-panel">
+                <h3><i class="fas fa-file-pdf" style="color:#14868C; margin-right:6px;"></i> Corresponding Radiology Report</h3>
+                <p>Upload the PDF report that corresponds to the Non-Contrast Head CT scan selected on the left.</p>
+                <input id="ctReportInput" type="file" accept=".pdf,application/pdf" style="display:none;" onchange="CT_handleFileChange('report')">
+                <label id="ctReportDropzone" class="ct-dropzone" for="ctReportInput">
+                    <span class="ct-dropzone-icon"><i class="fas fa-file-pdf"></i></span>
+                    <span class="ct-dropzone-title">Choose report PDF</span>
+                    <span class="ct-dropzone-subtitle">PDF report only</span>
+                </label>
+                <div id="ctReportCard" class="ct-selected-card">
+                    <div class="ct-selected-icon"><i class="fas fa-file-pdf"></i></div>
+                    <div class="ct-selected-details">
+                        <div id="ctReportFileName" class="ct-selected-name">No report selected</div>
+                        <div id="ctReportFileSize" class="ct-selected-size">0 KB</div>
+                    </div>
+                    <div class="ct-selected-actions">
+                        <button type="button" class="ct-view-file-btn" onclick="CT_showUploadPreview('report', event)" aria-label="Preview report PDF">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button type="button" class="ct-remove-file-btn" onclick="CT_removeFile('report', event)" aria-label="Remove report PDF">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="ctUploadPreviewPanel" class="ct-preview-panel" aria-live="polite">
+            <div class="ct-preview-header">
+                <div>
+                    <h3 id="ctPreviewTitle" class="ct-preview-title"><i class="fas fa-eye"></i> Upload Preview</h3>
+                    <div id="ctPreviewMeta" class="ct-preview-meta">Select View on an uploaded file.</div>
+                </div>
+                <button type="button" class="ct-preview-close" onclick="CT_hideUploadPreview()" aria-label="Close upload preview">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ct-preview-body">
+                <div id="ctReportPreviewPane" class="ct-preview-pane">
+                    <iframe id="ctReportPreviewFrame" class="ct-pdf-frame" title="Radiology report PDF preview"></iframe>
+                </div>
+                <div id="ctScanPreviewPane" class="ct-preview-pane">
+                    <div id="ctScanPreviewLoading" class="ct-preview-message">Preparing Head CT scan preview...</div>
+                    <div id="ctScanPreviewViewer" class="ct-scan-viewer" style="display:none;">
+                        <div class="ct-scan-canvas-wrap">
+                            <canvas id="ctScanPreviewCanvas" width="512" height="512"></canvas>
+                        </div>
+                        <div class="ct-scan-sidebar">
+                            <div id="ctScanPreviewMeta" class="ct-scan-meta-card"></div>
+                            <div class="ct-slice-control">
+                                <label for="ctScanSliceSlider">
+                                    <span>Axial slice</span>
+                                    <span id="ctScanSliceLabel">-</span>
+                                </label>
+                                <input id="ctScanSliceSlider" type="range" min="0" max="0" value="0" oninput="CT_renderScanSlice(Number(this.value))">
+                                <button id="ctScanPlayBtn" type="button" class="ct-slice-play-btn" onclick="CT_toggleScanPlayback()">
+                                    <i class="fas fa-play"></i> Play slices
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ct-actions" style="justify-content: space-between;">
+            <a href="https://rakeshtirlangi.github.io/model-cards/" target="_blank" class="ct-btn-modern" style="background: #ffffff !important; color: #14868C !important; border: 1.5px solid #14868C !important; box-shadow: none !important; text-decoration: none;">
+                <i class="fas fa-id-card"></i> Model Cards
+            </a>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="ct-status-pill"><span class="ct-status-dot"></span> Ready for paired input</span>
+                <button id="ctProcessBtn" class="ct-btn-modern" onclick="CT_processCase()" disabled>
+                    <i class="fas fa-microscope"></i> Check Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="ct-result-panel" id="ctResultPanel" style="display:none;">
+        <h3><i class="fas fa-clipboard-list" style="color:#14868C; margin-right:6px;"></i> Verification Output</h3>
+        <p id="ctResultText"></p>
+        <div class="ct-result-grid" style="grid-template-columns: 1fr;">
+            <div class="ct-result-chip" id="ctResultPass" style="display:none; text-align:center; padding: 18px;">
+                <strong style="font-size: 1.2rem;">PASS</strong>
+                <span style="font-size: 0.85rem;">Finding supported by Head CT scan evidence</span>
+            </div>
+            <div class="ct-result-chip" id="ctResultReview" style="display:none; text-align:center; padding: 18px;">
+                <strong style="font-size: 1.2rem;">Needs Review</strong>
+                <span style="font-size: 0.85rem;">Manual review recommended before confirmation</span>
+            </div>
+        </div>
+    </div>
+</div>

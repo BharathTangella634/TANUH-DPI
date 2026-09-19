@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>TANUH-DPI — Ops Dashboard</title>
+<link rel="icon" type="image/png" href="/assets/tanuh.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="admin-dashboard.css">
+</head>
+<body class="dashboard-shell">
+<div class="dash-shell" id="dashShell" style="display:none;">
+    <div class="dash-navbar">
+        <div class="dash-brand">
+            <img src="/assets/tanuh.png" alt="TANUH-DPI">
+            <span>DPI Ops</span>
+        </div>
+        <div class="dash-tabs" id="dashTabs"></div>
+        <button class="dash-logout" id="logoutBtn">Log out</button>
+    </div>
+    <div class="dash-frame-wrap" id="frameWrap">
+        <div class="dash-loading">Loading dashboard…</div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const GRAFANA_BASE = '/admin-dashboard/grafana';
+
+    // Ordered by operational priority — wallboard first, deep dives last.
+    const DASHBOARDS = [
+        { uid: 'tanuh-ops-command',        slug: 'ops-command-center',        label: 'Ops Command Center' },
+        { uid: 'tanuh-platform-overview',  slug: 'platform-overview',         label: 'Platform Overview' },
+        { uid: 'tanuh-service-ops',        slug: 'service-operations',        label: 'Service Operations' },
+        { uid: 'tanuh-worker-pipeline',    slug: 'worker-pipeline',           label: 'Worker Pipeline' },
+        { uid: 'tanuh-alerts-incidents',   slug: 'alerts-incidents',          label: 'Alerts & Incidents' },
+        { uid: 'tanuh-log-explorer',       slug: 'log-explorer',              label: 'Log Explorer' },
+        { uid: 'tanuh-infra-reliability',  slug: 'infrastructure-reliability',label: 'Infrastructure & Reliability' },
+    ];
+
+    const tabsEl = document.getElementById('dashTabs');
+    const frameWrap = document.getElementById('frameWrap');
+    const loadedFrames = {};
+    let activeUid = null;
+
+    function dashboardUrl(d) {
+        return GRAFANA_BASE + '/d/' + d.uid + '/' + d.slug + '?orgId=1&kiosk&theme=dark';
+    }
+
+    function selectTab(uid) {
+        activeUid = uid;
+
+        Array.from(tabsEl.children).forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.uid === uid);
+        });
+
+        Object.keys(loadedFrames).forEach(function (key) {
+            loadedFrames[key].style.display = key === uid ? 'block' : 'none';
+        });
+
+        if (!loadedFrames[uid]) {
+            const d = DASHBOARDS.find(function (x) { return x.uid === uid; });
+            const iframe = document.createElement('iframe');
+            iframe.src = dashboardUrl(d);
+            iframe.title = d.label;
+            loadedFrames[uid] = iframe;
+            frameWrap.appendChild(iframe);
+        }
+    }
+
+    function buildTabs() {
+        DASHBOARDS.forEach(function (d, idx) {
+            const btn = document.createElement('button');
+            btn.className = 'dash-tab';
+            btn.textContent = d.label;
+            btn.dataset.uid = d.uid;
+            btn.addEventListener('click', function () { selectTab(d.uid); });
+            tabsEl.appendChild(btn);
+            if (idx === 0) selectTab(d.uid);
+        });
+    }
+
+    function logout() {
+        fetch('/admin-dashboard/api/logout', { method: 'POST', credentials: 'include' })
+            .finally(function () { window.location.href = 'login.html'; });
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    fetch('/admin-dashboard/api/session', { credentials: 'include' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.authenticated) {
+                window.location.replace('login.html');
+                return;
+            }
+            document.getElementById('dashShell').style.display = 'flex';
+            buildTabs();
+        })
+        .catch(function () {
+            window.location.replace('login.html');
+        });
+})();
+</script>
+</body>
+</html>

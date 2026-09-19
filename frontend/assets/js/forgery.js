@@ -41,20 +41,40 @@
     async function fgEnsureToken() {
         const existing = fgGetToken();
         if (existing) return existing;
-        try {
-            const r = await fetch(`${FG_BASE}/api/token`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "UI User", email: "ui@nhcx.tanuh.ai" }),
-                signal: AbortSignal.timeout(10000),
-            });
-            if (!r.ok) return "";
-            const { access_token } = await r.json();
-            if (access_token) fgStoreToken(access_token);
-            return access_token || "";
-        } catch (_) {
-            return "";
+
+        const centralKey = 'dpi_token_forgensic';
+        const central = localStorage.getItem(centralKey);
+        if (central) {
+            fgStoreToken(central);
+            return central;
         }
+
+        if (window.DPI_Auth && window.DPI_Auth.isLoggedIn()) {
+            const loggerBase = window.DPI_API_CONFIG ? window.DPI_API_CONFIG.logger : 'http://localhost:8002';
+            try {
+                const firebaseToken = await window.DPI_Auth.getToken();
+                const r = await fetch(`${loggerBase}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${firebaseToken}`
+                    },
+                    body: JSON.stringify({ service: 'forgensic' }),
+                    signal: AbortSignal.timeout(10000),
+                });
+                if (r.ok) {
+                    const data = await r.json();
+                    if (data.access_token) {
+                        fgStoreToken(data.access_token);
+                        localStorage.setItem(centralKey, data.access_token);
+                        localStorage.setItem('dpi_token_expires_forgensic', data.expires_at);
+                        localStorage.setItem('dpi_token_status_forgensic', data.status);
+                    }
+                    return data.access_token || "";
+                }
+            } catch (_) {}
+        }
+        return "";
     }
 
     async function fgAuthFetch(url, opts = {}) {

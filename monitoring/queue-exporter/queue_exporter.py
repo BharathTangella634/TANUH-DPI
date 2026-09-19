@@ -23,12 +23,15 @@ Queue key names (Celery default broker is Redis list):
 Container restart monitoring:
   Reads `RestartCount` from the Docker container inspect endpoint.
   The Docker socket is mounted read-only from the host: /var/run/docker.sock.
-  If Docker is unavailable, restart metrics are silently skipped (no false data).
+  All TANUH-DPI Compose containers are discovered by label, including scaled
+  Celery workers whose names are not stable. If Docker is unavailable, restart
+  metrics are skipped so queue collection remains available.
 """
 
 import os
 import time
 import logging
+import urllib.parse
 
 import redis
 from prometheus_client import start_http_server, Gauge
@@ -36,13 +39,28 @@ from prometheus_client import start_http_server, Gauge
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("queue-exporter")
 
+# Memorystore has AUTH enabled and the password lives only in Secret Manager
+# (deploy/DEPLOYMENT.md §1-2), so REDIS_URL as written in compose carries no
+# credentials. Resolve REDIS_PASSWORD_SECRET into the URL exactly the way every
+# app service does — before REDIS_URL is read below. Without this the exporter
+# connects unauthenticated, Redis answers NOAUTH, and every queue gauge reports
+# the -1 sentinel instead of a real depth.
+try:
+    from common.secrets import load_secrets
+
+    load_secrets()
+except Exception as exc:  # image built without common/, or ADC unavailable
+    logger.warning(
+        "Secret Manager resolution unavailable (%s) — using REDIS_URL as provided", exc
+    )
+
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL_SECONDS", "15"))
 METRICS_PORT = int(os.getenv("METRICS_PORT", "9101"))
 
 # ── Queue depth configuration ─────────────────────────────────────────────────
 
-QUEUES = ["abdm", "nhcx", "forgensic"]
+QUEUES = ["abdm", "nhcx", "privacy_filter", "forgensic"]
 
 queue_depth_gauge = Gauge(
     "dpi_queue_depth",
@@ -52,8 +70,9 @@ queue_depth_gauge = Gauge(
 
 # ── Container restart configuration ──────────────────────────────────────────
 
-# Application containers to monitor for restarts.
-# Monitoring-stack containers are included to detect infrastructure failures.
+# Fixed-name containers are retained as a fallback for legacy deployments. New
+# Compose deployments are discovered by their project label so replica workers
+# (whose names include a numeric suffix) are covered too.
 MONITORED_CONTAINERS = [
     # Application services
     "pdf2abdm",
@@ -72,6 +91,12 @@ MONITORED_CONTAINERS = [
     "queue-exporter",
 ]
 
+MONITORED_COMPOSE_PROJECTS = frozenset(
+    project.strip()
+    for project in os.getenv("MONITORED_COMPOSE_PROJECTS", "tanuh-dpi,monitoring").split(",")
+    if project.strip()
+)
+
 container_restart_gauge = Gauge(
     "dpi_container_restart_count",
     "Cumulative restart count for a container as reported by Docker. "
@@ -79,7 +104,28 @@ container_restart_gauge = Gauge(
     ["container"],
 )
 
+redis_up_gauge = Gauge(
+    "dpi_queue_exporter_redis_up",
+    "Whether the queue exporter can reach its configured Redis instance (1=up, 0=down).",
+)
+
 # ── Collection functions ──────────────────────────────────────────────────────
+
+
+def _redacted(url: str) -> str:
+    """Mask any injected Redis password so it never reaches a log line."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        if parts.password is None:
+            return url
+        netloc = f"{parts.username or ''}:***@{parts.hostname or ''}"
+        if parts.port:
+            netloc = f"{netloc}:{parts.port}"
+        return urllib.parse.urlunsplit(
+            (parts.scheme, netloc, parts.path, parts.query, parts.fragment)
+        )
+    except Exception:
+        return "<redacted>"
 
 
 def _get_redis_client() -> redis.Redis:
@@ -89,6 +135,8 @@ def _get_redis_client() -> redis.Redis:
 def collect_queue_depths():
     try:
         r = _get_redis_client()
+        r.ping()
+        redis_up_gauge.set(1)
         for queue_name in QUEUES:
             try:
                 depth = r.llen(queue_name)
@@ -98,29 +146,29 @@ def collect_queue_depths():
                 queue_depth_gauge.labels(queue=queue_name).set(-1)
     except Exception as e:
         logger.error("Redis connection failed: %s", e)
+        redis_up_gauge.set(0)
         for queue_name in QUEUES:
             queue_depth_gauge.labels(queue=queue_name).set(-1)
 
 
 def collect_container_restarts():
-    """Poll the Docker socket for container restart counts.
-
-    Silently skips on Docker connectivity failure — queue depth metrics
-    must not be blocked by Docker socket unavailability.
-    """
+    """Poll Docker for restart counts of all DPI Compose containers."""
     try:
         import docker
         docker_client = docker.from_env(timeout=5)
-        for name in MONITORED_CONTAINERS:
+        for container in docker_client.containers.list(all=True):
             try:
-                container = docker_client.containers.get(name)
+                project = container.labels.get("com.docker.compose.project", "")
+                if (
+                    container.name not in MONITORED_CONTAINERS
+                    and project not in MONITORED_COMPOSE_PROJECTS
+                ):
+                    continue
+                container.reload()
                 restart_count = container.attrs.get("RestartCount", 0)
-                container_restart_gauge.labels(container=name).set(restart_count)
-            except docker.errors.NotFound:
-                # Container not running — skip; no stale value set
-                pass
+                container_restart_gauge.labels(container=container.name).set(restart_count)
             except Exception as e:
-                logger.warning("Failed to inspect container %s: %s", name, e)
+                logger.warning("Failed to inspect container %s: %s", container.name, e)
         docker_client.close()
     except ImportError:
         # docker SDK not installed — Phase 5 container restart metrics unavailable
@@ -135,8 +183,8 @@ def collect_container_restarts():
 def main():
     logger.info("Queue + container-state exporter starting on port %d", METRICS_PORT)
     logger.info("Monitoring queues: %s", QUEUES)
-    logger.info("Monitoring containers: %s", MONITORED_CONTAINERS)
-    logger.info("Redis URL: %s", REDIS_URL)
+    logger.info("Monitoring Compose projects: %s", sorted(MONITORED_COMPOSE_PROJECTS))
+    logger.info("Redis URL: %s", _redacted(REDIS_URL))
     logger.info("Poll interval: %ds", POLL_INTERVAL)
 
     start_http_server(METRICS_PORT)

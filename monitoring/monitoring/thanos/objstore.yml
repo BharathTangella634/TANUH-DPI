@@ -1,0 +1,9 @@
+# Thanos object-storage config — durable backing store for Prometheus data.
+# Same bucket as Loki (see monitoring/monitoring/loki/loki-config.yml).
+# No credentials here on purpose: Thanos picks up Application Default
+# Credentials from the VM's attached service account automatically (keyless,
+# same pattern as cloud-sql-proxy and Loki). That service account needs
+# roles/storage.objectAdmin on this bucket.
+type: GCS
+config:
+  bucket: dpi-monitoring-bkt

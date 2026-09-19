@@ -1,0 +1,536 @@
+<style>
+/* ── Premium Medical Audio Summarisation UI Overrides ────────────────────────────────── */
+.audio-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.audio-workspace-card {
+    background: #ffffff;
+    border: 1px solid rgba(20, 134, 140, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.015);
+    margin-bottom: 16px;
+}
+
+/* Redesigned Drag & Dropzone */
+.audio-dropzone-modern {
+    border: 2px dashed rgba(20, 134, 140, 0.25);
+    background: #fcfefe;
+    border-radius: 10px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 250ms ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.audio-dropzone-modern:hover {
+    border-color: #ec4899;
+    background: #f0fafb;
+    box-shadow: 0 0 0 4px rgba(20, 134, 140, 0.06);
+}
+
+.audio-upload-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(20, 134, 140, 0.06);
+    color: #ec4899;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.audio-dropzone-modern:hover .audio-upload-icon-wrap {
+    transform: translateY(-2px);
+    background: rgba(20, 134, 140, 0.1);
+}
+
+.audio-dropzone-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.audio-dropzone-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* File selected card style */
+.audio-selected-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+}
+
+.audio-file-icon {
+    font-size: 1.25rem;
+    color: #ec4899;
+}
+
+.audio-file-details {
+    flex: 1;
+}
+
+.audio-file-name {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #0f172a;
+    word-break: break-all;
+}
+
+.audio-file-size {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.audio-remove-file-btn {
+    border: none;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.audio-remove-file-btn:hover {
+    background: #fee2e2;
+}
+
+/* Premium Primary Buttons */
+.audio-btn-modern {
+    background: #ec4899 !important;
+    color: #ffffff !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 14px rgba(20, 134, 140, 0.25) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    transition: all 200ms ease !important;
+}
+
+.audio-btn-modern:hover {
+    background: var(--brand-dark) !important;
+    box-shadow: 0 6px 20px rgba(20, 134, 140, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+
+.audio-btn-modern:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Typography Hierarchy Overrides */
+#audioasr-interactive-view .tab-header h2 {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 6px 0 !important;
+    color: #0f172a !important;
+}
+
+#audioasr-interactive-view .tab-header p {
+    font-size: 0.82rem !important;
+    color: #64748b !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* Info and warnings alert styling */
+.audio-info-notes p {
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+}
+
+/* Table styling override */
+.audio-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.audio-table th {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1.5px solid #e2e8f0;
+    text-align: left;
+}
+
+.audio-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.78rem;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.audio-table tr:hover {
+    background: #fcfefe;
+}
+
+.audio-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Run Locally Overrides */
+.audio-runlocally-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.audio-runlocally-card {
+    text-decoration: none;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.audio-runlocally-card i {
+    font-size: 2rem !important;
+    margin-bottom: 8px !important;
+}
+
+.audio-runlocally-card h3 {
+    margin: 0 0 4px 0 !important;
+    color: #0f172a !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+}
+
+.audio-runlocally-card p {
+    font-size: 0.78rem !important;
+    margin: 0 !important;
+    color: #64748b !important;
+}
+
+.audio-runlocally-card p.audio-meta {
+    font-size: 0.7rem !important;
+    margin-top: 2px !important;
+    color: #94a3b8 !important;
+}
+
+/* API Endpoint table overrides */
+.api-endpoint-table {
+    font-size: 0.78rem !important;
+}
+
+.api-endpoint-table th {
+    padding: 6px 10px !important;
+    font-size: 0.76rem !important;
+}
+
+.api-endpoint-table td {
+    padding: 6px 10px !important;
+}
+
+.api-method {
+    font-size: 0.7rem !important;
+    padding: 1px 6px !important;
+}
+
+/* API section headings and boxes */
+.api-section-box {
+    margin-bottom: 16px !important;
+    padding: 12px 14px !important;
+    border-radius: 8px !important;
+}
+
+.api-section-box h4 {
+    font-size: 0.85rem !important;
+    margin-bottom: 6px !important;
+}
+
+.api-section-box p, .api-section-box ul {
+    font-size: 0.78rem !important;
+}
+
+.api-code-block pre {
+    font-size: 0.76rem !important;
+}
+
+@media (min-width: 1024px) {
+    .key-capabilities-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+@media (max-width: 1023px) and (min-width: 768px) {
+    .key-capabilities-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 767px) {
+    .key-capabilities-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- VIEW: LANDING PAGE (General Overview without sub-nav) -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="audioasr-landing-view" class="audio-container">
+    <!-- Hero / Intro -->
+    <div class="tab-hero-grid">
+        <div>
+            <span style="display: inline-block; background: rgba(20, 134, 140, 0.08); color: #ec4899; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;">
+                Secure Conversion
+            </span>
+            <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
+                Medical Audio Summarisation
+            </h2>
+            <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
+                Convert medical audio dictations in Hindi/Kannada into English text and generate structured summaries using state-of-the-art AI models. Fully compliant with data privacy regulations with 100% non-persistent execution.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+                <button onclick="directLaunchService('AudioASR')" class="process-btn" style="padding: 12px 24px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600;">
+                    <i class="fas fa-rocket"></i> Launch Interactive Service
+                </button>
+                <button onclick="openTab(null, 'AudioDocs'); return false;" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fas fa-book"></i> Read User Guide
+                </button>
+                <button onclick="window.open('https://github.com/trinity1611/DisplaceChallenge2026-TANUH', '_blank');" class="sub-tab-btn" style="border: 1.5px solid #e2e8f0; background: white; padding: 11px 20px; border-radius: 8px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <i class="fab fa-github"></i> Github
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mockup Visual FHIR Graph -->
+        <div style="position: relative; border-radius: 16px; overflow: hidden; border: 1.5px dashed rgba(20, 134, 140, 0.25); background: #ffffff; padding: 20px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02); height: 260px; display: flex; flex-direction: column; justify-content: center; gap: 10px; box-sizing: border-box;">
+            <div style="display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 2px; opacity: 0.8;">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+                <span style="font-size: 0.7rem; font-weight: 600; color: #64748b; font-family: monospace; margin-left: auto;">consultation_audio.mp3</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px; font-family: monospace; font-size: 0.72rem; color: #334155; line-height: 1.35;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #94a3b8;">🎙️</span>
+                    <span style="font-weight: 700; color: #0f172a;">pyannote</span>
+                    <span style="color: #64748b;">[Diarisation pipeline]</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: 14px; border-left: 1.5px solid #cbd5e1; padding-left: 8px;">
+                    <span style="color: #ec4899;">🗣️</span>
+                    <span style="font-weight: 600; color: #334155;">SPEAKER_00</span>
+                    <span style="background: rgba(236, 72, 153, 0.08); color: #ec4899; font-size: 0.6rem; padding: 1px 4px; border-radius: 4px;">00:00:00 - 00:00:05</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-left: 28px; border-left: 1.5px solid #cbd5e1; padding-left: 8px; font-size: 0.68rem; color: #64748b;">
+                    <div>• transcript: <span style="color: #0f172a; font-weight: 600;">"Good morning, how are you feeling?"</span></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: 14px; border-left: 1.5px solid #cbd5e1; padding-left: 8px;">
+                    <span style="color: #8b5cf6;">🗣️</span>
+                    <span style="font-weight: 600; color: #334155;">SPEAKER_01</span>
+                    <span style="background: rgba(139, 92, 246, 0.08); color: #8b5cf6; font-size: 0.6rem; padding: 1px 4px; border-radius: 4px;">00:00:06 - 00:00:12</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-left: 28px; border-left: 1.5px solid #cbd5e1; padding-left: 8px; font-size: 0.68rem; color: #64748b;">
+                    <div>• transcript: <span style="color: #0f172a; font-weight: 600;">"I've been having some chest pain."</span></div>
+                    <div>• condition: <span style="color: #ef4444; font-weight: 600;">Angina</span></div>
+                </div>
+            </div>
+            
+            <div style="position: absolute; bottom: 12px; right: 12px; font-size: 0.65rem; color: #ec4899; background: #e6f7f8; border-radius: 20px; padding: 3px 10px; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-check-circle"></i> STRUCTURED CLINICAL SUMMARY
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Key Capabilities (Grid Cards) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 24px; letter-spacing: -0.01em;">
+            Key Capabilities
+        </h3>
+        <div class="key-capabilities-grid" style="display: grid; gap: 20px;">
+            <!-- Card 1 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(20, 134, 140, 0.08); color: #ec4899; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Indic-Conformer ASR</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Accurately transcribes medical audio with deep support for Indian English accents and medical terminology.
+                </p>
+            </div>
+            
+            <!-- Card 2 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); color: #10b981; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-users-cog"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Abstractive Summarisation</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Generates concise, medically accurate summaries from long, unstructured doctor-patient consultation recordings.
+                </p>
+            </div>
+            
+            <!-- Card 3 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(139, 92, 246, 0.08); color: #8b5cf6; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Extractive QA</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Extracts specific entities like symptoms, medications, and family history directly from the transcript.
+                </p>
+            </div>
+            
+            <!-- Card 4 -->
+            <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(236, 72, 153, 0.08); color: #ec4899; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Speaker Diarisation</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Automatically distinguishes between doctor and patient voices to structure the generated transcript correctly.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── How It Works (Pipeline Steps) ────────────────────────────────────── -->
+    <div style="margin-bottom: 48px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Three conversion steps running securely on the clinical platform</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative;">
+            <!-- Phase 1 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #ec4899; opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">01</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Audio Preprocessing</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Audio files are normalised, noise-filtered, and segmented to prepare them for optimal transcription accuracy.
+                </p>
+            </div>
+            <!-- Phase 2 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #ec4899; opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">02</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Speech-to-Text</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Our specialised Indic-Conformer model processes the audio to generate a highly accurate, time-stamped raw transcript.
+                </p>
+            </div>
+            <!-- Phase 3 -->
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #ec4899; opacity: 0.15; margin-bottom: -10px; font-family: 'Inter', sans-serif;">03</div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Clinical NLP Summarisation</h4>
+                <p style="font-size: 0.82rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Medical NLP models analyze the raw transcript to generate structured summaries, extracting key diagnoses and treatment plans.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── On-Premises Security Banner ──────────────────────────────────────── -->
+    <div class="responsive-banner-card">
+        <div style="font-size: 2rem; color: #ec4899; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px;">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 4px;">Plausible 100% Confidential On-Premises Execution</h4>
+            <p style="font-size: 0.85rem; line-height: 1.5; color: #475569; margin: 0;">
+                Deploy the Medical Audio Summarisation service locally with a simple CPU-based installation. No external API calls, no cloud storage, and all processing occurs securely in memory. Designed to support compliance with the Indian DPDP Act for privacy-preserving healthcare applications.
+            </p>
+        </div>
+    </div>
+
+    <!-- ── Service Limitations ────────────────────────────────────────────── -->
+    <div style="margin-bottom: 40px; margin-top: 32px;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 24px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 1.15rem;"></i> Service Limitations
+        </h3>
+        <div class="limitations-grid">
+            <!-- Limit 1: File Size -->
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-hdd"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Audio Format & Size Limits</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Maximum audio file upload is capped at <strong>25 MB</strong>. The audio must be a minimum of <strong>5 mins</strong> long, and it should be a <strong>.wav</strong> file sampled at <strong>16kHz</strong>.
+                </p>
+            </div>
+            
+            <!-- Limit 2: Processing Duration -->
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Processing Time</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Processing long audio recordings may take up to <strong>7-10 mins</strong> due to the deep learning models running securely on local CPUs.
+                </p>
+            </div>
+            
+            <!-- Limit 3: Accuracy and Validation -->
+            <div style="background: #ffffff; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box; border-left: 4px solid #f59e0b;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
+                    <i class="fas fa-file-signature"></i>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Audio Quality Dependency</h4>
+                <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
+                    Transcription accuracy is highly dependent on audio quality, background noise, and microphone clarity. Always review the generated summary.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Continuous Improvement & Feedback ──────────────────────────────── -->
+    <div class="service-feedback-card">
+        <div class="service-feedback-content">
+            <h4>
+                <i class="fas fa-comment-dots" style="color: var(--brand-primary, #14868C); font-size: 1.1rem;"></i> Help Us Improve
+            </h4>
+            <p>
+                Automated tools can make mistakes. We warmly welcome your feedback, inputs, and bug reports. Your contributions directly help us refine extraction rules and enhance the platform's accuracy.
+            </p>
+        </div>
+        <div class="service-feedback-action">
+            <a href="mailto:dpi@tanuh.ai?subject=Feedback / Bug Report - Medical Audio Summarisation" class="service-feedback-btn">
+                <i class="fas fa-envelope-open-text"></i> Give Feedback & Report Bugs
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- VIEW: INTERACTIVE VIEW (Embedded Microservice) -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="audioasr-interactive-view" class="audio-container" style="display:none; height: 100%; min-height: 850px; padding: 0; display: flex; flex-direction: column; overflow: hidden; background: transparent; border: none;">
+    <iframe src="/audio_service_ui/index.html?v=fix5" style="width: 100%; flex: 1; border: none; min-height: 850px;"></iframe>
+</div>

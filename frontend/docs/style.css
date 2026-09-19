@@ -245,17 +245,29 @@ body {
 @media (max-width: 768px) {
     .docs-layout {
         flex-direction: column;
+        height: auto;
+        overflow: visible;
     }
     .docs-sidebar {
         position: static;
         width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--slate-200);
-        padding: 1.5rem;
+        padding: 1rem 1.5rem;
+    }
+    .docs-toc-container {
+        display: none;
+    }
+    .docs-brand-header {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
     }
     .docs-main {
         margin-left: 0;
         padding: 2rem 1.5rem;
+        height: auto;
+        overflow: visible;
     }
 }
 
@@ -352,7 +364,7 @@ table {
 }
 
 th {
-    background-color: var(--brand-dark);
+    background-color: var(--brand-primary);
     color: #ffffff;
     font-weight: 600;
     padding: 12px 16px;

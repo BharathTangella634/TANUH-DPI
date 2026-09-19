@@ -1,3 +1,6 @@
 prometheus_client>=0.20.0
 redis>=5.0.0
 docker>=7.0.0
+# Required by common/secrets.py to mint an ADC token for Secret Manager
+# (Redis AUTH password resolution).
+google-auth>=2.28.0

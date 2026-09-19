@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insurance Document Extraction Documentation | TANUH DPI</title>
+    <link rel="icon" type="image/png" href="../assets/tanuh.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -25,9 +26,9 @@
     
         <main class="docs-main">
             <div class="docs-content-inner">
-            <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Insurance Document Extraction Documentation</span>
-            <h1 style="margin-top:0.25rem;">Insurance Document Extraction Service</h1>
-            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">pdf2nhcx - NHCX InsurancePlanBundle FHIR Generator
+            <!-- <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Insurance Document Extraction Documentation</span> -->
+            <h1 style="margin-top:0.25rem;">Insurance Policy Documentation</h1>
+            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">NHCX Schema &amp; Policy Checks -
 Complete Technical & User Documentation</p>
             
             <h1>1. Summary</h1>
@@ -74,9 +75,14 @@ Complete Technical & User Documentation</p>
 <!-- <p>Processing time for distillation: approximately 60-90 seconds.</p> -->
 <h1>4. API Reference</h1>
 <h2>4.1 Authentication</h2>
-<p>Identical mechanism to pdf2abdm. POST /pdf2nhcx/api/token with {name, email} to get a 1-day HS256 JWT. Signed with NHCX_SECRET_KEY. Include as Authorization: Bearer <token> in all requests.</p>
+<p>All processing endpoints require a Bearer JWT token in the <code>Authorization</code> header. To obtain a token: Log in to the web portal and generate your token from the <strong>API Access</strong> tab within the Insurance Policy service. Direct per-service token generation endpoints (<code>/api/token</code>) are disabled in production.</p>
+<ul>
+<li><strong>Algorithm:</strong> HS256 JWT signed with <code>NHCX_SECRET_KEY</code></li>
+<li><strong>Default expiry:</strong> 1 day (configurable via <code>NHCX_TOKEN_EXPIRY_DAYS</code>)</li>
+<li><strong>Usage:</strong> Include in all requests as <code>Authorization: Bearer &lt;token&gt;</code></li>
+</ul>
 <h2>4.2 Endpoints</h2>
-<div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/pdf2nhcx/api/token</td><td>None</td><td>Issue 1-day demo JWT token</td></tr><tr><td>GET</td><td>/health</td><td>None</td><td>Service liveness probe</td></tr><tr><td>GET</td><td>/model-health</td><td>None</td><td>LLM model availability check</td></tr><tr><td>GET</td><td>/ocr-health</td><td>None</td><td>OCR engine availability check</td></tr><tr><td>POST</td><td>/pdf2nhcx</td><td>Bearer</td><td>Sync: upload PDF, wait for NHCX Bundle</td></tr><tr><td>POST</td><td>/pdf2nhcxurl</td><td>Bearer</td><td>Sync: process local file path</td></tr><tr><td>POST</td><td>/pdf2nhcx/submit</td><td>Bearer</td><td>Async: upload PDF, get task_id (202)</td></tr><tr><td>POST</td><td>/pdf2nhcx/submit-url</td><td>Bearer</td><td>Async: local path, get task_id (202)</td></tr><tr><td>GET</td><td>/pdf2nhcx/task-status/{id}</td><td>Bearer</td><td>Poll async task progress</td></tr><tr><td>GET</td><td>/pdf2nhcx/task-result/{id}</td><td>Bearer</td><td>Fetch completed NHCX Bundle</td></tr><tr><td>POST</td><td>/validate</td><td>Bearer</td><td>Validate FHIR JSON against HL7 validator</td></tr><tr><td>GET</td><td>/metrics</td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
+<div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/health</code></td><td>None</td><td>Service liveness probe</td></tr><tr><td>GET</td><td><code>/model-health</code></td><td>None</td><td>LLM model availability check</td></tr><tr><td>GET</td><td><code>/ocr-health</code></td><td>None</td><td>OCR engine availability check</td></tr><tr><td>POST</td><td><code>/pdf2nhcx</code></td><td>Bearer</td><td>Sync: upload PDF, wait for NHCX Bundle</td></tr><tr><td>POST</td><td><code>/pdf2nhcx/submit</code></td><td>Bearer</td><td>Async: upload PDF, get task_id (202)</td></tr><tr><td>GET</td><td><code>/pdf2nhcx/task-status/{id}</code></td><td>Bearer</td><td>Poll async task progress</td></tr><tr><td>GET</td><td><code>/pdf2nhcx/task-result/{id}</code></td><td>Bearer</td><td>Fetch completed NHCX Bundle</td></tr><tr><td>POST</td><td><code>/validate</code></td><td>Bearer</td><td>Validate FHIR JSON against HL7 validator</td></tr><tr><td>GET</td><td><code>/metrics</code></td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
 <!-- <h1>5. Celery Task Processing</h1>
 <div class="table-responsive"><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody><tr><td>Task Name</td><td>pdf2nhcx.tasks.process_nhcx_task</td></tr><tr><td>Queue</td><td>nhcx</td></tr><tr><td>Soft Time Limit</td><td>29 minutes</td></tr><tr><td>Hard Time Limit</td><td>30 minutes</td></tr><tr><td>Result TTL</td><td>24 hours in Redis</td></tr><tr><td>Workers</td><td>4 replicas x concurrency 2 = 8 parallel slots</td></tr></tbody></table></div>
 <h2>5.1 Progress Stages</h2>
@@ -99,12 +105,45 @@ Complete Technical & User Documentation</p>
 <li>View and download the generated NHCX FHIR Bundle</li>
 </ol>
 <h2>6.2 API Usage (curl)</h2>
-<p># Get token</p>
-<pre><code>curl -X POST http://<host>:8001/pdf2nhcx/api/token -H "Content-Type: application/json" -d '{"name": "Name", "email": "email@example.com"}'</code></pre>
-<p># Submit PDF</p>
-<pre><code>curl -X POST http://<host>:8001/pdf2nhcx/submit -H "Authorization: Bearer <token>" -F "file=@policy.pdf"</code></pre>
-<p># Poll and fetch result</p>
-<pre><code>curl http://<host>:8001/pdf2nhcx/task-result/<task_id> -H "Authorization: Bearer <token>"</code></pre>
+<p><strong>Step 1 - Obtain a Token:</strong> Visit the web portal, log in, and generate your API token from the API Access tab.</p>
+<p><strong>Step 2 - Submit a PDF (async):</strong></p>
+<pre><code>curl -X POST http://localhost:8001/pdf2nhcx/submit -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;" -F "file=@policy.pdf"</code></pre>
+<p><strong>Step 3 - Poll and fetch result:</strong></p>
+<pre><code>curl http://localhost:8001/pdf2nhcx/task-result/&lt;TASK_ID&gt; -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+<h2>6.3 API Usage (Python)</h2>
+<pre><code>import time
+import requests
+
+TOKEN = "YOUR_TOKEN"
+headers = {"Authorization": f"Bearer {TOKEN}"}
+
+# Submit PDF (async)
+with open("policy.pdf", "rb") as f:
+    resp = requests.post("http://localhost:8001/pdf2nhcx/submit", headers=headers, files={"file": f})
+task_id = resp.json()["task_id"]
+
+# Poll until complete
+while True:
+    result = requests.get(f"http://localhost:8001/pdf2nhcx/task-result/{task_id}", headers=headers).json()
+    if result.get("status") in ["completed", "failed", "rejected"]:
+        print(result)
+        break
+    time.sleep(2)</code></pre>
+<h2>6.4 Local Execution (Offline Mode)</h2>
+<p>A standalone CLI executable is available for fully offline insurance document processing. No Python, cloud APIs, or network connectivity required — all data stays on your machine.</p>
+<ol>
+<li><strong>Install Ollama:</strong> Download from <a href="https://ollama.com/download" target="_blank">ollama.com/download</a>. On Linux: <code>curl -fsSL https://ollama.com/install.sh | sh</code></li>
+<li><strong>Pull the LLM model (~16 GB):</strong> <code>ollama pull gemma4:26b</code> — requires NVIDIA GPU with 16 GB+ VRAM or Apple Silicon with 16 GB+ unified memory.</li>
+<li><strong>Download the executable:</strong> Go to the <strong>Run Locally</strong> tab on the platform and download the binary for your OS (Linux x86_64, Linux ARM64, Windows, or macOS).</li>
+<li><strong>Unzip and make executable:</strong> On Linux/Mac: <code>chmod +x nhcx-extract*</code></li>
+<li><strong>Run:</strong></li>
+</ol>
+<pre><code># Verify setup
+./nhcx-extract check -m gemma4:26b
+
+# Process an insurance policy document
+./nhcx-extract nhcx policy.pdf -o result.json -m gemma4:26b</code></pre>
+<p>The output JSON contains a complete NHCX FHIR R4 Collection Bundle identical to the cloud service output.</p>
 <h1>7. Performance</h1>
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Simple insurance policy</td><td>5-10</td><td>60-90 seconds</td></tr><tr><td>Complex multi-benefit policy</td><td>20-50</td><td>90-180 seconds</td></tr><tr><td>Large comprehensive policy</td><td>50-100</td><td>3-5 minutes</td></tr></tbody></table></div>
 <p>The distillation step (4 parallel LLM calls) accounts for approximately 40-50% of total processing time. The LangGraph extraction accounts for another 40%. OCR and assembly are relatively fast.</p>
@@ -125,7 +164,6 @@ Complete Technical & User Documentation</p>
 <li>High latency due to distillation + multi-step extraction</li>
 <li>No automated validation correction loop</li>
 <li>Very large policies may stress LLM context windows even after distillation</li>
-<li>No rate limiting on API endpoints</li>
 <li>Planned: LLM-in-the-loop FHIR validation cycle, terminology fixer, missing data completion</li>
 </ul>
             </div>

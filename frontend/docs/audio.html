@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Audio Summarisation Documentation | TANUH DPI</title>
+    <link rel="icon" type="image/png" href="../assets/tanuh.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="docs-layout">
+        
+    <div class="docs-sidebar">
+        <div class="docs-brand-header">
+            <div class="docs-brand-logos">
+                <img src="../assets/tanuh.png" alt="TANUH Logo" class="docs-logo-img">
+                <img src="../assets/MoE_Logo.svg" alt="MoE Logo" class="docs-logo-img">
+                <img src="../assets/IISc_Logo.png" alt="IISc Logo" class="docs-logo-img">
+            </div>
+            <div class="docs-brand-title">TANUH DPI Docs</div>
+            <div class="docs-brand-subtitle">AI Centre of Excellence</div>
+        </div>
+    </div>
+    
+        <main class="docs-main">
+            <div class="docs-content-inner">
+
+<h1 style="margin-top:0.25rem;">Medical Audio Summarisation Documentation</h1>
+<p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Medical Audio Speech-to-Text &amp; Summarisation Service</p>
+
+<h1>1. Overview</h1>
+<p>The <strong>Medical Audio Summarisation Service</strong> is a GPU-accelerated application designed to transcribe and summarise medical audio recordings. It takes raw <code>.wav</code> audio files as input, identifies different speakers (Diarisation), transcribes the conversation (ASR), and leverages Large Language Models (LLMs) to generate structured clinical summaries.</p>
+<p>This tool is built specifically to handle the heavy computational loads of modern AI models while maintaining a lightweight footprint, achieved via state-of-the-art <strong>4-bit NF4 quantisation</strong>.</p>
+
+<h1>2. Key Features</h1>
+<ul>
+<li><strong>Speaker Diarisation:</strong> Accurately distinguishes between different speakers (e.g., Doctor vs. Patient) using <code>pyannote.audio</code>.</li>
+<li><strong>Automatic Speech Recognition (ASR):</strong> Highly accurate multilingual transcription powered by OpenAI's Whisper model.</li>
+<li><strong>Clinical Summarisation:</strong> Extracts critical medical context and outputs structured summaries using LLMs (e.g., Qwen / LLaMA).</li>
+<li><strong>VRAM Optimised:</strong> Implements <code>bitsandbytes</code> 4-bit NormalFloat (NF4) double quantisation, allowing massive 3B+ parameter models to run smoothly on consumer GPUs (8GB VRAM).</li>
+<li><strong>Privacy-First Design:</strong> Fully non-persistent. Audio files and summaries are processed in memory and purged entirely once the session ends. No sensitive patient data is permanently stored.</li>
+</ul>
+
+<h1>3. Architecture</h1>
+<ul>
+<li><strong>Database:</strong> SQLite (used temporarily to track ephemeral background job statuses).</li>
+<li><strong>Pipeline Components:</strong>
+  <ol>
+    <li><strong>Audio Validation:</strong> Checks format (16kHz <code>.wav</code>) and size constraints.</li>
+    <li><strong>Diarisation Engine:</strong> <code>pyannote/speaker-diarization-3.1</code>.</li>
+    <li><strong>ASR Engine:</strong> <code>openai/whisper-small</code> (or variants).</li>
+    <li><strong>Summarisation Engine:</strong> Transformer-based causal language models (e.g., <code>Qwen/Qwen2.5-3B-Instruct</code>), heavily optimised with 4-bit quantisation.</li>
+  </ol>
+</li>
+</ul>
+
+<h1>4. Usage Guide</h1>
+<ol>
+<li><strong>Prepare Audio:</strong> Ensure your audio is a <code>.wav</code> file, ideally sampled at 16kHz, and is under 25 MB in size.</li>
+<li><strong>Upload:</strong> Click the "Choose Audio file..." box on the web interface to select your recording.</li>
+<li><strong>Select Language:</strong> Choose the primary language (Hindi or Kannada) from the dropdown.</li>
+<li><strong>Process:</strong> Click <strong>Process</strong>. The backend will sequentially run Diarisation -&gt; ASR -&gt; Summarisation. This typically takes <strong>7 to 10 minutes</strong> depending on your GPU. <em>Do not refresh the tab during this time.</em></li>
+<li><strong>Export:</strong> Once complete, the output window will display the Clinical Summary and Transcript. Click the <strong>Download Results</strong> button to save a <code>.txt</code> file of the insights directly to your computer.</li>
+</ol>
+
+<h1>5. Privacy &amp; Security</h1>
+<p>This application is strictly non-persistent.</p>
+<ul>
+<li>All <code>.wav</code> files temporarily saved to the <code>uploads/</code> directory are purged upon job completion or failure.</li>
+<li>In-memory results are discarded.</li>
+<li>The SQLite database only tracks transient <code>job_id</code> statuses and does not log transcript text or PII (Personally Identifiable Information).</li>
+</ul>
+
+<h1>6. Acknowledgement</h1>
+<p>This model development was part of the MeitY Bhashini program in collaboration with LEAP Lab, IISc, and NITK Surathkal.</p>
+
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainContent = document.querySelector('.docs-main');
+            const sidebar = document.querySelector('.docs-sidebar');
+            if (mainContent && sidebar) {
+                // Generate TOC
+                const headers = mainContent.querySelectorAll('h1, h2');
+                let tocHtml = '<div class="docs-toc-container"><div class="docs-toc-title">On This Page</div><ul class="docs-toc-list">';
+                let hasHeaders = false;
+                headers.forEach((header, index) => {
+                    const text = header.textContent.trim();
+                    if (header.tagName === 'H1' && !/^\d+\./.test(text)) {
+                        return; // Skip main title
+                    }
+                    hasHeaders = true;
+                    if (!header.id) {
+                        header.id = 'doc-sec-' + index + '-' + text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    }
+                    const isH2 = header.tagName === 'H2';
+                    const itemClass = isH2 ? 'docs-toc-item docs-toc-item-h2' : 'docs-toc-item';
+                    tocHtml += `
+                        <li class="${itemClass}">
+                            <a href="#${header.id}" class="docs-toc-link" data-target="${header.id}">${text}</a>
+                        </li>
+                    `;
+                });
+                tocHtml += '</ul></div>';
+                if (hasHeaders) {
+                    sidebar.insertAdjacentHTML('beforeend', tocHtml);
+                    
+                    // Add smooth scroll click handlers
+                    sidebar.querySelectorAll('.docs-toc-link').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const targetId = link.getAttribute('data-target');
+                            const targetEl = document.getElementById(targetId);
+                            if (targetEl && mainContent) {
+                                // Calculate target offset relative to mainContent scroll container
+                                const relativeTop = targetEl.getBoundingClientRect().top - mainContent.getBoundingClientRect().top + mainContent.scrollTop;
+                                mainContent.scrollTo({
+                                    top: relativeTop - 20,
+                                    behavior: 'smooth'
+                                });
+                                sidebar.querySelectorAll('.docs-toc-link').forEach(l => l.classList.remove('active'));
+                                link.classList.add('active');
+                            }
+                        });
+                    });
+
+                    // Set first link active by default
+                    const firstLink = sidebar.querySelector('.docs-toc-link');
+                    if (firstLink) firstLink.classList.add('active');
+
+                    // Scrollspy implementation
+                    mainContent.addEventListener('scroll', () => {
+                        const headingElements = Array.from(mainContent.querySelectorAll('h1, h2')).filter(h => h.id);
+                        const containerTop = mainContent.getBoundingClientRect().top;
+                        let currentActiveId = '';
+                        
+                        headingElements.forEach(header => {
+                            const rect = header.getBoundingClientRect();
+                            if (rect.top - containerTop <= 80) {
+                                currentActiveId = header.id;
+                            }
+                        });
+                        if (currentActiveId) {
+                            sidebar.querySelectorAll('.docs-toc-link').forEach(link => {
+                                if (link.getAttribute('data-target') === currentActiveId) {
+                                    link.classList.add('active');
+                                } else {
+                                    link.classList.remove('active');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -573,9 +573,9 @@ a:hover {
 /* Hero service quick-links */
 .hero-services {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
-    max-width: 56rem;
+    max-width: 72rem;
     margin: 0 auto;
 }
 
@@ -642,7 +642,7 @@ a:hover {
 
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1.25rem;
 }
 
@@ -768,9 +768,9 @@ a:hover {
    ═══════════════════════════════════════════════════════════════════════════ */
 .ecosystem-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.25rem;
-    max-width: 72rem;
+    max-width: 90rem;
     margin: 0 auto;
 }
 
@@ -1136,7 +1136,8 @@ a:hover {
     color: var(--text-600);
     line-height: 1.8;
     margin: 0 0 1.25rem;
-    text-align: center;
+    text-align: left;
+    /* text-indent: 2rem; */
 }
 
 .about-content a {
@@ -3463,6 +3464,24 @@ select:focus {
     height: 16px;
 }
 
+@media (max-width: 768px) {
+    .api-section-box {
+        padding: 14px 12px;
+        overflow-x: auto;
+    }
+    .api-endpoint-table {
+        font-size: 0.78rem;
+    }
+    .api-endpoint-table th,
+    .api-endpoint-table td {
+        padding: 6px 8px;
+    }
+    .api-code-block {
+        padding: 12px 14px;
+        font-size: 0.76rem;
+    }
+}
+
 /* ── In-Page User Guide Layout ──────────────────────────────────────────── */
 .guide-layout {
     display: flex;
@@ -3925,6 +3944,87 @@ select:focus {
     }
 }
 
+/* ── Service Feedback Block ────────────────────────────────────────────── */
+.service-feedback-card {
+    background: linear-gradient(135deg, rgba(20, 134, 140, 0.02) 0%, rgba(20, 134, 140, 0.06) 100%);
+    border: 1px solid rgba(20, 134, 140, 0.12);
+    border-left: 4px solid var(--brand-primary, #14868C);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 20px rgba(20, 134, 140, 0.02);
+}
+
+.service-feedback-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.service-feedback-content h4 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.service-feedback-content p {
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: #475569;
+    margin: 0;
+}
+
+.service-feedback-action {
+    flex-shrink: 0;
+}
+
+.service-feedback-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    background: linear-gradient(135deg, var(--brand-primary, #14868C), var(--brand-dark, #0e6a6f));
+    color: #ffffff !important;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(20, 134, 140, 0.2);
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.service-feedback-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(20, 134, 140, 0.3);
+}
+
+@media (max-width: 768px) {
+    .service-feedback-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .service-feedback-action {
+        width: 100%;
+    }
+    .service-feedback-btn {
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+}
+
 /* ── Dashboard compat ───────────────────────────────────────────────────── */
 .dash-stats {
     display: grid;
@@ -4208,7 +4308,7 @@ select:focus {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Remove default container padding/max-width for full-width layout */
-#ClinicalDocs, #InsuranceDocs, #PrivacyDocs, #ForgeryDocs {
+#ClinicalDocs, #InsuranceDocs, #PrivacyDocs, #ForgeryDocs, #AudioDocs {
     max-width: 100% !important;
     padding: 0 !important;
 }
@@ -4600,16 +4700,16 @@ select:focus {
     padding: 6px 10px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #ef4444; /* red-500 */
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.15);
+    color: var(--brand-primary);
+    background: rgba(20, 134, 140, 0.08);
+    border: 1px solid rgba(20, 134, 140, 0.2);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 .nav-logout-btn:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(20, 134, 140, 0.15);
+    border-color: rgba(20, 134, 140, 0.35);
 }
 
 /* ── Login page layout ─────────────────────────────────────────────────── */
@@ -4621,15 +4721,15 @@ select:focus {
 }
 
 .login-panel-left {
-    flex: 0 0 30%;
-    max-width: 30%;
+    flex: 0 0 40%;
+    max-width: 40%;
     background: linear-gradient(160deg, #0c3b3e 0%, var(--brand-dark) 40%, var(--brand-primary) 100%);
     color: #fff;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    padding: 4rem 3.5rem;
+    padding: 4rem 3.5rem 3rem;
     position: relative;
     overflow: hidden;
 }
@@ -4657,26 +4757,26 @@ select:focus {
 }
 
 .login-brand {
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
     position: relative;
     z-index: 1;
 }
 .login-brand-logo {
-    height: 52px;
-    margin-bottom: 1.2rem;
+    height: 56px;
+    margin-bottom: 1.4rem;
     filter: brightness(0) invert(1);
 }
 .login-brand-title {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
 }
 .login-brand-subtitle {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 .login-features {
@@ -4685,38 +4785,44 @@ select:focus {
     margin: 0;
     position: relative;
     z-index: 1;
+    width: 100%;
 }
 .login-features li {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 0;
-    font-size: 0.92rem;
-    color: rgba(255, 255, 255, 0.85);
+    gap: 16px;
+    padding: 14px 0;
+    font-size: 0.94rem;
+    color: rgba(255, 255, 255, 0.88);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    line-height: 1.4;
 }
 .login-features li:last-child {
     border-bottom: none;
 }
 .login-features li i {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.1);
     color: rgba(45, 212, 191, 0.9);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     flex-shrink: 0;
 }
 
 .login-brand-copy {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: auto;
+    padding-top: 2.5rem;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* ── Right form panel ──────────────────────────────────────────────────── */

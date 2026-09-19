@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Head CT Report Checker Documentation | TANUH DPI</title>
+    <link rel="icon" type="image/png" href="../assets/tanuh.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="docs-layout">
+        <div class="docs-sidebar">
+            <div class="docs-brand-header">
+                <div class="docs-brand-logos">
+                    <img src="../assets/tanuh.png" alt="TANUH Logo" class="docs-logo-img">
+                    <img src="../assets/MoE_Logo.svg" alt="MoE Logo" class="docs-logo-img">
+                    <img src="../assets/cbr.jpeg" alt="Centre for Brain Research" class="docs-logo-img">
+                    <img src="../assets/IISc_Logo.png" alt="IISc Logo" class="docs-logo-img">
+                </div>
+                <div class="docs-brand-title">TANUH DPI Docs</div>
+                <div class="docs-brand-subtitle">AI Centre of Excellence</div>
+            </div>
+        </div>
+
+        <main class="docs-main">
+            <div class="docs-content-inner">
+                <h1 style="margin-top:0.25rem;">Head CT Report Checker Documentation</h1>
+                <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">TANUH-CBR IndiNeuroFM Head CT Report Checker</p>
+
+                <h1>1. Overview</h1>
+                <p>The Head CT Report Checker is an automated CT report verification framework that assesses consistency between Head CT scans and their corresponding radiology reports. The service is designed to verify whether findings mentioned in a report are supported by the imaging evidence and to generate binary review tags: PASS or Needs Review.</p>
+                <p>Radiology interpretation errors and discrepancies are a known clinical quality challenge. Caranci et al. describe daily-practice radiologic interpretation errors around 4%, with report discrepancy ranges that can vary by setting and review context (<a href="https://pubmed.ncbi.nlm.nih.gov/26183038/" target="_blank" rel="noopener noreferrer">PubMed PMID: 26183038</a>). At global imaging volumes, even a small error rate can translate into a large number of interpretive errors each year, especially in abnormal or emergency-after-hours studies.</p>
+                <p>The objective of this work package is to build an inference-only pipeline that combines multiple pretrained medical foundation models. Rather than training new models, the framework uses an ensemble strategy to integrate complementary model capabilities for CT image understanding and report verification.</p>
+
+                <h1>2. Key Features</h1>
+                <ul>
+                    <li>Verifies consistency between a Head CT scan and its matching radiology report</li>
+                    <li>Uses de-identified clinical CT datasets and associated reports from clinical partners</li>
+                    <li>Works with CT images in NIfTI format and report PDFs</li>
+                    <li>Evaluates a selected pool of five recent and efficient medical foundation models</li>
+                    <li>Combines outputs from two to three selected models using an ensemble, mixture-of-experts strategy</li>
+                    <li>Generates structured finding-level decisions with PASS and Needs Review tags</li>
+                    <li>Provides confidence scores and explanatory reasoning to support clinical quality assurance</li>
+                    <li>Creates standardised model cards covering model capabilities, input requirements, limitations, and deployment characteristics</li>
+                </ul>
+
+                <h1>3. Architecture</h1>
+                <p>The framework follows a modular inference pipeline for scan-report verification. A paired Head CT scan and report are prepared, processed through a unified preprocessing layer, evaluated by a selected ensemble of medical foundation models, and converted into a consensus verification output.</p>
+                <ol>
+                    <li>Input: CT image in NIfTI format and corresponding report PDF</li>
+                    <li>Preprocessing: standardise CT volume inputs so selected models can process clinical partner data</li>
+                    <li>Model inference: run multiple pretrained medical foundation models on the Head CT scan and report context</li>
+                    <li>Finding comparison: compare model-generated imaging observations with the corresponding report findings</li>
+                    <li>Consensus generation: combine model outputs to improve robustness and reliability</li>
+                    <li>Verification output: produce a PASS or REVIEW flag with finding-level tags, confidence scores, and explanatory reasoning</li>
+                </ol>
+
+                <h1>4. Usage Guide</h1>
+                <p>The intended workflow is:</p>
+                <ol>
+                    <li>Upload one Head CT scan in NIfTI format</li>
+                    <li>Upload the corresponding radiology report PDF</li>
+                    <li>Submit the paired case for automated verification</li>
+                    <li>Review finding-level outputs tagged as PASS or Needs Review</li>
+                    <li>Use the generated PASS or REVIEW flag, confidence scores, and explanation to assist radiologist review</li>
+                </ol>
+
+                <h1>5. Privacy &amp; Security</h1>
+                <p>The planned workflow uses de-identified CT datasets and reports obtained through clinical partners. The service is intended to support clinical quality assurance while protecting patient privacy, with secure handling of imaging volumes and report documents throughout the review process.</p>
+
+                <h1>6. Acknowledgements</h1>
+                <p>TANUH-CBR IndiNeuroFM</p>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainContent = document.querySelector('.docs-main');
+            const sidebar = document.querySelector('.docs-sidebar');
+            if (mainContent && sidebar) {
+                const headers = mainContent.querySelectorAll('h1, h2');
+                let tocHtml = '<div class="docs-toc-container"><div class="docs-toc-title">On This Page</div><ul class="docs-toc-list">';
+                let hasHeaders = false;
+                headers.forEach((header, index) => {
+                    const text = header.textContent.trim();
+                    if (header.tagName === 'H1' && !/^\d+\./.test(text)) {
+                        return;
+                    }
+                    hasHeaders = true;
+                    if (!header.id) {
+                        header.id = 'doc-sec-' + index + '-' + text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    }
+                    const isH2 = header.tagName === 'H2';
+                    const itemClass = isH2 ? 'docs-toc-item docs-toc-item-h2' : 'docs-toc-item';
+                    tocHtml += `
+                        <li class="${itemClass}">
+                            <a href="#${header.id}" class="docs-toc-link" data-target="${header.id}">${text}</a>
+                        </li>
+                    `;
+                });
+                tocHtml += '</ul></div>';
+                if (hasHeaders) {
+                    sidebar.insertAdjacentHTML('beforeend', tocHtml);
+
+                    sidebar.querySelectorAll('.docs-toc-link').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const targetId = link.getAttribute('data-target');
+                            const targetEl = document.getElementById(targetId);
+                            if (targetEl && mainContent) {
+                                const relativeTop = targetEl.getBoundingClientRect().top - mainContent.getBoundingClientRect().top + mainContent.scrollTop;
+                                mainContent.scrollTo({
+                                    top: relativeTop - 20,
+                                    behavior: 'smooth'
+                                });
+                                sidebar.querySelectorAll('.docs-toc-link').forEach(l => l.classList.remove('active'));
+                                link.classList.add('active');
+                            }
+                        });
+                    });
+
+                    const firstLink = sidebar.querySelector('.docs-toc-link');
+                    if (firstLink) firstLink.classList.add('active');
+
+                    mainContent.addEventListener('scroll', () => {
+                        const headingElements = Array.from(mainContent.querySelectorAll('h1, h2')).filter(h => h.id);
+                        const containerTop = mainContent.getBoundingClientRect().top;
+                        let currentActiveId = '';
+
+                        headingElements.forEach(header => {
+                            const rect = header.getBoundingClientRect();
+                            if (rect.top - containerTop <= 80) {
+                                currentActiveId = header.id;
+                            }
+                        });
+                        if (currentActiveId) {
+                            sidebar.querySelectorAll('.docs-toc-link').forEach(link => {
+                                if (link.getAttribute('data-target') === currentActiveId) {
+                                    link.classList.add('active');
+                                } else {
+                                    link.classList.remove('active');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

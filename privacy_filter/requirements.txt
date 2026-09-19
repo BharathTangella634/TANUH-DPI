@@ -10,7 +10,12 @@ opencv-python-headless==4.10.0.84   # cv2: image processing, connected component
 numpy>=1.26,<3                       # array manipulation (pixel + DICOM)
 Pillow==11.0.0                       # image IO + EXIF
 pytesseract==0.3.13                  # OCR backend (system tesseract required)
+docling>=2.0,<3                      # OCR waterfall engine 1 (structural PDF OCR)
+paddleocr>=2.7                       # OCR waterfall engine 2 (PaddlePaddle OCR)
 pydicom==3.0.1                       # DICOM read/write + tag scrub
+pylibjpeg>=2.0                       # DICOM pixel data decompression framework
+pylibjpeg-openjpeg>=2.0              # JPEG2000 transfer syntax (mammography etc.)
+pylibjpeg-libjpeg>=2.0               # JPEG transfer syntax (older DICOMs)
 nibabel==5.3.2                       # NIfTI (.nii / .nii.gz) volumes
 pymupdf==1.24.13                     # fitz: PDF render + rewrite
 

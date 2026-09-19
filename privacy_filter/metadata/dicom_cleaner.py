@@ -188,12 +188,35 @@ class DicomCleaner:
             exist_ok=True,
         )
 
+        self._ensure_file_meta(ds)
+
         ds.save_as(
             str(output_path),
             write_like_original=False,
         )
 
         return report
+
+    @staticmethod
+    def _ensure_file_meta(ds):
+        """Guarantee the Dataset has a valid File Meta Information header."""
+        from pydicom.uid import ExplicitVRLittleEndian, generate_uid
+
+        if not hasattr(ds, "file_meta") or ds.file_meta is None:
+            ds.file_meta = pydicom.Dataset()
+
+        if not getattr(ds.file_meta, "TransferSyntaxUID", None):
+            ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+
+        if not getattr(ds.file_meta, "MediaStorageSOPClassUID", None):
+            ds.file_meta.MediaStorageSOPClassUID = getattr(
+                ds, "SOPClassUID", "1.2.840.10008.5.1.4.1.1.7"
+            )
+
+        if not getattr(ds.file_meta, "MediaStorageSOPInstanceUID", None):
+            ds.file_meta.MediaStorageSOPInstanceUID = getattr(
+                ds, "SOPInstanceUID", generate_uid()
+            )
 
     def _scrub_phi_tags(
         self,

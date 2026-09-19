@@ -1,0 +1,898 @@
+name: Build Privacy Filter GUI
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'pf-gui-v*'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 1: Linux x86_64 -- AppImage (venv + rsync)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-linux:
+    name: Linux x86_64 GUI (AppImage)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr5 -y
+          sudo apt-get update
+          sudo apt-get install -y fuse libfuse2 rsync wget tesseract-ocr \
+            libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+            libwebkit2gtk-4.0-dev libgtk-3-dev
+
+      - name: Create build workspace
+        run: |
+          mkdir -p pf-build
+          cp -r privacy_filter pf-build/privacy_filter
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          cd pf-build
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --quiet --upgrade pip setuptools wheel
+          pip install --quiet \
+            opencv-python-headless==4.10.0.84 \
+            "numpy>=1.26,<3" \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            "pylibjpeg>=2.0" \
+            "pylibjpeg-openjpeg>=2.0" \
+            "pylibjpeg-libjpeg>=2.0" \
+            nibabel==5.3.2 \
+            pymupdf==1.24.13 \
+            "flask>=3.0" \
+            "pywebview>=5.0"
+          echo "Dependencies installed:"
+          pip list | grep -iE "opencv|numpy|pillow|pytesseract|pydicom|pylibjpeg|nibabel|pymupdf|flask|webview"
+          deactivate
+
+      - name: Download appimagetool
+        run: |
+          cd pf-build
+          wget -q -O appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool
+
+      - name: Build AppDir
+        run: |
+          cd pf-build
+          source venv/bin/activate
+
+          APPDIR="pf-redact-gui.AppDir"
+          mkdir -p "${APPDIR}/usr/bin"
+          mkdir -p "${APPDIR}/usr/lib/python3/site-packages"
+          mkdir -p "${APPDIR}/usr/share/applications"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+          mkdir -p "${APPDIR}/usr/share/tessdata"
+
+          # Copy Python interpreter
+          PYTHON_REAL="$(readlink -f "$(which python3)")"
+          cp "${PYTHON_REAL}" "${APPDIR}/usr/bin/python3"
+
+          # Copy Tesseract binary and data
+          cp "$(which tesseract)" "${APPDIR}/usr/bin/tesseract"
+          for d in /usr/share/tesseract-ocr/*/tessdata /usr/share/tessdata; do
+            if [ -d "$d" ]; then
+              cp "$d"/*.traineddata "${APPDIR}/usr/share/tessdata/" 2>/dev/null || true
+            fi
+          done
+
+          # Copy Python stdlib
+          PYVER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+          STDLIB="$(python3 -c 'import sysconfig; print(sysconfig.get_path("stdlib"))')"
+          mkdir -p "${APPDIR}/usr/lib/python${PYVER}"
+          rsync -a --quiet \
+            --exclude='test/' --exclude='tests/' --exclude='__pycache__/' \
+            --exclude='*.pyc' --exclude='tkinter/' --exclude='idlelib/' \
+            --exclude='turtle*' --exclude='ensurepip/' --exclude='distutils/' \
+            "${STDLIB}/" "${APPDIR}/usr/lib/python${PYVER}/"
+
+          # Copy lib-dynload
+          DYNLOAD="$(python3 -c 'import sysconfig; print(sysconfig.get_path("platstdlib"))')/lib-dynload"
+          if [ -d "${DYNLOAD}" ]; then
+            mkdir -p "${APPDIR}/usr/lib/python${PYVER}/lib-dynload"
+            cp -a "${DYNLOAD}"/*.so "${APPDIR}/usr/lib/python${PYVER}/lib-dynload/" 2>/dev/null || true
+          fi
+
+          # Copy site-packages
+          SITE="$(python3 -c 'import site; print(site.getsitepackages()[0])')"
+          rsync -a --quiet \
+            --exclude='__pycache__/' --exclude='*.pyc' \
+            --exclude='pip/' --exclude='pip-*' \
+            --exclude='setuptools/' --exclude='setuptools-*' \
+            --exclude='wheel/' --exclude='wheel-*' \
+            --exclude='_distutils_hack/' --exclude='pkg_resources/' \
+            "${SITE}/" "${APPDIR}/usr/lib/python3/site-packages/"
+
+          # Copy the privacy_filter package (include gui, exclude app/tests)
+          rsync -a --quiet \
+            --exclude='__pycache__/' --exclude='*.pyc' \
+            --exclude='tests/' --exclude='app/' \
+            "privacy_filter/" "${APPDIR}/usr/lib/python3/site-packages/privacy_filter/"
+
+          # Copy shared libraries
+          mkdir -p "${APPDIR}/usr/lib/x86_64-linux-gnu"
+          for elf_file in "${APPDIR}/usr/bin/python3" "${APPDIR}/usr/bin/tesseract" $(find "${APPDIR}" -name "*.so" -type f 2>/dev/null); do
+            ldd "${elf_file}" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read dep; do
+              dep_name="$(basename "${dep}")"
+              case "${dep_name}" in
+                libc.so*|libm.so*|libpthread.so*|libdl.so*|librt.so*|ld-linux*|libgcc_s*) continue ;;
+              esac
+              if [ ! -f "${APPDIR}/usr/lib/x86_64-linux-gnu/${dep_name}" ]; then
+                cp -L "${dep}" "${APPDIR}/usr/lib/x86_64-linux-gnu/" 2>/dev/null || true
+              fi
+            done || true
+          done
+
+          deactivate
+
+      - name: Create AppImage metadata
+        run: |
+          cd pf-build
+          APPDIR="pf-redact-gui.AppDir"
+          PYVER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+
+          # AppRun entry point
+          cat > "${APPDIR}/AppRun" << 'APPRUN_EOF'
+          #!/bin/bash
+          set -e
+          APPDIR="$(dirname "$(readlink -f "$0")")"
+          export PYTHONNOUSERSITE=1
+          export PYTHONDONTWRITEBYTECODE=1
+          unset PYTHONPATH
+          PYVER=$(ls "${APPDIR}/usr/lib/" | grep -oE 'python3\.[0-9]+' | head -1)
+          export PATH="${APPDIR}/usr/bin:${PATH}"
+          export PYTHONHOME="${APPDIR}/usr"
+          export PYTHONPATH="${APPDIR}/usr/lib/python3/site-packages:${APPDIR}/usr/lib/${PYVER}"
+          export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+          export TESSDATA_PREFIX="${APPDIR}/usr/share/tessdata"
+          export SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
+          export REQUESTS_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
+          exec "${APPDIR}/usr/bin/python3" -m privacy_filter.gui.main "$@"
+          APPRUN_EOF
+          sed -i 's/^          //' "${APPDIR}/AppRun"
+          chmod +x "${APPDIR}/AppRun"
+
+          # Desktop file
+          cat > "${APPDIR}/pf-redact-gui.desktop" << 'DESKTOP_EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Privacy Filter GUI
+          Exec=pf-redact-gui
+          Icon=pf-redact-gui
+          Categories=Utility;
+          Terminal=false
+          DESKTOP_EOF
+          sed -i 's/^          //' "${APPDIR}/pf-redact-gui.desktop"
+          cp "${APPDIR}/pf-redact-gui.desktop" "${APPDIR}/usr/share/applications/"
+
+          # Icon
+          cat > "${APPDIR}/pf-redact-gui.svg" << 'SVG_EOF'
+          <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+            <rect width="256" height="256" rx="32" fill="#14868C"/>
+            <rect x="40" y="40" width="176" height="176" rx="12" fill="#fff"/>
+            <rect x="60" y="80" width="136" height="20" rx="4" fill="#0c6468"/>
+            <rect x="60" y="120" width="136" height="20" rx="4" fill="#0c6468"/>
+            <rect x="60" y="160" width="80" height="20" rx="4" fill="#0c6468"/>
+          </svg>
+          SVG_EOF
+          sed -i 's/^          //' "${APPDIR}/pf-redact-gui.svg"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+          cp "${APPDIR}/pf-redact-gui.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/"
+
+      - name: Build AppImage
+        run: |
+          cd pf-build
+          export ARCH=x86_64
+          APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool pf-redact-gui.AppDir pf-redact-gui-1.0.0-x86_64.AppImage 2>&1 | tail -5
+
+      - name: Smoke test AppImage (API test)
+        run: |
+          cd pf-build
+          source venv/bin/activate
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          deactivate
+
+          # Start the GUI in browser mode, send a test request, verify response
+          chmod +x pf-redact-gui-1.0.0-x86_64.AppImage
+          ./pf-redact-gui-1.0.0-x86_64.AppImage --no-window --port 18899 &
+          GUI_PID=$!
+          sleep 8
+
+          # Health check
+          curl -sf http://127.0.0.1:18899/api/health || { echo "FAIL: health check"; kill $GUI_PID 2>/dev/null; exit 1; }
+
+          # Upload and redact
+          RESULT=$(curl -sf -X POST http://127.0.0.1:18899/api/redact \
+            -F "file=@test_input.png" \
+            --max-time 120)
+          echo "Redact result: ${RESULT}"
+
+          # Verify response structure
+          python3 -c "
+          import json, sys
+          r = json.loads('''${RESULT}''')
+          assert 'entities' in r, 'Missing entities in response'
+          assert 'redacted_url' in r, 'Missing redacted_url in response'
+          print(f'Smoke test passed: {len(r[\"entities\"])} entities detected')
+          "
+
+          # Download redacted file
+          REDACTED_URL=$(python3 -c "import json; print(json.loads('''${RESULT}''')['redacted_url'])")
+          curl -sf "http://127.0.0.1:18899${REDACTED_URL}" -o test_redacted.png
+          test -f test_redacted.png || { echo "FAIL: redacted file not downloaded"; kill $GUI_PID 2>/dev/null; exit 1; }
+
+          kill $GUI_PID 2>/dev/null || true
+          echo "AppImage GUI smoke test passed"
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-gui-linux-x86_64
+          path: pf-build/pf-redact-gui-1.0.0-x86_64.AppImage
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: Linux ARM64 -- PyInstaller binary
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-linux-arm64:
+    name: Linux ARM64 GUI (binary)
+    runs-on: ubuntu-22.04-arm
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr5 -y
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-eng \
+            libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+            libwebkit2gtk-4.0-dev libgtk-3-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install \
+            opencv-python-headless==4.10.0.84 \
+            "numpy>=1.26,<3" \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            "pylibjpeg>=2.0" \
+            "pylibjpeg-openjpeg>=2.0" \
+            "pylibjpeg-libjpeg>=2.0" \
+            nibabel==5.3.2 \
+            pymupdf==1.24.13 \
+            "flask>=3.0" \
+            "pywebview>=5.0"
+          pip install pyinstaller
+
+      - name: Prepare Tesseract bundle
+        run: |
+          mkdir -p tesseract_bundle/tesseract/tessdata
+          cp "$(which tesseract)" tesseract_bundle/tesseract/
+          TESSDATA=$(dpkg -L tesseract-ocr-eng | grep tessdata | head -1 | xargs dirname)
+          cp "${TESSDATA}"/*.traineddata tesseract_bundle/tesseract/tessdata/ 2>/dev/null || true
+          cp /usr/share/tesseract-ocr/*/tessdata/*.traineddata tesseract_bundle/tesseract/tessdata/ 2>/dev/null || true
+          for lib in $(ldd "$(which tesseract)" | grep "=> /" | awk '{print $3}'); do
+            libname=$(basename "$lib")
+            case "$libname" in
+              libc.so*|libm.so*|libpthread.so*|libdl.so*|librt.so*|ld-linux*|libgcc_s*) continue ;;
+            esac
+            cp -L "$lib" tesseract_bundle/tesseract/ 2>/dev/null || true
+          done
+          echo "Tesseract bundle contents:"
+          ls -la tesseract_bundle/tesseract/
+
+      - name: Create PyInstaller entry point and spec
+        run: |
+          cat > pf_gui_entry.py << 'ENTRY_EOF'
+          import sys, os
+          sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+          from privacy_filter.gui.main import main
+          main()
+          ENTRY_EOF
+
+          cat > pf-redact-gui.spec << 'SPEC_EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          import os, glob
+          from PyInstaller.utils.hooks import collect_submodules
+
+          hidden_imports = (
+              collect_submodules('privacy_filter.gui') +
+              collect_submodules('privacy_filter.pipeline') +
+              collect_submodules('privacy_filter.registry') +
+              collect_submodules('privacy_filter.schemas') +
+              collect_submodules('privacy_filter.detectors') +
+              collect_submodules('privacy_filter.loaders') +
+              collect_submodules('privacy_filter.metadata') +
+              collect_submodules('privacy_filter.redactors') +
+              collect_submodules('privacy_filter.savers') +
+              collect_submodules('privacy_filter.utils') +
+              collect_submodules('privacy_filter.validators') +
+              collect_submodules('cv2') +
+              collect_submodules('flask') +
+              [
+                  'numpy', 'PIL', 'PIL.Image', 'PIL.ExifTags',
+                  'pytesseract', 'pydicom', 'nibabel',
+                  'fitz', 'pymupdf',
+                  'pydicom.encoders', 'pydicom.encoders.gdcm',
+                  'pydicom.encoders.pylibjpeg', 'pydicom.encoders.native',
+                  'pylibjpeg', 'pylibjpeg.utils',
+                  'openjpeg', 'libjpeg',
+                  'webview', 'jinja2', 'markupsafe', 'werkzeug',
+              ]
+          )
+
+          tess_bundle = 'tesseract_bundle/tesseract'
+          tess_binaries = [
+              (os.path.join(tess_bundle, 'tesseract'), 'tesseract'),
+          ]
+          for f in glob.glob(os.path.join(tess_bundle, '*.so*')):
+              tess_binaries.append((f, 'tesseract'))
+
+          tess_datas = [
+              (os.path.join(tess_bundle, 'tessdata'), 'tesseract/tessdata'),
+              ('privacy_filter/gui/static', 'privacy_filter/gui/static'),
+          ]
+
+          a = Analysis(
+              ['pf_gui_entry.py'],
+              pathex=['.'],
+              binaries=tess_binaries,
+              datas=tess_datas,
+              hiddenimports=hidden_imports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[
+                  'tkinter', 'turtle', 'idlelib', 'test', 'unittest',
+                  'privacy_filter.app', 'privacy_filter.tests',
+                  'fastapi', 'uvicorn', 'httpx', 'jose',
+                  'google.cloud', 'prometheus_client',
+              ],
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.datas,
+              [],
+              name='pf-redact-gui',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=False,
+              runtime_tmpdir=None,
+              console=False,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          SPEC_EOF
+
+      - name: Build binary with PyInstaller
+        run: |
+          pyinstaller --clean --noconfirm pf-redact-gui.spec
+
+      - name: Smoke test binary (API test)
+        run: |
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          chmod +x dist/pf-redact-gui
+          ./dist/pf-redact-gui --no-window --port 18899 &
+          GUI_PID=$!
+          sleep 10
+
+          curl -sf http://127.0.0.1:18899/api/health || { echo "FAIL: health check"; kill $GUI_PID 2>/dev/null; exit 1; }
+
+          RESULT=$(curl -sf -X POST http://127.0.0.1:18899/api/redact \
+            -F "file=@test_input.png" \
+            --max-time 120)
+          echo "Redact result: ${RESULT}"
+
+          python3 -c "
+          import json
+          r = json.loads('''${RESULT}''')
+          assert 'entities' in r, 'Missing entities'
+          assert 'redacted_url' in r, 'Missing redacted_url'
+          print(f'Smoke test passed: {len(r[\"entities\"])} entities detected')
+          "
+          kill $GUI_PID 2>/dev/null || true
+          echo "ARM64 GUI smoke test passed"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-gui-linux-aarch64
+          path: dist/pf-redact-gui
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 3: Windows -- PyInstaller .exe
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-windows:
+    name: Windows GUI (exe)
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Tesseract OCR
+        run: |
+          choco install tesseract -y
+          echo "C:\Program Files\Tesseract-OCR" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install `
+            opencv-python-headless==4.10.0.84 `
+            "numpy>=1.26,<3" `
+            Pillow==11.0.0 `
+            pytesseract==0.3.13 `
+            pydicom==3.0.1 `
+            "pylibjpeg>=2.0" `
+            "pylibjpeg-openjpeg>=2.0" `
+            "pylibjpeg-libjpeg>=2.0" `
+            nibabel==5.3.2 `
+            pymupdf==1.24.13 `
+            "flask>=3.0" `
+            "pywebview>=5.0"
+          pip install pyinstaller
+
+      - name: Create PyInstaller entry point and spec
+        shell: bash
+        run: |
+          cat > pf_gui_entry.py << 'ENTRY_EOF'
+          import sys, os
+          sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+          from privacy_filter.gui.main import main
+          main()
+          ENTRY_EOF
+
+          TESS_DIR="/c/Program Files/Tesseract-OCR"
+          echo "Tesseract directory contents:"
+          ls -la "${TESS_DIR}/" || true
+
+          cat > pf-redact-gui.spec << 'SPEC_EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          import os
+          from PyInstaller.utils.hooks import collect_submodules
+
+          hidden_imports = (
+              collect_submodules('privacy_filter.gui') +
+              collect_submodules('privacy_filter.pipeline') +
+              collect_submodules('privacy_filter.registry') +
+              collect_submodules('privacy_filter.schemas') +
+              collect_submodules('privacy_filter.detectors') +
+              collect_submodules('privacy_filter.loaders') +
+              collect_submodules('privacy_filter.metadata') +
+              collect_submodules('privacy_filter.redactors') +
+              collect_submodules('privacy_filter.savers') +
+              collect_submodules('privacy_filter.utils') +
+              collect_submodules('privacy_filter.validators') +
+              collect_submodules('cv2') +
+              collect_submodules('flask') +
+              [
+                  'numpy', 'PIL', 'PIL.Image', 'PIL.ExifTags',
+                  'pytesseract', 'pydicom', 'nibabel',
+                  'fitz', 'pymupdf',
+                  'pydicom.encoders', 'pydicom.encoders.gdcm',
+                  'pydicom.encoders.pylibjpeg', 'pydicom.encoders.native',
+                  'pylibjpeg', 'pylibjpeg.utils',
+                  'openjpeg', 'libjpeg',
+                  'webview', 'jinja2', 'markupsafe', 'werkzeug',
+              ]
+          )
+
+          tess_dir = r'C:\Program Files\Tesseract-OCR'
+          tess_binaries = [
+              (os.path.join(tess_dir, 'tesseract.exe'), 'tesseract'),
+          ]
+          for f in os.listdir(tess_dir):
+              if f.endswith('.dll'):
+                  tess_binaries.append(
+                      (os.path.join(tess_dir, f), 'tesseract')
+                  )
+
+          tess_datas = [
+              (os.path.join(tess_dir, 'tessdata'), 'tesseract/tessdata'),
+              ('privacy_filter/gui/static', 'privacy_filter/gui/static'),
+          ]
+
+          a = Analysis(
+              ['pf_gui_entry.py'],
+              pathex=['.'],
+              binaries=tess_binaries,
+              datas=tess_datas,
+              hiddenimports=hidden_imports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[
+                  'tkinter', 'turtle', 'idlelib', 'test', 'unittest',
+                  'privacy_filter.app', 'privacy_filter.tests',
+                  'fastapi', 'uvicorn', 'httpx', 'jose',
+                  'google.cloud', 'prometheus_client',
+              ],
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.datas,
+              [],
+              name='pf-redact-gui',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=False,
+              runtime_tmpdir=None,
+              console=False,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          SPEC_EOF
+
+      - name: Build exe with PyInstaller
+        run: |
+          pyinstaller --clean --noconfirm pf-redact-gui.spec
+
+      - name: Smoke test exe (API test)
+        shell: bash
+        run: |
+          python -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          ./dist/pf-redact-gui.exe --no-window --port 18899 &
+          GUI_PID=$!
+          sleep 12
+
+          curl -sf http://127.0.0.1:18899/api/health || { echo "FAIL: health check"; kill $GUI_PID 2>/dev/null; exit 1; }
+
+          RESULT=$(curl -sf -X POST http://127.0.0.1:18899/api/redact \
+            -F "file=@test_input.png" \
+            --max-time 120)
+          echo "Redact result: ${RESULT}"
+
+          python -c "
+          import json
+          r = json.loads('''${RESULT}''')
+          assert 'entities' in r, 'Missing entities'
+          assert 'redacted_url' in r, 'Missing redacted_url'
+          print(f'Smoke test passed: {len(r[\"entities\"])} entities detected')
+          "
+          kill $GUI_PID 2>/dev/null || true
+          echo "Windows GUI smoke test passed"
+
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-gui-windows-x86_64
+          path: dist/pf-redact-gui.exe
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 4: macOS -- PyInstaller binary
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-macos:
+    name: macOS GUI (universal)
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Tesseract OCR
+        run: |
+          brew install tesseract
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install \
+            opencv-python-headless==4.10.0.84 \
+            "numpy>=1.26,<3" \
+            Pillow==11.0.0 \
+            pytesseract==0.3.13 \
+            pydicom==3.0.1 \
+            "pylibjpeg>=2.0" \
+            "pylibjpeg-openjpeg>=2.0" \
+            "pylibjpeg-libjpeg>=2.0" \
+            nibabel==5.3.2 \
+            pymupdf==1.24.13 \
+            "flask>=3.0" \
+            "pywebview>=5.0"
+          pip install pyinstaller
+
+      - name: Prepare Tesseract bundle
+        run: |
+          mkdir -p tesseract_bundle/tesseract
+          TESS_BIN="$(brew --prefix tesseract)/bin/tesseract"
+          cp "${TESS_BIN}" tesseract_bundle/tesseract/
+          cp -r "$(brew --prefix tesseract)/share/tessdata" tesseract_bundle/tesseract/
+          for lib in $(otool -L "${TESS_BIN}" | awk '/homebrew/{print $1}'); do
+            cp -L "${lib}" tesseract_bundle/tesseract/ 2>/dev/null || true
+          done
+          echo "Tesseract bundle contents:"
+          ls -la tesseract_bundle/tesseract/
+
+      - name: Create PyInstaller entry point and spec
+        run: |
+          cat > pf_gui_entry.py << 'ENTRY_EOF'
+          import sys, os
+          sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+          from privacy_filter.gui.main import main
+          main()
+          ENTRY_EOF
+
+          cat > pf-redact-gui.spec << 'SPEC_EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+          import os, glob
+          from PyInstaller.utils.hooks import collect_submodules
+
+          hidden_imports = (
+              collect_submodules('privacy_filter.gui') +
+              collect_submodules('privacy_filter.pipeline') +
+              collect_submodules('privacy_filter.registry') +
+              collect_submodules('privacy_filter.schemas') +
+              collect_submodules('privacy_filter.detectors') +
+              collect_submodules('privacy_filter.loaders') +
+              collect_submodules('privacy_filter.metadata') +
+              collect_submodules('privacy_filter.redactors') +
+              collect_submodules('privacy_filter.savers') +
+              collect_submodules('privacy_filter.utils') +
+              collect_submodules('privacy_filter.validators') +
+              collect_submodules('cv2') +
+              collect_submodules('flask') +
+              [
+                  'numpy', 'PIL', 'PIL.Image', 'PIL.ExifTags',
+                  'pytesseract', 'pydicom', 'nibabel',
+                  'fitz', 'pymupdf',
+                  'pydicom.encoders', 'pydicom.encoders.gdcm',
+                  'pydicom.encoders.pylibjpeg', 'pydicom.encoders.native',
+                  'pylibjpeg', 'pylibjpeg.utils',
+                  'openjpeg', 'libjpeg',
+                  'webview', 'jinja2', 'markupsafe', 'werkzeug',
+              ]
+          )
+
+          tess_bundle = 'tesseract_bundle/tesseract'
+          tess_binaries = [
+              (os.path.join(tess_bundle, 'tesseract'), 'tesseract'),
+          ]
+          for f in glob.glob(os.path.join(tess_bundle, '*.dylib')):
+              tess_binaries.append((f, 'tesseract'))
+
+          tess_datas = [
+              (os.path.join(tess_bundle, 'tessdata'), 'tesseract/tessdata'),
+              ('privacy_filter/gui/static', 'privacy_filter/gui/static'),
+          ]
+
+          a = Analysis(
+              ['pf_gui_entry.py'],
+              pathex=['.'],
+              binaries=tess_binaries,
+              datas=tess_datas,
+              hiddenimports=hidden_imports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[
+                  'tkinter', 'turtle', 'idlelib', 'test', 'unittest',
+                  'privacy_filter.app', 'privacy_filter.tests',
+                  'fastapi', 'uvicorn', 'httpx', 'jose',
+                  'google.cloud', 'prometheus_client',
+              ],
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.datas,
+              [],
+              name='pf-redact-gui',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=False,
+              runtime_tmpdir=None,
+              console=False,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          SPEC_EOF
+
+      - name: Build binary with PyInstaller
+        run: |
+          pyinstaller --clean --noconfirm pf-redact-gui.spec
+
+      - name: Smoke test binary (API test)
+        run: |
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (400, 200), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((10, 10), 'Patient: John Smith', fill='black')
+          d.text((10, 40), 'DOB: 01/15/1990', fill='black')
+          d.text((10, 70), 'MRN: 123456', fill='black')
+          img.save('test_input.png')
+          "
+          chmod +x dist/pf-redact-gui
+          ./dist/pf-redact-gui --no-window --port 18899 &
+          GUI_PID=$!
+          sleep 10
+
+          curl -sf http://127.0.0.1:18899/api/health || { echo "FAIL: health check"; kill $GUI_PID 2>/dev/null; exit 1; }
+
+          RESULT=$(curl -sf -X POST http://127.0.0.1:18899/api/redact \
+            -F "file=@test_input.png" \
+            --max-time 120)
+          echo "Redact result: ${RESULT}"
+
+          python3 -c "
+          import json
+          r = json.loads('''${RESULT}''')
+          assert 'entities' in r, 'Missing entities'
+          assert 'redacted_url' in r, 'Missing redacted_url'
+          print(f'Smoke test passed: {len(r[\"entities\"])} entities detected')
+          "
+          kill $GUI_PID 2>/dev/null || true
+          echo "macOS GUI smoke test passed"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pf-redact-gui-macos
+          path: dist/pf-redact-gui
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 5: Create GitHub Release (only on tags)
+  # ═══════════════════════════════════════════════════════════════════════════
+  release:
+    name: Create GUI Release
+    needs: [build-linux, build-linux-arm64, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/pf-gui-v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Rename artifacts for release
+        run: |
+          mkdir -p release
+          cp artifacts/pf-redact-gui-linux-x86_64/pf-redact-gui-1.0.0-x86_64.AppImage  release/pf-redact-gui-linux-x86_64.AppImage
+          cp artifacts/pf-redact-gui-linux-aarch64/pf-redact-gui                        release/pf-redact-gui-linux-aarch64
+          cp artifacts/pf-redact-gui-windows-x86_64/pf-redact-gui.exe                   release/pf-redact-gui-windows-x86_64.exe
+          cp artifacts/pf-redact-gui-macos/pf-redact-gui                                release/pf-redact-gui-macos
+          ls -lh release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Privacy Filter GUI ${{ github.ref_name }}"
+          body: |
+            ## Privacy Filter GUI ${{ github.ref_name }}
+
+            **Desktop GUI application** for medical de-identification.
+            Upload documents, detect PII/PHI, interactively edit redaction boxes,
+            and download sanitized files — all 100% offline on your local machine.
+
+            ### Downloads
+            | Platform | File |
+            |----------|------|
+            | Linux x86_64 | `pf-redact-gui-linux-x86_64.AppImage` |
+            | Linux ARM64 (aarch64) | `pf-redact-gui-linux-aarch64` |
+            | Windows x86_64 | `pf-redact-gui-windows-x86_64.exe` |
+            | macOS (Apple Silicon) | `pf-redact-gui-macos` |
+
+            ### Prerequisites
+            No external dependencies needed — Tesseract OCR is bundled.
+            No internet connection required.
+
+            ### Usage
+            1. Download the file for your platform
+            2. Make it executable (Linux/macOS): `chmod +x pf-redact-gui-*`
+            3. Double-click or run from terminal
+            4. A window will open with the Privacy Filter interface
+            5. Upload documents, process them, edit redactions interactively, and download results
+
+            ### Features
+            - **Upload**: PDF, DICOM, NIfTI, and PNG/JPG images (up to 75 MB)
+            - **Detect**: Automated PII/PHI detection using MedDeID engine
+            - **Edit**: Interactive canvas editor — draw, remove, undo redaction boxes
+            - **Download**: Save original and redacted versions
+            - **Offline**: Everything runs locally, no data leaves your machine
+
+            ### Supported Formats
+            - Images: `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp`
+            - DICOM: `.dcm`, `.dicom`
+            - NIfTI: `.nii`, `.nii.gz`
+            - PDF: `.pdf`
+          files: release/*
+          draft: false
+          prerelease: false

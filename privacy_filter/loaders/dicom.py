@@ -82,6 +82,10 @@ class DicomLoader(BaseLoader):
                 f"DICOM read failed: {path}"
             ) from exc
 
+        if not hasattr(ds.file_meta, "TransferSyntaxUID") or ds.file_meta.TransferSyntaxUID is None:
+            from pydicom.uid import ImplicitVRLittleEndian
+            ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+
         metadata = self._extract_metadata(ds)
 
         modality = self._infer_modality(ds)

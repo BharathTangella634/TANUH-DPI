@@ -74,6 +74,6 @@ class User(Base):
     firebase_uid = Column(String(128),  nullable=False, unique=True)
     email        = Column(String(255),  nullable=False)
     full_name    = Column(String(200),  nullable=True)
-    role         = Column(String(50),   nullable=False, default="user")
+    role         = Column(String(50),   nullable=False, default="authorized")
     created_at   = Column(DateTime,     server_default=_CREATED_AT_DEFAULT)
     updated_at   = Column(DateTime,     server_default=_CREATED_AT_DEFAULT, onupdate=datetime.now)

@@ -263,9 +263,10 @@
   padding: 3px 10px;
   border-radius: 999px;
 }
-.pf-demo-token-output-wrap { display: flex; align-items: flex-start; gap: 10px; }
+.hidden { display: none !important; }
+.pf-demo-token-output-wrap { display: flex; flex-direction: column; gap: 10px; }
 .pf-demo-token-output {
-  flex: 1;
+  width: 100%;
   background: #0e1f21;
   color: #7ee8ea;
   font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -279,6 +280,21 @@
   margin: 0;
   border: 1px solid rgba(20,134,140,0.3);
   max-height: 90px;
+  box-sizing: border-box;
+}
+.pf-demo-token-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf-demo-token-expiry-text {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 .pf-demo-token-copy {
   flex-shrink: 0;
@@ -426,6 +442,10 @@
   .pf-demo-token-fields { grid-template-columns: 1fr; }
   .pf-demo-token-output-wrap { flex-direction: column; }
   .pf-demo-token-copy { align-self: flex-start; }
+  .pf-demo-token-card { padding: 18px 16px; }
+  .pf-demo-token-header { font-size: 0.88rem; gap: 8px; }
+  .pf-demo-token-actions { flex-wrap: wrap; }
+  .pf-demo-token-expiry-text { margin-left: 0; white-space: normal; font-size: 0.72rem; }
 }
 
 /* ── Meta chips (job id / filename / content-type) ── */
@@ -488,21 +508,26 @@
 .pf-entity-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   font-size: 0.73rem;
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 999px;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1.1;
+  word-break: break-word;
 }
 
 .pf-conf-bar-wrap {
   display: flex;
   align-items: center;
-  gap: 7px;
-  min-width: 90px;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 .pf-conf-bar {
   flex: 1;
@@ -510,6 +535,7 @@
   border-radius: 999px;
   background: #e2e8f0;
   overflow: hidden;
+  min-width: 15px;
 }
 .pf-conf-bar-fill {
   height: 100%;

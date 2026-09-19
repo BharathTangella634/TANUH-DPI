@@ -6,7 +6,13 @@ positions:
   filename: /run/promtail/positions.yaml
 
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+  # Was http://loki:3100/... (Docker-internal name — only worked because
+  # Promtail used to be colocated with Loki on the same VM). Promtail now runs
+  # on every VM in dpi-mig, so it needs Loki's real, reachable address.
+  # Requires the -config.expand-env=true flag (set on the promtail command in
+  # docker-compose.yml) and the LOKI_HOST env var pointing at the monitoring
+  # VM's internal IP.
+  - url: http://${LOKI_HOST}:3100/loki/api/v1/push
 
 scrape_configs:
   - job_name: docker

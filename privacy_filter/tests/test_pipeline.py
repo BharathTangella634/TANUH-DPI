@@ -354,3 +354,40 @@ class TestPdfSafeHarbor:
         _result, text = self._run("rajashetty report.pdf", tmp_path)
         missing = [c for c in self.REPORT_CLINICAL if c.lower() not in text.lower()]
         assert missing == [], f"clinical content lost: {missing}"
+
+
+class TestSterlingAccurisPdf:
+    """Sterling Accuris pathology report: multi-page lab report with
+    patient/doctor names, org name, demographic info, and dense clinical data."""
+
+    DATA = Path(__file__).parent
+
+    ACCURIS_PHI = [
+        "LYUBOCHKA", "SVETKA", "SANJEEV", "STERLING",
+        "ACCURIS", "PURVISH", "SIDDHARTH", "HARDIK",
+    ]
+    ACCURIS_CLINICAL = [
+        "HAEMOGLOBIN", "PLATELET", "CREATININE",
+        "REFERENCE", "GLUCOSE", "CHOLESTEROL",
+        "SODIUM", "POTASSIUM", "BILIRUBIN",
+    ]
+
+    def _run(self, tmp_path):
+        import fitz
+        src = self.DATA / "sterling_accuris.pdf"
+        if not src.exists():
+            pytest.skip("sterling_accuris.pdf not present")
+        out = tmp_path / "redacted.pdf"
+        result = _engine().process(src, out)
+        text = "\n".join(p.get_text() for p in fitz.open(str(out)))
+        return result, text
+
+    def test_phi_removed(self, tmp_path):
+        _, text = self._run(tmp_path)
+        leaked = [p for p in self.ACCURIS_PHI if p.lower() in text.lower()]
+        assert leaked == [], f"PHI leaked: {leaked}"
+
+    def test_clinical_preserved(self, tmp_path):
+        _, text = self._run(tmp_path)
+        missing = [c for c in self.ACCURIS_CLINICAL if c.lower() not in text.lower()]
+        assert missing == [], f"clinical content lost: {missing}"

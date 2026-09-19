@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sign In — TANUH-DPI Ops Dashboard</title>
+<link rel="icon" type="image/png" href="/assets/tanuh.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="admin-dashboard.css">
+</head>
+<body>
+<div class="login-shell">
+    <div class="login-panel-brand">
+        <h1>DPI Monitoring &amp;<br>Operations</h1>
+        <p class="lede">
+            Live health, metrics, logs and alerts for the TANUH-DPI healthcare
+            document processing platform.
+        </p>
+        <ul class="login-features">
+            <li><span class="check">✓</span> Platform &amp; service health at a glance</li>
+            <li><span class="check">✓</span> Metrics, logs and alerts in one place</li>
+            <li><span class="check">✓</span> Restricted to authorized operators</li>
+        </ul>
+        <div class="login-supported-by">
+            <div class="label">Supported by</div>
+            <img src="/assets/MoE_Logo.svg" alt="Ministry of Education">
+            <img src="/assets/IISc_Logo.png" alt="IISc">
+        </div>
+    </div>
+
+    <div class="login-panel-form">
+        <div class="login-form-inner">
+            <div class="login-logos">
+                <img src="/assets/tanuh.png" alt="TANUH">
+            </div>
+
+            <h2>Welcome back</h2>
+            <p class="subtitle">Sign in with your ops dashboard credentials to continue</p>
+
+            <div class="login-error" id="loginError"></div>
+
+            <form id="loginForm" autocomplete="off">
+                <div class="form-field">
+                    <label for="username">Username</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user icon"></i>
+                        <input type="text" id="username" name="username" placeholder="e.g. Admin" required>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock icon"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-visibility" id="togglePassword" aria-label="Show password">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="sign-in-btn" id="signInBtn">
+                    Sign In <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <p class="login-footnote">TANUH-DPI — Monitoring &amp; Observability</p>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const form = document.getElementById('loginForm');
+    const errorBox = document.getElementById('loginError');
+    const signInBtn = document.getElementById('signInBtn');
+    const toggleBtn = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    toggleBtn.addEventListener('click', function () {
+        const showing = passwordInput.type === 'text';
+        passwordInput.type = showing ? 'password' : 'text';
+        toggleBtn.innerHTML = showing
+            ? '<i class="fa-solid fa-eye"></i>'
+            : '<i class="fa-solid fa-eye-slash"></i>';
+    });
+
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.add('visible');
+    }
+
+    // If already signed in, skip straight to the dashboard shell.
+    fetch('/admin-dashboard/api/session', { credentials: 'include' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.authenticated) {
+                window.location.replace('dashboard.html');
+            }
+        })
+        .catch(function () { /* ignore — just show the login form */ });
+
+    form.addEventListener('submit', function (evt) {
+        evt.preventDefault();
+        errorBox.classList.remove('visible');
+        signInBtn.disabled = true;
+
+        const username = document.getElementById('username').value;
+        const password = passwordInput.value;
+
+        fetch('/admin-dashboard/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username: username, password: password }),
+        })
+            .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+            .then(function (result) {
+                if (result.ok && result.data.ok) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    showError(result.data.error || 'Invalid credentials.');
+                    signInBtn.disabled = false;
+                }
+            })
+            .catch(function () {
+                showError('Could not reach the login service. Please try again.');
+                signInBtn.disabled = false;
+            });
+    });
+})();
+</script>
+</body>
+</html>

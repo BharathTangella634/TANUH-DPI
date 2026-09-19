@@ -54,6 +54,18 @@
         return isLocal ? 'http://localhost:8004/stats' : `${window.location.origin}/forgensic/stats`;
     }
 
+    function getAudioStatsUrl() {
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/audio-stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002/logs/audio-stats' : `${window.location.origin}/session-logger/logs/audio-stats`;
+    }
+
+    function getCTStatsUrl() {
+        if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/ct-stats`;
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        return isLocal ? 'http://localhost:8002/logs/ct-stats' : `${window.location.origin}/session-logger/logs/ct-stats`;
+    }
+
     function getVisitUrl() {
         if (window.DPI_API_CONFIG && window.DPI_API_CONFIG.logger) return `${window.DPI_API_CONFIG.logger}/logs/visit`;
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -154,12 +166,15 @@
         let clinical = 0, insurance = 0;
         let states = [], districts = [];
         let docsRedacted = 0, pageVisits = 0, forgeryDocs = 0;
+        let audioProcessings = 0, ctProcessings = 0;
 
-        const [statsRes, pfStatsRes, visitRes, forgeryRes] = await Promise.allSettled([
+        const [statsRes, pfStatsRes, visitRes, forgeryRes, audioRes, ctRes] = await Promise.allSettled([
             fetch(getStatsUrl(), { signal: AbortSignal.timeout(8000) }),
             fetchPfStats(),
             fetch(getVisitStatsUrl(), { signal: AbortSignal.timeout(6000) }),
             fetch(getForgeryStatsUrl(), { signal: AbortSignal.timeout(6000) }),
+            fetch(getAudioStatsUrl(), { signal: AbortSignal.timeout(6000) }),
+            fetch(getCTStatsUrl(), { signal: AbortSignal.timeout(6000) }),
         ]);
 
         if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
@@ -196,6 +211,20 @@
             } catch(e) {}
         }
 
+        if (audioRes.status === 'fulfilled' && audioRes.value.ok) {
+            try {
+                const a = await audioRes.value.json();
+                audioProcessings = a.audio_processings || 0;
+            } catch(e) {}
+        }
+
+        if (ctRes.status === 'fulfilled' && ctRes.value.ok) {
+            try {
+                const c = await ctRes.value.json();
+                ctProcessings = c.ct_processings || 0;
+            } catch(e) {}
+        }
+
         // Cards
         const setTarget = (id, val) => {
             const el = document.getElementById(id);
@@ -206,7 +235,9 @@
         setTarget('statInsurance',       insurance);
         setTarget('statDocsRedacted',    docsRedacted);
         setTarget('statForgery',         forgeryDocs);
-        
+        setTarget('statAudio',           audioProcessings);
+        setTarget('statCTReports',       ctProcessings);
+
         // Trigger animations for any elements that are already revealed
         document.querySelectorAll('.stat-value').forEach(el => {
             if (el.classList.contains('revealed-stat')) {

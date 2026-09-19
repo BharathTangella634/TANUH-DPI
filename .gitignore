@@ -25,7 +25,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+.claude/settings.json
+claude/
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -297,7 +298,11 @@ reference/
 postman/
 test_files/
 privacy_filter_data/
+privacy_filter_bharath_old/
+privacy_filter_old/
+privacy-filter-local/
 forgensic_data/
+privacy_filter/tests/
 
 # ── Concurrency test outputs ─────────────────────────────────────────────────
 conc_test_*.json

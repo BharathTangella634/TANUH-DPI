@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const GATED_TABS = new Set(["PDF2FHIR", "PDF2NHCX", "PrivacyFilter", "ForgeryDetection"]);
+    const GATED_TABS = new Set(["PDF2FHIR", "PDF2NHCX", "PrivacyFilter", "ForgeryDetection", "AudioASR", "HeadCTReportChecker"]);
     let _pendingTab = null;
     let _authReady = false;
     let _authReadyCallbacks = [];
@@ -82,9 +82,7 @@
     // ── Auth gate ─────────────────────────────────────────────────────────────
 
     function isGatedTab(tabName) {
-        // Temporarily disabled for UI changes
-        // return GATED_TABS.has(tabName);
-        return false;
+        return GATED_TABS.has(tabName);
     }
 
     function setPendingTab(tabName) {

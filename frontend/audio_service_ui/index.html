@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio to ASR and Summarisation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/audio_service_ui/css/styles.css?v=6">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: transparent;">
+    <main class="main-content" style="padding: 0;">
+        
+        <!-- Card Sub-navigation, styled like Image 1's top sub-nav -->
+        <div class="sub-nav-bar" style="display: flex; align-items: center; background-color: #e2f2f1; padding: 12px 24px; border-radius: 12px; margin-bottom: 24px;">
+            <button class="card-nav-btn active" id="nav-audio-summary" style="background-color: #14868C; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-microphone"></i> Audio Summary
+            </button>
+            <button class="card-nav-btn" id="nav-user-guide" style="background-color: transparent; color: #14868C; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-left: 8px;">
+                <i class="fas fa-book-open"></i> User Guide
+            </button>
+            <div class="ai-status" style="margin-left: auto; display: flex; align-items: center; gap: 6px; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">
+                <span class="ai-dot" style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%;"></span> AI ON
+            </div>
+        </div>
+
+        <!-- Service Header -->
+        <div class="service-header" style="margin-bottom: 24px;">
+            <div class="service-title-area">
+                <h2 style="display:flex; align-items:center; gap:8px; font-size: 1.4rem; color: #1e293b; margin-bottom: 8px;">
+                    <i class="fas fa-file-audio" style="color:#14868C;"></i> Audio to ASR and Summarisation
+                </h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Transform medical audio conversations into transcripts, topics, and clinical summaries.</p>
+            </div>
+        </div>
+        
+        <!-- Info Box (Light Green with Left Border) -->
+        <div class="info-box" style="background: #f0fdfa; border-left: 4px solid #14868C; border-radius: 6px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px;">
+            <div class="info-item" style="display: flex; align-items: flex-start; gap: 8px;">
+                <i class="fas fa-clock" style="color: #0f766e; margin-top: 3px;"></i>
+                <p style="margin: 0; font-size: 0.85rem; color: #0f766e; line-height: 1.5;"><strong>Note:</strong> Processing time is typically <strong>7-10 mins</strong>, depending on the audio size. <strong>Please do not close or refresh this tab</strong> while processing is in progress.</p>
+            </div>
+            <div class="info-item" style="display: flex; align-items: flex-start; gap: 8px;">
+                <i class="fas fa-user-shield" style="color: #0f766e; margin-top: 3px;"></i>
+                <p style="margin: 0; font-size: 0.85rem; color: #0f766e; line-height: 1.5;"><strong>Privacy Protocol:</strong> This is a non-persistent service. Your data is processed in real-time and purged automatically after use. No data is stored.</p>
+            </div>
+            <div class="info-item" style="display: flex; align-items: flex-start; gap: 8px;">
+                <i class="fas fa-file-audio" style="color: #0f766e; margin-top: 3px;"></i>
+                <p style="margin: 0; font-size: 0.85rem; color: #0f766e; line-height: 1.5;"><strong>Limit:</strong> Audio file must be at least <strong>5 minutes</strong> long, in <strong>.wav</strong> format, sampled at <strong>16kHz</strong>, and up to <strong>25 MB</strong> in size.</p>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: Audio Summary -->
+        <div id="tab-content-audio-summary" class="tab-pane active">
+            <!-- Upload Section (Big Dashed Dropzone) -->
+            <div class="upload-section" style="padding: 12px 0; margin-bottom: 24px; background: transparent;">
+                
+                <div class="audio-workspace-card" style="width: 100%;">
+                    <div class="audio-dropzone-modern" id="upload-zone" onclick="document.getElementById('file-input').click()" style="border: 1.5px dashed #94a3b8; border-radius: 12px; padding: 40px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s;">
+                        <div class="audio-upload-icon-wrap" style="background:#e0f2fe; color:#0284c7; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 12px;">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div>
+                            <p class="audio-dropzone-title" style="font-weight:600; color:#334155; margin-bottom:4px;">Drag &amp; drop audio file here, or <span style="color:#0284c7; text-decoration:underline; font-weight:700;">browse files</span></p>
+                            <p class="audio-dropzone-subtitle" style="font-size:0.8rem; color:#64748b;">Supports .wav (Max 25 MB)</p>
+                            <span id="file-name" style="display:block; margin-top:8px; font-weight:600; color:#ec4899;"></span>
+                        </div>
+                        <input type="file" id="file-input" accept=".wav" hidden>
+                    </div>
+                </div>
+                
+                <!-- Language and Process Button Row -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label for="language-select" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Language:</label>
+                        <select id="language-select" class="lang-select" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; font-family: inherit; font-size: 0.9rem; color: #0f172a;">
+                            <option value="hi">Hindi</option>
+                            <option value="kn">Kannada</option>
+                        </select>
+                    </div>
+                    <button id="btn-process" class="btn-primary" disabled style="background:#5eead4; color:#0f766e; padding:10px 24px; font-weight:700; border-radius:6px; border:none; cursor:pointer;">Process Audio</button>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div id="status-bar" class="status-bar dark-theme" style="display: none;">
+                <div class="progress-bar-container">
+                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                </div>
+                <div id="status-text-container">
+                    <span id="status-text">... Processing</span>
+                </div>
+            </div>
+
+            <!-- Output Wrapper -->
+            <div id="output-wrapper" style="display: none;">
+                <!-- RTTM Transcripts -->
+                <div class="output-panel">
+                    <div class="output-panel-header">
+                        <h3>RTTM Transcripts with Diarised Speakers</h3>
+                        <div class="panel-actions">
+                            <button id="btn-copy-transcript" class="btn-action">Copy</button>
+                            <button id="btn-download-transcript" class="btn-action">Download</button>
+                        </div>
+                    </div>
+                    <div class="output-panel-content transcript-content">
+                        <table class="transcript-table">
+                            <thead>
+                                <tr>
+                                    <th>Speaker</th>
+                                    <th>Time stamp</th>
+                                    <th>Transcripts</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transcript-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Topic and Summary Side-by-Side -->
+                <div class="bottom-panels">
+                    <div class="output-panel half-width">
+                        <div class="output-panel-header">
+                            <h3>Topic</h3>
+                            <div class="panel-actions">
+                                <button id="btn-copy-topic" class="btn-action">Copy</button>
+                                <button id="btn-download-topic" class="btn-action">Download</button>
+                            </div>
+                        </div>
+                        <div class="output-panel-content" id="topic-content"></div>
+                    </div>
+                    <div class="output-panel half-width">
+                        <div class="output-panel-header">
+                            <h3>Summary</h3>
+                            <div class="panel-actions">
+                                <button id="btn-copy-summary" class="btn-action">Copy</button>
+                                <button id="btn-download-summary" class="btn-action">Download</button>
+                            </div>
+                        </div>
+                        <div class="output-panel-content" id="summary-content"></div>
+                    </div>
+                </div>
+                
+                <div class="done-section" style="margin-top: 20px; text-align: center;">
+                    <button id="btn-done" class="btn-primary" style="display: none;">Done</button>
+                </div>
+            </div>
+        </div> <!-- End TAB CONTENT: Audio Summary -->
+
+        <!-- TAB CONTENT: User Guide -->
+        <div id="tab-content-user-guide" class="tab-pane" style="display: none;">
+            <div class="user-guide-content modern-guide" style="padding-top: 12px;">
+                <div class="guide-hero" style="background: #f0fdfa; text-align: center; padding: 32px 20px; border-radius: 12px; margin-bottom: 32px;">
+                    <h3 style="font-size: 1.6rem; color: #14868C; margin-bottom: 12px; font-weight: 700;">Mastering the Platform</h3>
+                    <p style="color: #64748b; font-size: 1.05rem; margin: 0;">Turn raw medical audio into structured clinical intelligence in 4 simple steps.</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                    <!-- Step 1 -->
+                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdfa; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                            <i class="fas fa-file-medical-alt" style="color: #14868C; font-size: 1.3rem;"></i>
+                        </div>
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0 0 12px;">1. Prepare Audio</h4>
+                        <p style="font-size: 0.9rem; line-height: 1.6; color: #64748b; margin: 0;">
+                            Ensure your audio is <strong>.wav</strong> (16kHz), at least 5 minutes long, and under 25 MB.
+                        </p>
+                    </div>
+                    
+                    <!-- Step 2 -->
+                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdfa; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                            <i class="fas fa-globe" style="color: #14868C; font-size: 1.3rem;"></i>
+                        </div>
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0 0 12px;">2. Select Language</h4>
+                        <p style="font-size: 0.9rem; line-height: 1.6; color: #64748b; margin: 0;">
+                            Pick the primary language spoken in your recording (Hindi or Kannada) from the top dropdown.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdfa; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                            <i class="far fa-clock" style="color: #14868C; font-size: 1.3rem;"></i>
+                        </div>
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0 0 12px;">3. Upload &amp; Process</h4>
+                        <p style="font-size: 0.9rem; line-height: 1.6; color: #64748b; margin: 0;">
+                            Upload the file and hit <strong>Process</strong>. Grab a coffee— AI analysis takes <strong>7-10 minutes</strong>. Do not refresh!
+                        </p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #f0fdfa; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                            <i class="fas fa-download" style="color: #14868C; font-size: 1.3rem;"></i>
+                        </div>
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0 0 12px;">4. Export Insights</h4>
+                        <p style="font-size: 0.9rem; line-height: 1.6; color: #64748b; margin: 0;">
+                            Review the AI-generated clinical summary and transcript. Copy text or download the text file.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End TAB CONTENT: User Guide -->
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/audio_service_ui/js/app.js?v=6"></script>
+    <script>
+        // Simple tab switching logic for the newly styled buttons
+        document.getElementById('nav-audio-summary').addEventListener('click', function() {
+            this.style.backgroundColor = '#14868C';
+            this.style.color = 'white';
+            let ug = document.getElementById('nav-user-guide');
+            ug.style.backgroundColor = 'transparent';
+            ug.style.color = '#14868C';
+            
+            document.getElementById('tab-content-audio-summary').style.display = 'block';
+            document.getElementById('tab-content-user-guide').style.display = 'none';
+        });
+        document.getElementById('nav-user-guide').addEventListener('click', function() {
+            this.style.backgroundColor = '#14868C';
+            this.style.color = 'white';
+            let au = document.getElementById('nav-audio-summary');
+            au.style.backgroundColor = 'transparent';
+            au.style.color = '#14868C';
+            
+            document.getElementById('tab-content-audio-summary').style.display = 'none';
+            document.getElementById('tab-content-user-guide').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

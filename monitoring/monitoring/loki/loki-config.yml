@@ -9,12 +9,23 @@ common:
   ring:
     kvstore:
       store: inmemory
+  # ── Durable storage (GCS) ───────────────────────────────────────────────────
+  # Bucket: gs://dpi-monitoring-bkt (asia-south1, already created).
+  # No credentials configured here on purpose — Loki picks up Application
+  # Default Credentials from the VM's attached service account automatically,
+  # same keyless pattern already used by cloud-sql-proxy and the app services'
+  # own GCS access (see docker-compose.prod.yml GCS_BUCKET usage). That service
+  # account needs roles/storage.objectAdmin on this bucket (see plan doc for
+  # the exact gcloud command).
+  storage:
+    gcs:
+      bucket_name: dpi-monitoring-bkt
 
 schema_config:
   configs:
     - from: 2024-01-01
       store: tsdb
-      object_store: filesystem
+      object_store: gcs
       schema: v13
       index:
         prefix: index_
@@ -25,14 +36,12 @@ storage_config:
     active_index_directory: /loki/index
     cache_location: /loki/index_cache
     cache_ttl: 24h
-  filesystem:
-    directory: /loki/chunks
 
 compactor:
   working_directory: /loki/compactor
   compaction_interval: 10m
   retention_enabled: true
-  delete_request_store: filesystem
+  delete_request_store: gcs
 
 limits_config:
   retention_period: 168h

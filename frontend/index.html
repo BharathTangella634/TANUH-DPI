@@ -8,9 +8,9 @@
     <meta name="description"
         content="TANUH DPI is the open-source AI platform for healthcare document processing - clinical conversion, insurance claims, privacy filtering, and forgery detection in one ecosystem.">
     <link rel="icon" type="image/png" href="assets/tanuh.png">
-    <link rel="stylesheet" href="assets/style.css?v=4">
-    <link rel="stylesheet" href="assets/home-modern.css?v=15">
-    <link rel="stylesheet" href="assets/privacy-filter.css?v=4">
+    <link rel="stylesheet" href="assets/style.css?v=8">
+    <link rel="stylesheet" href="assets/home-modern.css?v=21">
+    <link rel="stylesheet" href="assets/privacy-filter.css?v=5">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"
         crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -34,6 +34,7 @@
                     <a class="nav-brand" href="#" onclick="openTab(null, 'Home'); return false;">
                         <img src="assets/tanuh.png" alt="TANUH AI" class="nav-logo">
                         <img src="assets/MoE_Logo.svg" alt="Ministry of Education" class="nav-logo-moe">
+                        <img src="assets/cbr.jpeg" alt="Centre for Brain Research" class="nav-logo-cbr">
                         <img src="assets/IISc_Logo.png" alt="IISc Logo" class="nav-logo-iisc">
                         <div class="nav-brand-text">
                             <span class="nav-brand-title">TANUH DPI</span>
@@ -105,8 +106,28 @@
                                         style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i
                                             class="fas fa-user-shield"></i></span>
                                     <div>
-                                        <div class="dropdown-item-title">Privacy Filter (Anonymization)</div>
-                                        <div class="dropdown-item-desc">Data/image anonymization engine</div>
+                                        <div class="dropdown-item-title">Privacy Filter (Anonymisation)</div>
+                                        <div class="dropdown-item-desc">Data/image anonymisation engine</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="#" id="navAudio"
+                                    onclick="openTab(event, 'AudioASR')">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(236,72,153,0.1);color:#ec4899;"><i
+                                            class="fas fa-microphone"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Medical Audio Summarisation</div>
+                                        <div class="dropdown-item-desc">Audio dictation &amp; summarisation</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="#" id="navHeadCTReportChecker"
+                                    onclick="openTab(event, 'HeadCTReportChecker')">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(6,182,212,0.1);color:#06b6d4;"><i
+                                            class="fas fa-x-ray"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Head CT Report Checker</div>
+                                        <div class="dropdown-item-desc">Radiology report review workflow</div>
                                     </div>
                                 </a>
                             </div>
@@ -122,7 +143,7 @@
                                 </svg>
                             </button>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" href="#" onclick="openTab(event, 'ClinicalDocs')">
+                                <a class="dropdown-item" href="docs/clinical.html" target="_blank" rel="noopener noreferrer">
                                     <span class="dropdown-icon"
                                         style="background:rgba(14,165,233,0.1);color:#0ea5e9;"><i
                                             class="fas fa-file-medical"></i></span>
@@ -131,7 +152,7 @@
                                         <div class="dropdown-item-desc">FHIR parsing &amp; conversion</div>
                                     </div>
                                 </a>
-                                <a class="dropdown-item" href="#" onclick="openTab(event, 'ForgeryDocs')">
+                                <a class="dropdown-item" href="docs/forgery.html" target="_blank" rel="noopener noreferrer">
                                     <span class="dropdown-icon"
                                         style="background:rgba(16,185,129,0.1);color:#10b981;"><i
                                             class="fas fa-search-plus"></i></span>
@@ -140,7 +161,7 @@
                                         <div class="dropdown-item-desc">Tampering &amp; forensics checks</div>
                                     </div>
                                 </a>
-                                <a class="dropdown-item" href="#" onclick="openTab(event, 'InsuranceDocs')">
+                                <a class="dropdown-item" href="docs/insurance.html" target="_blank" rel="noopener noreferrer">
                                     <span class="dropdown-icon"
                                         style="background:rgba(139,92,246,0.1);color:#8b5cf6;"><i
                                             class="fas fa-shield-alt"></i></span>
@@ -149,13 +170,31 @@
                                         <div class="dropdown-item-desc">NHCX schemas &amp; policy specs</div>
                                     </div>
                                 </a>
-                                <a class="dropdown-item" href="#" onclick="openTab(event, 'PrivacyDocs')">
+                                <a class="dropdown-item" href="docs/privacyfilter.html" target="_blank" rel="noopener noreferrer">
                                     <span class="dropdown-icon"
                                         style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i
                                             class="fas fa-user-shield"></i></span>
                                     <div>
-                                        <div class="dropdown-item-title">Privacy Filter (Anonymization) Docs</div>
+                                        <div class="dropdown-item-title">Privacy Filter (Anonymisation) Docs</div>
                                         <div class="dropdown-item-desc">Redaction &amp; DPDP compliance</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="docs/audio.html" target="_blank" rel="noopener noreferrer">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(236,72,153,0.1);color:#ec4899;"><i
+                                            class="fas fa-microphone"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Medical Audio Summarisation Docs</div>
+                                        <div class="dropdown-item-desc">Audio models &amp; local deploy</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item" href="docs/head-ct-checker.html" target="_blank" rel="noopener noreferrer">
+                                    <span class="dropdown-icon"
+                                        style="background:rgba(6,182,212,0.1);color:#06b6d4;"><i
+                                            class="fas fa-x-ray"></i></span>
+                                    <div>
+                                        <div class="dropdown-item-title">Head CT Report Checker Docs</div>
+                                        <div class="dropdown-item-desc">Report review workflow</div>
                                     </div>
                                 </a>
                             </div>
@@ -190,11 +229,14 @@
         <div id="PDF2NHCX" class="tabcontent container" style="display: none;"></div>
         <div id="PrivacyFilter" class="tabcontent container" style="display: none;"></div>
         <div id="ForgeryDetection" class="tabcontent container" style="display: none;"></div>
+        <div id="AudioASR" class="tabcontent container" style="display: none;"></div>
+        <div id="HeadCTReportChecker" class="tabcontent container" style="display: none;"></div>
         <div id="AboutUs" class="tabcontent container" style="display: none;"></div>
         <div id="ClinicalDocs" class="tabcontent" style="display: none;"></div>
         <div id="InsuranceDocs" class="tabcontent" style="display: none;"></div>
         <div id="PrivacyDocs" class="tabcontent" style="display: none;"></div>
         <div id="ForgeryDocs" class="tabcontent" style="display: none;"></div>
+        <div id="AudioDocs" class="tabcontent" style="display: none;"></div>
         <div id="APIAccess" class="tabcontent container" style="display: none;"></div>
         <div id="Download" class="tabcontent container" style="display: none;"></div>
         <div id="Login" class="tabcontent" style="display: none;"></div>
@@ -231,13 +273,15 @@
                         <li><a href="#" onclick="openTab(null,'PDF2FHIR'); return false;">Clinical Document</a></li>
                         <li><a href="#" onclick="openTab(null,'ForgeryDetection'); return false;">Forgery Detection</a></li>
                         <li><a href="#" onclick="openTab(null,'PDF2NHCX'); return false;">Insurance Policy</a></li>
-                        <li><a href="#" onclick="openTab(null,'PrivacyFilter'); return false;">Privacy Filter (Anonymization)</a></li>
+                        <li><a href="#" onclick="openTab(null,'PrivacyFilter'); return false;">Privacy Filter (Anonymisation)</a></li>
+                        <li><a href="#" onclick="openTab(null,'AudioASR'); return false;">Medical Audio Summarisation</a></li>
+                        <li><a href="#" onclick="openTab(null,'HeadCTReportChecker'); return false;">Head CT Report Checker</a></li>
                     </ul>
                 </div>
 
-                <!-- Organization Column -->
+                <!-- Organisation Column -->
                 <div class="footer-link-col">
-                    <h4 class="footer-heading">Organization</h4>
+                    <h4 class="footer-heading">Organisation</h4>
                     <ul>
                         <li><a href="https://www.tanuh.ai" target="_blank" rel="noopener noreferrer">About TANUH</a></li>
                         <li><a href="#" onclick="openTab(null,'AboutUs'); return false;">About DPI</a></li>
@@ -276,19 +320,20 @@
     <div id="toast-container"></div>
 
     <!-- Auth -->
-    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/auth.js?v=3"></script>
     <!-- Core Logic -->
-    <script src="assets/js/main.js?v=17"></script>
+    <script src="assets/js/main.js?v=20"></script>
     <!-- Tab Modules -->
     <script src="assets/js/dashboard.js?v=2"></script>
-    <script src="assets/js/processor.js?v=4"></script>
+    <script src="assets/js/processor.js?v=18"></script>
     <script src="assets/js/apiaccess.js"></script>
     <script src="assets/js/fhir-validator.js"></script>
-    <script src="assets/privacy-filter.js?v=2"></script>
-    <script src="assets/pf-editor.js"></script>
+    <script src="assets/privacy-filter.js?v=3"></script>
+    <script src="assets/pf-editor.js?v=2"></script>
     <script src="assets/js/forgery.js?v=2"></script>
 
     <!-- Third Party -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>

@@ -25,9 +25,11 @@ services:
       - ABDM_SECRET_KEY=${ABDM_SECRET_KEY}
       - ABDM_AUTH_ENABLED=${ABDM_AUTH_ENABLED:-true}
       - ABDM_TOKEN_EXPIRY_DAYS=${ABDM_TOKEN_EXPIRY_DAYS:-7}
+      - DOWNLOADS_LOCAL_DIR=/app/downloads
     volumes:
       - ./pdf_uploads:/app/pdf_uploads
       - ./fhir_results:/app/fhir_results
+      - /opt/downloads:/app/downloads:ro
     depends_on:
       - redis
       - session-logger
@@ -75,9 +77,15 @@ services:
       - PYTHONPATH=/app
       - WORKER_METRICS_PORT=9200
       - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    # Each of the 4 replicas gets one host port from this range (Compose
+    # assigns them automatically) so target-discovery can reach every replica
+    # from any VM, not just via the same-host Docker network name.
+    ports:
+      - "9210-9213:9200"
     volumes:
       - ./pdf_uploads:/app/pdf_uploads
       - ./fhir_results:/app/fhir_results
+      - /opt/downloads:/app/downloads:ro
       - ./nhcx_results:/app/nhcx_results
     depends_on:
       - redis
@@ -100,17 +108,100 @@ services:
       - PYTHONPATH=/app
       - WORKER_METRICS_PORT=9200
       - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    ports:
+      - "9200-9203:9200"
     volumes:
       - ./pdf_uploads:/app/pdf_uploads
       - ./fhir_results:/app/fhir_results
+      - /opt/downloads:/app/downloads:ro
       - ./nhcx_results:/app/nhcx_results
     depends_on:
       - redis
 
 
+  # ── Admin dashboard login gate (dpi.tanuh.ai/admin-dashboard) ────────────────
+  # Not part of the CI/CD image-publish pipeline (built locally, like queue-exporter).
+  dashboard-auth:
+    build:
+      context: .
+      dockerfile: dashboard_auth/Dockerfile
+    container_name: dashboard-auth
+    ports:
+      - "8005:8005"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ADMIN_DASHBOARD_USERNAME=${ADMIN_DASHBOARD_USERNAME:-Admin}
+      - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD:-Admin@TANUH_12345!}
+      - ADMIN_DASHBOARD_SECRET_KEY=${ADMIN_DASHBOARD_SECRET_KEY:-dev-change-me-in-production}
+
+  # ── Per-VM monitoring agents ──────────────────────────────────────────────
+  # One copy of each runs on every VM in dpi-mig (this file already runs
+  # identically on every instance via docker-starter.sh), so each VM's own
+  # host metrics, container-restart counts, and container logs are visible —
+  # not just whichever VM happens to run the singleton Prometheus/Loki.
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+    ports:
+      - "9100:9100"
+
+  queue-exporter:
+    # Built from the repo root so the image can carry common/secrets.py — the
+    # exporter needs the Memorystore AUTH password resolved the same way the
+    # app services resolve it (env_file below supplies PROJECT_ID + the
+    # pointer). Without it Redis answers NOAUTH and every queue reads -1.
+    build:
+      context: .
+      dockerfile: monitoring/queue-exporter/Dockerfile
+    container_name: queue-exporter
+    restart: unless-stopped
+    environment:
+      # Only the Redis pointer is passed, not the whole .env — the exporter has
+      # no business holding the MySQL or JWT secrets. PROJECT_ID is interpolated
+      # from .env by Compose itself and tells common/secrets.py where to look.
+      - PROJECT_ID=${PROJECT_ID}
+      - REDIS_URL=redis://10.250.123.43:6379/0
+      - REDIS_PASSWORD_SECRET=redis-password
+      - POLL_INTERVAL_SECONDS=15
+      - METRICS_PORT=9101
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "9101:9101"
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: promtail
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/promtail/promtail-config.yml
+      - -config.expand-env=true
+    environment:
+      # Set to the monitoring VM's real internal IP once known (see the
+      # autoscale plan doc — this is a placeholder until that's provisioned).
+      - LOKI_HOST=${LOKI_HOST:-127.0.0.1}
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - promtail_positions:/run/promtail
+      - ${DOCKER_CONTAINER_LOGS_PATH:-/var/lib/docker/containers}:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   frontend:
     image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/frontend:${IMAGE_TAG:-v1.0.0}
-    build: 
+    build:
       context: .
       dockerfile: frontend/Dockerfile
     container_name: frontend-service
@@ -120,6 +211,7 @@ services:
     depends_on:
       - pdf2abdm
       - pdf2nhcx
+      - dashboard-auth
 
   cloud-sql-proxy:
     image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
@@ -183,14 +275,14 @@ services:
       - redis
       - session-logger
 
-  # ── Privacy Filter Workers (4 replicas × concurrency 2 = 8 parallel slots) ──
+  # ── Privacy Filter Workers (8 replicas × concurrency 2 = 16 parallel slots) ──
   celery-privacy-worker:
     image: asia-south1-docker.pkg.dev/proj-dpi-shared/dpi-containers/celery-privacy-worker:${IMAGE_TAG:-v1.0.0}
     build:
       context: .
       dockerfile: privacy_filter/Dockerfile
     deploy:
-      replicas: 4
+      replicas: 8
     command: >
       celery -A privacy_filter.celery_app worker
       --loglevel=info
@@ -212,6 +304,8 @@ services:
       - SESSION_LOGGER_URL=http://session-logger:8002
       - WORKER_METRICS_PORT=9200
       - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    ports:
+      - "9230-9237:9200"
     volumes:
       - ./privacy_filter_data:/tmp/data
     depends_on:
@@ -276,7 +370,11 @@ services:
       - FORGENSIC_SECRET_KEY=${FORGENSIC_SECRET_KEY}
       - WORKER_METRICS_PORT=9200
       - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    ports:
+      - "9220-9223:9200"
     volumes:
       - ./forgensic_data:/app/forgensic_data
     depends_on:
       - redis
+volumes:
+  promtail_positions:

@@ -35,13 +35,27 @@
     margin-left: 4px !important;
 }
 
+.nav-logo-cbr {
+    display: none !important;
+    height: 36px !important;
+    width: auto !important;
+    border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
+    padding-left: 8px !important;
+    margin-left: 4px !important;
+    object-fit: contain !important;
+}
+
+body.ct-report-checker-active .nav-logo-cbr {
+    display: inline-block !important;
+}
+
 .nav-logo-iisc {
     height: 34px !important;
     width: auto !important;
     border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
     padding-left: 8px !important;
     margin-left: 4px !important;
-    filter: none !important; /* Disable inversion filter on light theme */
+    filter: none !important;
 }
 
 .nav-brand-title {
@@ -257,9 +271,9 @@ body {
 /* ── Shrunk Hero Service Quick Links ─────────────────────────────────────── */
 .hero-services {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)) !important;
     gap: 8px !important; /* reduced gap */
-    max-width: 48rem !important; /* reduced width of the row */
+    max-width: 72rem !important; /* increased width of the row */
     margin: 0 auto !important;
 }
 
@@ -338,7 +352,7 @@ body {
 
 .stats-row {
     display: grid !important;
-    grid-template-columns: repeat(5, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
     gap: 1.5rem !important;
 }
 
@@ -448,9 +462,9 @@ body {
 /* ── Ecosystem Side-by-Side Cards (4-Column Layout) ──────────────────────── */
 .ecosystem-grid {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)) !important;
     gap: 1rem !important;
-    max-width: 76rem !important;
+    max-width: 90rem !important;
 }
 
 @media (max-width: 1024px) {
@@ -522,6 +536,10 @@ body {
     border-color: rgba(16, 185, 129, 0.3) !important;
     box-shadow: 0 8px 20px rgba(16, 185, 129, 0.04) !important;
 }
+.eco-card:nth-child(6):hover {
+    border-color: rgba(20, 134, 140, 0.3) !important;
+    box-shadow: 0 8px 20px rgba(20, 134, 140, 0.04) !important;
+}
 
 /* ── Slower, Smoother Transitions ────────────────────────────────────────── */
 .animate-slide-up {
@@ -572,6 +590,8 @@ body {
 .eco-card:nth-child(2) { transition-delay: 0.3s !important; }
 .eco-card:nth-child(3) { transition-delay: 0.5s !important; }
 .eco-card:nth-child(4) { transition-delay: 0.7s !important; }
+.eco-card:nth-child(5) { transition-delay: 0.9s !important; }
+.eco-card:nth-child(6) { transition-delay: 1.1s !important; }
 
 /* ── Staggered reveal for Backed By logos ────────────────────────────────── */
 .logo-grid img {
@@ -1094,6 +1114,11 @@ body {
         padding-left: 12px !important;
         margin-left: 6px !important;
     }
+    .nav-logo-cbr {
+        height: 54px !important;
+        padding-left: 12px !important;
+        margin-left: 6px !important;
+    }
     .nav-brand-subtitle {
         display: none !important;
     }
@@ -1460,9 +1485,9 @@ body {
         padding: 0 12px !important;
         font-size: 0.75rem !important;
         font-weight: 600 !important;
-        color: #ef4444 !important;
-        background: rgba(239, 68, 68, 0.08) !important;
-        border: 1px solid rgba(239, 68, 68, 0.15) !important;
+        color: var(--brand-primary) !important;
+        background: rgba(20, 134, 140, 0.08) !important;
+        border: 1px solid rgba(20, 134, 140, 0.2) !important;
         border-radius: 6px !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
@@ -1521,9 +1546,9 @@ body {
         padding: 0 12px !important;
         font-size: 0.75rem !important;
         font-weight: 600 !important;
-        color: #ef4444 !important;
-        background: rgba(239, 68, 68, 0.08) !important;
-        border: 1px solid rgba(239, 68, 68, 0.15) !important;
+        color: var(--brand-primary) !important;
+        background: rgba(20, 134, 140, 0.08) !important;
+        border: 1px solid rgba(20, 134, 140, 0.2) !important;
         border-radius: 6px !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
@@ -1651,6 +1676,11 @@ body {
     }
     .nav-logo-iisc {
         height: 44px !important;
+        padding-left: 10px !important;
+        margin-left: 5px !important;
+    }
+    .nav-logo-cbr {
+        height: 46px !important;
         padding-left: 10px !important;
         margin-left: 5px !important;
     }

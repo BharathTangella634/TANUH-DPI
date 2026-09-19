@@ -58,7 +58,7 @@
       "description": "Total documents currently queued across all pipelines.",
       "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(dpi_queue_depth) or vector(0)", "legendFormat": "", "refId": "A" }],
+      "targets": [{ "expr": "sum(max by (queue) (dpi_queue_depth))", "legendFormat": "", "refId": "A" }],
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value", "colorMode": "background", "graphMode": "area", "justifyMode": "center" },
       "fieldConfig": {
         "defaults": {
@@ -191,9 +191,10 @@
       "gridPos": { "x": 16, "y": 6, "w": 8, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM", "refId": "A" },
-        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX", "refId": "B" },
-        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forensic", "refId": "C" }
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"abdm\"})", "legendFormat": "ABDM", "refId": "A" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"nhcx\"})", "legendFormat": "NHCX", "refId": "B" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"privacy_filter\"})", "legendFormat": "Privacy Filter", "refId": "C" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"forgensic\"})", "legendFormat": "Forensic", "refId": "D" }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -227,9 +228,10 @@
       "gridPos": { "x": 0, "y": 15, "w": 24, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "dpi_queue_depth{queue=\"abdm\"}", "legendFormat": "ABDM Queue", "refId": "A" },
-        { "expr": "dpi_queue_depth{queue=\"nhcx\"}", "legendFormat": "NHCX Queue", "refId": "B" },
-        { "expr": "dpi_queue_depth{queue=\"forgensic\"}", "legendFormat": "Forensic Queue", "refId": "C" }
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"abdm\"})", "legendFormat": "ABDM Queue", "refId": "A" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"nhcx\"})", "legendFormat": "NHCX Queue", "refId": "B" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"privacy_filter\"})", "legendFormat": "Privacy Filter Queue", "refId": "C" },
+        { "expr": "max by (queue) (dpi_queue_depth{queue=\"forgensic\"})", "legendFormat": "Forensic Queue", "refId": "D" }
       ],
       "options": {
         "tooltip": { "mode": "multi" },

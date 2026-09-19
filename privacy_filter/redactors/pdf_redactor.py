@@ -28,13 +28,14 @@ via PyMuPDF's OCR text page when available.
 """
 from __future__ import annotations
 
+import io
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import fitz
 
-from ..detectors.safe_harbor_detector import SafeHarborDetector
+from ..detectors.safe_harbor_detector import SafeHarborDetector, _CLINICAL_ALLOWLIST
 
 logger = logging.getLogger("privacy_filter.pdf_redactor")
 
@@ -65,18 +66,38 @@ _QR_MAX_SIDE = 160.0  # PDF points
 _BARCODE_MIN_AR = 2.5
 _BARCODE_MAX_H = 70.0  # PDF points — distinguishes barcodes from wide banners
 
+# Signature image heuristic: wider than tall, moderate height.
+_SIG_MIN_AR = 1.5
+_SIG_MAX_AR = 6.0
+_SIG_MIN_H = 20.0  # PDF points
+_SIG_MAX_H = 80.0  # PDF points
+
 # Labels whose detected text is a discrete identifier worth searching for
 # everywhere it repeats (names, codes, IDs). Dates/times/ages repeat too but
 # are already caught per-line by the pattern detectors on every page.
 _GLOBAL_LABELS = {
     "PERSON_NAME", "IDENTIFIER", "LABELED_PHI", "BARCODE", "AADHAAR",
-    "PAN", "SSN", "EMAIL",
+    "PAN", "SSN", "EMAIL", "ORG_NAME",
 }
 
 # Stop-words never worth global searching (would over-match clinical text).
 _TOKEN_STOPWORDS = {
     "dr", "mr", "mrs", "ms", "the", "of", "and", "unit", "male", "female",
     "general", "consultant", "professor", "resident", "by", "no", "id",
+    "for", "with", "from", "into", "that", "this", "then", "than",
+    "not", "but", "are", "was", "were", "been", "has", "have", "had",
+    "its", "all", "any", "can", "may", "will", "also", "each", "per",
+    "national", "international", "scientific", "advisory", "board",
+    "committee", "council", "society", "association", "organization",
+    "foundation", "system", "testing", "variant", "method", "type",
+    "group", "class", "level", "grade", "stage", "phase", "part",
+    "based", "using", "according", "between", "within", "after", "before",
+    "about", "under", "over", "through", "during", "following",
+    "management", "recommendations", "guidelines", "standards",
+    "department", "division", "section", "service", "program",
+    "journal", "report", "review", "study", "research", "article",
+    "patients", "subjects", "individuals", "persons", "cases",
+    "data", "information", "records", "files", "documents",
 }
 
 
@@ -169,8 +190,8 @@ class PDFRedactor:
 
         words = page.get_text("words")  # [x0,y0,x1,y1, word, block, line, wordno]
 
-        # Scanned page fallback → OCR text page (needs system tesseract).
-        if len(words) < _MIN_WORDS_FOR_NATIVE:
+        is_scanned = len(words) < _MIN_WORDS_FOR_NATIVE
+        if is_scanned:
             words = self._ocr_words(page)
 
         # Group words into visual lines by (block, line).
@@ -202,10 +223,20 @@ class PDFRedactor:
                 if rect is not None:
                     redact_rects.append((rect, span.label, span.text))
 
-        # Apply text redactions (true removal + black fill).
+        # ── Block-level detection ────────────────────────────────────────────
+        redact_rects.extend(self._block_level_detect(lines, words))
+
+        if is_scanned:
+            # Scanned page: text lives in the page image, not as PDF glyphs.
+            # Annotation-based redaction would destroy the entire page image.
+            # Instead, modify the image pixels directly.
+            return self._apply_scanned_redactions(
+                page, page_index, redact_rects, global_tokens,
+            )
+
+        # ── Digital page: text-based redaction (true glyph removal) ──────────
         for rect, label, text in redact_rects:
             page.add_redact_annot(rect, fill=(0, 0, 0))
-            # Remember identifier-like tokens for the global repeat pass.
             if global_tokens is not None and text and label in _GLOBAL_LABELS:
                 global_tokens.add(text)
             entities.append({
@@ -225,13 +256,258 @@ class PDFRedactor:
                 "bbox": _px_bbox(rect, page_index),
             })
 
-        if redact_rects or any(e["entity_group"] in ("QR_CODE", "BARCODE") for e in entities):
-            # images=PDF_REDACT_IMAGE_NONE keeps unrelated images (logos, figures);
-            # the QR/barcode rects are removed because their annots cover them and
-            # we request pixel removal only where annots sit.
+        if redact_rects or any(e["entity_group"] in ("QR_CODE", "BARCODE", "SIGNATURE") for e in entities):
             page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_REMOVE)
 
         return entities
+
+    # ------------------------------------------------------------------
+
+    def _apply_scanned_redactions(
+        self,
+        page: "fitz.Page",
+        page_index: int,
+        redact_rects: List[tuple],
+        global_tokens: set | None = None,
+    ) -> List[Dict[str, Any]]:
+        """Redact a scanned page by modifying the embedded image pixels.
+
+        For scanned PDFs the visible content is a raster image, not PDF text
+        glyphs.  Annotation-based ``apply_redactions`` with image removal would
+        destroy the entire page.  Instead we:
+          1. Extract the main page image.
+          2. Draw filled black rectangles at every PHI bounding box.
+          3. Detect and mask handwritten signatures.
+          4. Replace the image in the PDF via ``page.replace_image``.
+        """
+        from PIL import Image, ImageDraw
+
+        entities: List[Dict[str, Any]] = []
+        doc = page.parent
+
+        page_images = page.get_images(full=True)
+        if not page_images:
+            logger.warning("Scanned page %d: no extractable images", page_index)
+            return entities
+
+        # Pick the largest embedded image (the full-page scan).
+        main_xref, main_rect = None, None
+        max_area = 0.0
+        for img_info in page_images:
+            xref = img_info[0]
+            try:
+                rects = page.get_image_rects(xref)
+                if not rects:
+                    continue
+                r = rects[0]
+                area = r.width * r.height
+                if area > max_area:
+                    max_area, main_xref, main_rect = area, xref, r
+            except Exception:
+                continue
+
+        if main_xref is None:
+            logger.warning("Scanned page %d: could not locate main image", page_index)
+            return entities
+
+        try:
+            base_image = doc.extract_image(main_xref)
+        except Exception as exc:
+            logger.warning("Scanned page %d: extract_image failed: %s", page_index, exc)
+            return entities
+
+        pil_img = Image.open(io.BytesIO(base_image["image"]))
+        if pil_img.mode not in ("RGB", "L"):
+            pil_img = pil_img.convert("RGB")
+
+        img_w, img_h = pil_img.size
+        sx = img_w / main_rect.width
+        sy = img_h / main_rect.height
+
+        draw = ImageDraw.Draw(pil_img)
+        _PAD_L = 6   # left/top padding (pixels)
+        _PAD_R = 18  # right padding — OCR boxes consistently under-report width
+        _PAD_T = 6
+        _PAD_B = 10  # bottom — descenders extend below baseline
+
+        for rect, label, text in redact_rects:
+            px0 = max(0, int((rect.x0 - main_rect.x0) * sx) - _PAD_L)
+            py0 = max(0, int((rect.y0 - main_rect.y0) * sy) - _PAD_T)
+            px1 = min(img_w, int((rect.x1 - main_rect.x0) * sx) + _PAD_R)
+            py1 = min(img_h, int((rect.y1 - main_rect.y0) * sy) + _PAD_B)
+            draw.rectangle([px0, py0, px1, py1], fill="black")
+
+            if global_tokens is not None and text and label in _GLOBAL_LABELS:
+                global_tokens.add(text)
+            entities.append({
+                "entity_group": label,
+                "score": 1.0,
+                "word": text or None,
+                "bbox": _px_bbox(rect, page_index),
+            })
+
+        # Detect and mask handwritten signatures.
+        for sig_box in self._detect_signatures_in_image(pil_img):
+            draw.rectangle(sig_box, fill="black")
+            pg_rect = fitz.Rect(
+                sig_box[0] / sx + main_rect.x0,
+                sig_box[1] / sy + main_rect.y0,
+                sig_box[2] / sx + main_rect.x0,
+                sig_box[3] / sy + main_rect.y0,
+            )
+            entities.append({
+                "entity_group": "SIGNATURE",
+                "score": 0.9,
+                "word": None,
+                "bbox": _px_bbox(pg_rect, page_index),
+            })
+
+        # Save modified image and replace in the PDF.
+        buf = io.BytesIO()
+        ext = base_image.get("ext", "png").lower()
+        if ext in ("jpeg", "jpg"):
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            pil_img.save(buf, format="JPEG", quality=95)
+        else:
+            pil_img.save(buf, format="PNG")
+
+        try:
+            new_pix = fitz.Pixmap(buf.getvalue())
+            page.replace_image(main_xref, pixmap=new_pix)
+        except Exception as exc:
+            logger.warning(
+                "Scanned page %d: replace_image failed (%s), "
+                "falling back to page rebuild",
+                page_index, exc,
+            )
+            self._rebuild_page_with_image(page, buf.getvalue())
+
+        logger.info(
+            "Scanned page %d: redacted %d regions + %d signatures",
+            page_index,
+            len(redact_rects),
+            sum(1 for e in entities if e["entity_group"] == "SIGNATURE"),
+        )
+        return entities
+
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _rebuild_page_with_image(page: "fitz.Page", img_bytes: bytes):
+        """Fallback: delete page and re-create with the redacted image."""
+        doc = page.parent
+        idx = page.number
+        rect = page.rect
+        doc.delete_page(idx)
+        new_page = doc.new_page(pno=idx, width=rect.width, height=rect.height)
+        new_page.insert_image(new_page.rect, stream=img_bytes)
+
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _detect_signatures_in_image(pil_img) -> List[tuple]:
+        """Detect handwritten signature regions in the bottom half of an image.
+
+        Returns list of (x0, y0, x1, y1) pixel rectangles.
+        """
+        import numpy as np
+
+        try:
+            import cv2
+        except ImportError:
+            return []
+
+        gray = np.array(pil_img.convert("L"))
+        h, w = gray.shape
+
+        # Signatures appear in the bottom 45% of the page.
+        y_start = int(h * 0.55)
+        bottom = gray[y_start:]
+        bh = bottom.shape[0]
+
+        # Otsu threshold: dark ink on light paper.
+        _, binary = cv2.threshold(bottom, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+        # Dilate to merge nearby pen strokes into connected regions.
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 8))
+        dilated = cv2.dilate(binary, kernel, iterations=2)
+
+        contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        sig_rects: List[tuple] = []
+        for c in contours:
+            x, y, cw, ch = cv2.boundingRect(c)
+            area = cw * ch
+            if area < w * bh * 0.003 or area > w * bh * 0.08:
+                continue
+            ar = cw / max(ch, 1)
+            if ar < 1.2 or ar > 10:
+                continue
+            # Must not span the full width (those are text lines, caught by OCR).
+            if cw > w * 0.55:
+                continue
+            fill = cv2.contourArea(c) / max(area, 1)
+            # Signatures are sparse strokes, not solid blocks.
+            if fill > 0.7:
+                continue
+            sig_rects.append((x, y + y_start, x + cw, y + ch + y_start))
+
+        return sig_rects
+
+    # ------------------------------------------------------------------
+
+    def _block_level_detect(
+        self,
+        lines: Dict[tuple, list],
+        words: list,
+    ) -> List[tuple]:
+        """Re-run detection on block-level text to catch cross-line label-value pairs.
+        """
+        extra: List[tuple] = []
+        blocks: Dict[int, list] = {}
+        for key, line_words in lines.items():
+            blocks.setdefault(key[0], []).append((key, line_words))
+
+        _Y_TOL = 3.0  # points — lines within this tolerance are the same row
+
+        for block_id, block_data in blocks.items():
+            if len(block_data) <= 1:
+                continue
+            # Sort lines into visual reading order: group by y (with tolerance),
+            # then left-to-right within each row.
+            for item in block_data:
+                item_words = item[1]
+                item_words.sort(key=lambda w: w[0])
+            block_data.sort(
+                key=lambda x: (
+                    round(min(w[1] for w in x[1]) / _Y_TOL) * _Y_TOL,
+                    min(w[0] for w in x[1]),
+                )
+            )
+
+            block_text = ""
+            block_offsets = []
+            for _key, lwords in block_data:
+                for w in lwords:
+                    start = len(block_text)
+                    block_text += w[4]
+                    block_offsets.append(
+                        (start, len(block_text), fitz.Rect(w[0], w[1], w[2], w[3]))
+                    )
+                    block_text += " "
+
+            for span in self.detector.detect_spans(block_text):
+                rect = None
+                span_words = []
+                for cs, ce, r in block_offsets:
+                    if not (ce <= span.start or cs >= span.end):
+                        rect = r if rect is None else (rect | r)
+                        span_words.append(block_text[cs:ce])
+                if rect is not None:
+                    text = span.text or " ".join(span_words)
+                    extra.append((rect, span.label, text))
+        return extra
 
     # ------------------------------------------------------------------
 
@@ -250,6 +526,8 @@ class PDFRedactor:
                         out.append((rect, "QR_CODE"))
                     elif ar >= _BARCODE_MIN_AR and h <= _BARCODE_MAX_H:
                         out.append((rect, "BARCODE"))
+                    elif _SIG_MIN_AR <= ar <= _SIG_MAX_AR and _SIG_MIN_H <= h <= _SIG_MAX_H:
+                        out.append((rect, "SIGNATURE"))
         except Exception as exc:
             logger.warning("QR/barcode scan failed: %s", exc)
         return out
@@ -269,6 +547,8 @@ class PDFRedactor:
                 t = raw.strip(".:-()[]*")
                 if len(t) < 4 or t.lower() in _TOKEN_STOPWORDS:
                     continue
+                if t.lower() in _CLINICAL_ALLOWLIST:
+                    continue
                 # Only search for identifier-like tokens: those containing a
                 # digit (codes/IDs) or that are capitalised/UPPER name parts.
                 # All-lowercase words are clinical prose (e.g. "urine") and must
@@ -281,10 +561,6 @@ class PDFRedactor:
         return sorted(out, key=len, reverse=True)
 
     def _ocr_words(self, page: "fitz.Page") -> list:
-        """OCR fallback for scanned pages (best-effort; needs tesseract)."""
-        try:
-            tp = page.get_textpage_ocr(flags=0, full=True)
-            return page.get_text("words", textpage=tp)
-        except Exception as exc:
-            logger.warning("PDF OCR fallback unavailable: %s", exc)
-            return []
+        """OCR fallback for scanned pages — waterfall: docling → PaddleOCR → pytesseract."""
+        from .pdf_ocr_waterfall import waterfall_ocr_words
+        return waterfall_ocr_words(page)

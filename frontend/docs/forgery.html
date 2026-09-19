@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgery Detection Documentation | TANUH DPI</title>
+    <link rel="icon" type="image/png" href="../assets/tanuh.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -25,9 +26,9 @@
     
         <main class="docs-main">
             <div class="docs-content-inner">
-            <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Forgery Detection Documentation</span>
-            <h1 style="margin-top:0.25rem;">Document Forgery Detection Service</h1>
-            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Forgensic - Classical CV-Based Tampering Detection
+            <!-- <span style="font-size:0.875rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--brand-primary);">Forgery Detection Documentation</span> -->
+            <h1 style="margin-top:0.25rem;">Forgery Detection Documentation</h1>
+            <p style="font-size:1.1rem; color:var(--text-500); margin-bottom:2rem;">Tampering &amp; Forensic Checks -
 Complete Technical & User Documentation</p>
             
             <h1>1. Summary</h1>
@@ -38,7 +39,7 @@ Complete Technical & User Documentation</p>
 <h2>2.1 Why Classical CV Over Deep Learning</h2>
 <div class="table-responsive"><table><thead><tr><th>Capability</th><th>Deep Learning</th><th>Classical CV (Forgensic)</th></tr></thead><tbody><tr><td>Scalability</td><td>GPU-bound, memory-heavy</td><td>Runs on any standard CPU</td></tr><tr><td>Explainability</td><td>Black-box confidence scores</td><td>Every flag has a mathematical proof</td></tr><tr><td>Deployment</td><td>Requires ONNX/TensorRT hosting</td><td>Zero model weights, instant deploy</td></tr><tr><td>Latency</td><td>Seconds per image (even on GPU)</td><td>1-3 seconds per page on CPU</td></tr><tr><td>AB-PMJAY Fit</td><td>Over-engineered for noisy scans</td><td>Purpose-built for Indian medical docs</td></tr></tbody></table></div>
 <h2>2.2 Tampering Categories</h2>
-<div class="table-responsive"><table><thead><tr><th>ID</th><th>Category</th><th>Detection Method</th><th>Signal</th></tr></thead><tbody><tr><td>C1</td><td>Copy-Paste</td><td>ORB keypoint matching + spatial clustering</td><td>Duplicate regions displaced spatially</td></tr><tr><td>C2</td><td>Overwriting</td><td>Edge density anomalies + stroke width analysis</td><td>Anomalous texture in text components</td></tr><tr><td>C3</td><td>Added Content</td><td>Component shape analysis (circularity, fill)</td><td>Stamps, signatures, pasted elements</td></tr><tr><td>C4</td><td>Erasure</td><td>Gap analysis + smooth region detection</td><td>Unnaturally smooth gaps in text lines</td></tr><tr><td>C5</td><td>Document Merge</td><td>Row/col density discontinuities</td><td>Header/body from different documents</td></tr><tr><td>C6</td><td>Watermark Removal</td><td>Hough diagonal lines + FFT periodicity</td><td>Frequency-domain ghosts</td></tr><tr><td>C7</td><td>Irregular Spacing</td><td>Token-level gap z-score analysis</td><td>Anomalous inter-word/inter-line gaps</td></tr><tr><td>C8</td><td>AI-Generated (Full)</td><td>FFT spectrum flatness + high-freq ratio</td><td>Page-wide AI generation signatures</td></tr><tr><td>C9</td><td>AI-Generated (Partial)</td><td>Region-level FFT + edge/gradient z-scores</td><td>Localized AI-edited regions</td></tr><tr><td>C10</td><td>No Tampering</td><td>Default</td><td>No detections found</td></tr></tbody></table></div>
+<div class="table-responsive"><table><thead><tr><th>ID</th><th>Category</th><th>Detection Method</th><th>Signal</th></tr></thead><tbody><tr><td>C1</td><td>Copy-Paste</td><td>ORB keypoint matching + spatial clustering</td><td>Duplicate regions displaced spatially</td></tr><tr><td>C2</td><td>Overwriting</td><td>Edge density anomalies + stroke width analysis</td><td>Anomalous texture in text components</td></tr><tr><td>C3</td><td>Added Content</td><td>Component shape analysis (circularity, fill)</td><td>Stamps, signatures, pasted elements</td></tr><tr><td>C4</td><td>Erasure</td><td>Gap analysis + smooth region detection</td><td>Unnaturally smooth gaps in text lines</td></tr><tr><td>C5</td><td>Document Merge</td><td>Row/col density discontinuities</td><td>Header/body from different documents</td></tr><tr><td>C6</td><td>Watermark Removal</td><td>Hough diagonal lines + FFT periodicity</td><td>Frequency-domain ghosts</td></tr><tr><td>C7</td><td>Irregular Spacing</td><td>Token-level gap z-score analysis</td><td>Anomalous inter-word/inter-line gaps</td></tr><tr><td>C8</td><td>AI-Generated (Full)</td><td>FFT spectrum flatness + high-freq ratio</td><td>Page-wide AI generation signatures</td></tr><tr><td>C9</td><td>AI-Generated (Partial)</td><td>Region-level FFT + edge/gradient z-scores</td><td>Localised AI-edited regions</td></tr><tr><td>C10</td><td>No Tampering</td><td>Default</td><td>No detections found</td></tr></tbody></table></div>
 <h2>2.3 Supported File Formats</h2>
 <ul>
 <li>PDF (.pdf) - rendered to per-page JPEG images via PyMuPDF</li>
@@ -56,7 +57,7 @@ Complete Technical & User Documentation</p>
 </ul>
 <h2>3.2 Detection Pipeline Per Page</h2>
 <ol>
-<li>Page Quality Assessment: Compute Laplacian blur score, edge density, contrast ratio, and text density to characterize document quality.</li>
+<li>Page Quality Assessment: Compute Laplacian blur score, edge density, contrast ratio, and text density to characterise document quality.</li>
 <li>C1 Copy-Move Detection: Extract ORB keypoints (5000 features, scale_factor=1.2, 8 levels). Self-match via BFMatcher with Lowe's ratio test (0.75). Cluster matches by spatial shift vector (bin_size=14px). Flag clusters with >= 4 match pairs.</li>
 <li>C2 Overwriting Detection: Extract Canny edges (40-140). Compute local texture maps (residual, variance, gradient) per text line. Z-score threshold on edge/stroke density. Flag components where >= 2 signals exceed thresholds simultaneously.</li>
 <li>C3 Added Content Detection: Extract connected components. Classify by shape: stamps (circularity > 0.5, fill > 0.3), signatures (aspect > 3.0, fill < 0.2), regular text (fill > 0.55). Filter by area and aspect ratio.</li>
@@ -73,9 +74,14 @@ Complete Technical & User Documentation</p>
 <p>Default preset: npv_focus (set via PIPELINE_PRESET environment variable). Each preset defines 20+ parameters per tampering category including edge_z, stroke_z, min_region_area, component_min_area, etc.</p>
 <h1>4. API Reference</h1>
 <h2>4.1 Authentication</h2>
-<p>POST /forgensic/api/token with {name, email} to get a 1-day HS256 JWT signed with FORGENSIC_SECRET_KEY. Include as Authorization: Bearer <token>. Auth bypass: set FORGENSIC_AUTH_ENABLED=false.</p>
+<p>All job endpoints require a Bearer JWT token in the <code>Authorization</code> header. To obtain a token: Log in to the web portal and generate your token from the <strong>API Access</strong> tab within the Forgery Detection service. Direct per-service token generation endpoints (<code>/api/token</code>) are disabled in production.</p>
+<ul>
+<li><strong>Algorithm:</strong> HS256 JWT signed with <code>FORGENSIC_SECRET_KEY</code></li>
+<li><strong>Default expiry:</strong> 1 day (configurable via <code>FORGENSIC_TOKEN_EXPIRY_DAYS</code>)</li>
+<li><strong>Usage:</strong> Include in all requests as <code>Authorization: Bearer &lt;token&gt;</code></li>
+</ul>
 <h2>4.2 Endpoints</h2>
-<div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td>/forgensic/api/token</td><td>None</td><td>Issue demo JWT token</td></tr><tr><td>POST</td><td>/forgensic/jobs</td><td>Bearer</td><td>Upload document, get job_id</td></tr><tr><td>GET</td><td>/forgensic/jobs/{id}</td><td>Bearer</td><td>Poll job status and progress</td></tr><tr><td>GET</td><td>/forgensic/jobs/{id}/results</td><td>Bearer</td><td>Fetch analysis findings (when complete)</td></tr><tr><td>GET</td><td>/forgensic/jobs/{id}/files/{name}</td><td>Bearer</td><td>Download output file (preview/JSON/Excel/YAML)</td></tr><tr><td>GET</td><td>/health</td><td>None</td><td>Liveness probe (checks Redis)</td></tr><tr><td>GET</td><td>/stats</td><td>None</td><td>Active jobs count + total docs analyzed</td></tr><tr><td>GET</td><td>/metrics</td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
+<div class="table-responsive"><table><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/forgensic/jobs</code></td><td>Bearer</td><td>Upload document, get job_id</td></tr><tr><td>GET</td><td><code>/forgensic/jobs/{id}</code></td><td>Bearer</td><td>Poll job status and progress</td></tr><tr><td>GET</td><td><code>/forgensic/jobs/{id}/results</code></td><td>Bearer</td><td>Fetch analysis findings (when complete)</td></tr><tr><td>GET</td><td><code>/forgensic/jobs/{id}/files/{name}</code></td><td>Bearer</td><td>Download output file (preview/JSON/Excel/YAML)</td></tr><tr><td>GET</td><td><code>/health</code></td><td>None</td><td>Liveness probe (checks Redis)</td></tr><tr><td>GET</td><td><code>/stats</code></td><td>None</td><td>Active jobs count + total docs analyzed</td></tr><tr><td>GET</td><td><code>/metrics</code></td><td>None</td><td>Prometheus metrics</td></tr></tbody></table></div>
 <h2>4.3 Job Lifecycle</h2>
 <ol>
 <li>POST /forgensic/jobs - Upload file (multipart form-data), optional ocr_enabled parameter. Returns {job_id, status: 'queued'}.</li>
@@ -134,19 +140,49 @@ Complete Technical & User Documentation</p>
 <li>Copy findings text or download the annotated preview / export files</li>
 </ol>
 <h2>6.2 API Usage (curl)</h2>
-<p># Get token</p>
-<pre><code>curl -X POST http://<host>:8004/forgensic/api/token -H "Content-Type: application/json" -d '{"name": "Name", "email": "email@example.com"}'</code></pre>
-<p># Submit document for analysis</p>
-<pre><code>curl -X POST http://<host>:8004/forgensic/jobs -H "Authorization: Bearer <token>" -F "file=@document.pdf"</code></pre>
-<p># Poll status</p>
-<pre><code>curl http://<host>:8004/forgensic/jobs/<job_id> -H "Authorization: Bearer <token>"</code></pre>
-<p># Get results</p>
-<pre><code>curl http://<host>:8004/forgensic/jobs/<job_id>/results -H "Authorization: Bearer <token>"</code></pre>
-<p># Download annotated preview</p>
-<pre><code>curl -o preview.jpg http://<host>:8004/forgensic/jobs/<job_id>/files/preview_page_1.jpg -H "Authorization: Bearer <token>"</code></pre>
+<p><strong>Step 1 - Obtain a Token:</strong> Visit the web portal, log in, and generate your API token from the API Access tab.</p>
+<p><strong>Step 2 - Submit document for analysis (async):</strong></p>
+<pre><code>curl -X POST http://localhost:8004/forgensic/jobs -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;" -F "file=@document.pdf"</code></pre>
+<p><strong>Step 3 - Poll status:</strong></p>
+<pre><code>curl http://localhost:8004/forgensic/jobs/&lt;JOB_ID&gt; -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+<p><strong>Step 4 - Get results:</strong></p>
+<pre><code>curl http://localhost:8004/forgensic/jobs/&lt;JOB_ID&gt;/results -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+<p><strong>Step 5 - Download annotated preview:</strong></p>
+<pre><code>curl -o preview.jpg http://localhost:8004/forgensic/jobs/&lt;JOB_ID&gt;/files/preview_page_1.jpg -H "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+<h2>6.3 API Usage (Python)</h2>
+<pre><code>import time
+import requests
+
+TOKEN = "YOUR_TOKEN"
+headers = {"Authorization": f"Bearer {TOKEN}"}
+
+# Submit PDF for forgery detection (async)
+with open("document.pdf", "rb") as f:
+    resp = requests.post("http://localhost:8004/forgensic/jobs", headers=headers, files={"file": f})
+job_id = resp.json()["job_id"]
+
+# Poll until complete
+while True:
+    result = requests.get(f"http://localhost:8004/forgensic/jobs/{job_id}", headers=headers).json()
+    if result.get("status") in ["complete", "error"]:
+        break
+    time.sleep(2)
+
+# Get findings
+findings = requests.get(f"http://localhost:8004/forgensic/jobs/{job_id}/results", headers=headers).json()
+print(findings)</code></pre>
+<h2>6.4 Local Execution (Offline Mode)</h2>
+<p>A standalone desktop GUI application (<code>forgensic_gui.py</code>) is available for fully offline forgery detection. No server, Redis, GPU, or network connectivity required — all processing runs on standard CPU hardware.</p>
+<ol>
+<li><strong>Download:</strong> Obtain the standalone desktop application from the TANUH DPI repository.</li>
+<li><strong>Run the application:</strong> Launch <code>forgensic_gui.py</code> — a CustomTkinter-based GUI opens.</li>
+<li><strong>Upload a document:</strong> Drag and drop or browse to select a PDF or image file.</li>
+<li><strong>View results:</strong> Annotated preview images and findings are displayed in the GUI. Results are saved locally as annotated images and findings text files.</li>
+</ol>
+<p>The desktop GUI provides the same 10-category CV detection pipeline (C1–C10) as the cloud service, with identical accuracy and explainability.</p>
 <h1>7. Performance</h1>
 <div class="table-responsive"><table><thead><tr><th>Document Type</th><th>Pages</th><th>Estimated Time</th></tr></thead><tbody><tr><td>Single image</td><td>1</td><td>1-3 seconds</td></tr><tr><td>Short PDF</td><td>1-5</td><td>5-15 seconds</td></tr><tr><td>Medium PDF</td><td>5-20</td><td>15-60 seconds</td></tr><tr><td>Large PDF</td><td>20-50</td><td>1-3 minutes</td></tr></tbody></table></div>
-<p>Processing is CPU-bound. Each page goes through 10 independent detectors sequentially. The pipeline is optimized for standard server CPUs (e.g., GCP e2-standard-4).</p>
+<p>Processing is CPU-bound. Each page goes through 10 independent detectors sequentially. The pipeline is optimised for standard server CPUs (e.g., GCP e2-standard-4).</p>
 <h1>8. Offline Desktop Application</h1>
 <p>A standalone desktop GUI (forgensic_gui.py) is available for offline usage using CustomTkinter. It provides the same CV detection pipeline without requiring a server, Redis, or network connectivity. Results are saved locally as annotated images and findings text files.</p>
 <h1>9. Known Limitations & Future Enhancements</h1>
@@ -154,7 +190,6 @@ Complete Technical & User Documentation</p>
 <li>High false positive rate on very noisy/low-quality scans (use 'strict' preset)</li>
 <li>OCR-dependent detectors (C4, C7) require Tesseract to be installed</li>
 <li>No learning/adaptation - all thresholds are static per preset</li>
-<li>No rate limiting on API endpoints</li>
 <li>C8/C9 AI detection may not catch latest generation AI models</li>
 <li>Planned: adaptive thresholding, batch processing, ensemble scoring, ML-augmented detection</li>
 </ul>

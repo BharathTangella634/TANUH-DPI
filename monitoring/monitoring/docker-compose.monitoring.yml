@@ -8,10 +8,15 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=15d
       - --storage.tsdb.retention.size=4GB
+      # 2h blocks, both flags equal — the standard Thanos-sidecar pairing so
+      # blocks are cut on a predictable schedule for the sidecar to upload.
+      - --storage.tsdb.min-block-duration=2h
+      - --storage.tsdb.max-block-duration=2h
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
+      - prometheus_file_sd:/etc/prometheus/file_sd:ro
     ports:
       - "127.0.0.1:9090:9090"
     extra_hosts:
@@ -19,6 +24,48 @@ services:
     networks:
       - monitoring_internal
       - app_network
+
+  # ── Durability: Thanos sidecar ships Prometheus's 2h blocks to GCS as soon
+  #    as they're cut, so metric history survives even if this VM/disk is lost.
+  #    Read-side (Thanos Query, for browsing old data through Grafana) is left
+  #    for later — this is deliberately scoped to durability only for now.
+  thanos-sidecar:
+    image: thanosio/thanos:v0.36.1
+    container_name: thanos-sidecar
+    restart: unless-stopped
+    command:
+      - sidecar
+      - --tsdb.path=/prometheus
+      - --prometheus.url=http://prometheus:9090
+      - --objstore.config-file=/etc/thanos/objstore.yml
+      - --http-address=0.0.0.0:10902
+      - --grpc-address=0.0.0.0:10901
+    volumes:
+      - prometheus_data:/prometheus:ro
+      - ./thanos/objstore.yml:/etc/thanos/objstore.yml:ro
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring_internal
+
+  # ── Autoscale readiness: polls the GCE API for the current dpi-mig VM list
+  #    and writes Prometheus's file_sd target file (see monitoring/target-discovery/).
+  target-discovery:
+    build:
+      context: ../../monitoring/target-discovery
+      dockerfile: Dockerfile
+    container_name: target-discovery
+    restart: unless-stopped
+    environment:
+      - GCE_PROJECT=${GCE_PROJECT:-proj-dpi-shared}
+      - GCE_REGION=${GCE_REGION:-asia-south1}
+      - GCE_MIG_NAME=${GCE_MIG_NAME:-dpi-mig}
+      - POLL_INTERVAL_SECONDS=30
+      - OUTPUT_PATH=/output/targets.json
+    volumes:
+      - prometheus_file_sd:/output
+    networks:
+      - monitoring_internal
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -59,6 +106,17 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_USERS_ALLOW_SIGN_UP=false
+      # ── Reachable at dpi.tanuh.ai/admin-dashboard/grafana/ via the frontend
+      #    container's reverse proxy (see frontend/httpd.conf). ─────────────────
+      - GF_SERVER_ROOT_URL=https://dpi.tanuh.ai/admin-dashboard/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      # Anonymous Viewer access lets the admin-dashboard shell iframe dashboards
+      # without hitting Grafana's own login screen. Grafana itself is still only
+      # reachable through the login-gated shell (see dashboard_auth), never
+      # exposed directly — editing still requires the real admin/grafana.env login.
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_ALLOW_EMBEDDING=true
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -70,22 +128,13 @@ services:
       - loki
     networks:
       - monitoring_internal
+      - app_network
 
-  node-exporter:
-    image: prom/node-exporter:v1.8.2
-    container_name: node-exporter
-    restart: unless-stopped
-    command:
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --path.rootfs=/host/root
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/host/root:ro
-    networks:
-      - monitoring_internal
+  # node-exporter, queue-exporter and promtail now run per-VM as part of the
+  # main app stack (docker-compose.yml / docker-compose.prod.yml) instead of
+  # only here — see the autoscale plan doc for why: this stack is a singleton
+  # (one Prometheus/Grafana/Loki for the whole platform), but those three need
+  # to run on *every* VM in dpi-mig to see that VM's own host/containers.
 
   loki:
     image: grafana/loki:3.1.1
@@ -97,51 +146,20 @@ services:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki_data:/loki
     ports:
-      - "127.0.0.1:3100:3100"
+      # Was 127.0.0.1-only; now needs to accept pushes from every VM's
+      # Promtail, not just this one. Bind on all interfaces and restrict at
+      # the GCP firewall level to the internal VPC range only — see the plan
+      # doc for the exact `gcloud compute firewall-rules create` command.
+      # Still never exposed to the public internet.
+      - "3100:3100"
     networks:
       - monitoring_internal
-
-  promtail:
-    image: grafana/promtail:3.1.1
-    container_name: promtail
-    restart: unless-stopped
-    command:
-      - -config.file=/etc/promtail/promtail-config.yml
-    volumes:
-      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
-      - promtail_positions:/run/promtail
-      - ${DOCKER_CONTAINER_LOGS_PATH:-/var/lib/docker/containers}:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      - loki
-    networks:
-      - monitoring_internal
-
-  queue-exporter:
-    build:
-      context: ../../monitoring/queue-exporter
-      dockerfile: Dockerfile
-    container_name: queue-exporter
-    restart: unless-stopped
-    environment:
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - POLL_INTERVAL_SECONDS=15
-      - METRICS_PORT=9101
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - monitoring_internal
-      - app_network
-    depends_on:
-      - prometheus
 
 volumes:
   prometheus_data:
+  prometheus_file_sd:
   grafana_data:
   loki_data:
-  promtail_positions:
   alertmanager_data:
 
 networks:

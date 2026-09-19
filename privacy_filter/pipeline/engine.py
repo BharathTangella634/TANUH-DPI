@@ -128,6 +128,18 @@ class MedDeIDEngine:
         # classified OCR hits add labelled entities for the audit report.
         phi_entities = text_region_hits + ocr_phi
 
+        # ── DOCUMENT PHOTO: full-image SafeHarbor scan ───────────────────────
+        # Corner-crop OCR misses document photos (pathology reports, lab
+        # results) where PHI covers the entire page.  Run SafeHarborDetector
+        # on full-image OCR to catch names, dates, IDs everywhere.
+        if artifact.image is not None and input_path.suffix.lower() in {
+            ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp",
+        }:
+            safe_harbor_hits = self._safe_harbor_image(artifact.image)
+            if safe_harbor_hits:
+                logger.info("SafeHarbor full-image scan: %d PHI entities", len(safe_harbor_hits))
+                phi_entities.extend(safe_harbor_hits)
+
         for e in phi_entities:
             logger.debug(
                 "PHI  label=%-20s  text=%-30r  bbox=%s",
@@ -210,6 +222,97 @@ class MedDeIDEngine:
             "pdf_entities":      entities,   # API-shape dicts (with bbox)
             "pdf_counts":        counts,
         }
+
+    # ── Full-image SafeHarbor (document photos) ─────────────────────────────
+
+    def _safe_harbor_image(self, image) -> list:
+        """OCR the full image and run SafeHarborDetector on every line.
+
+        Returns PHIEntity objects with pixel bounding boxes.  Designed for
+        document photos (pathology reports, lab sheets) where PHI is
+        scattered across the entire page — not confined to corners.
+        """
+        import numpy as np
+        import cv2
+        import pytesseract
+        from ..detectors.safe_harbor_detector import SafeHarborDetector
+        from ..schemas.core import BoundingBox, PHIEntity, PHISource
+
+        img = image[0] if isinstance(image, list) else image
+        if isinstance(img, np.ndarray) and img.ndim == 4:
+            img = img[0]
+        if img is None:
+            return []
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+
+        data = pytesseract.image_to_data(
+            gray, config="--oem 3 --psm 6", output_type=pytesseract.Output.DICT,
+        )
+
+        # Group OCR words into lines by (block_num, line_num).
+        lines: dict[tuple, list] = {}
+        n = len(data["text"])
+        for i in range(n):
+            text = str(data["text"][i]).strip()
+            if not text:
+                continue
+            try:
+                conf = float(data["conf"][i])
+            except (ValueError, TypeError):
+                conf = 0
+            if conf < 10:
+                continue
+            key = (int(data["block_num"][i]), int(data["line_num"][i]))
+            lines.setdefault(key, []).append({
+                "text": text,
+                "x": int(data["left"][i]),
+                "y": int(data["top"][i]),
+                "w": int(data["width"][i]),
+                "h": int(data["height"][i]),
+            })
+
+        detector = SafeHarborDetector()
+        entities: list[PHIEntity] = []
+
+        for key, words in lines.items():
+            words.sort(key=lambda w: w["x"])
+            line_text = ""
+            offsets = []  # (char_start, char_end, word_dict)
+            for w in words:
+                start = len(line_text)
+                line_text += w["text"]
+                offsets.append((start, len(line_text), w))
+                line_text += " "
+
+            for span in detector.detect_spans(line_text):
+                x1, y1, x2, y2 = None, None, None, None
+                for cs, ce, w in offsets:
+                    if ce <= span.start or cs >= span.end:
+                        continue
+                    wx1, wy1 = w["x"], w["y"]
+                    wx2, wy2 = w["x"] + w["w"], w["y"] + w["h"]
+                    if x1 is None:
+                        x1, y1, x2, y2 = wx1, wy1, wx2, wy2
+                    else:
+                        x1, y1 = min(x1, wx1), min(y1, wy1)
+                        x2, y2 = max(x2, wx2), max(y2, wy2)
+                if x1 is not None:
+                    _PAD = 4
+                    entities.append(PHIEntity(
+                        label=span.label,
+                        confidence=1.0,
+                        source=PHISource.OCR,
+                        text=span.text,
+                        bbox=BoundingBox(
+                            x1=max(0, x1 - _PAD),
+                            y1=max(0, y1 - _PAD),
+                            x2=x2 + _PAD,
+                            y2=y2 + _PAD,
+                        ),
+                    ))
+
+        return entities
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 

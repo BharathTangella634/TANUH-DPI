@@ -57,6 +57,7 @@
     }
 
     function updateActiveNav(tabName) {
+        document.body.classList.toggle('ct-report-checker-active', tabName === 'HeadCTReportChecker');
         document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
         const navMap = {
             'Home': 'navHome',
@@ -64,6 +65,8 @@
             'PDF2NHCX': 'navInsurance',
             'PrivacyFilter': 'navPrivacyFilter',
             'ForgeryDetection': 'navForgery',
+            'AudioASR': 'navAudio',
+            'HeadCTReportChecker': 'navHeadCTReportChecker',
             'AboutUs': 'navAboutUs'
         };
         const id = navMap[tabName];
@@ -77,8 +80,8 @@
         if (servicesTrigger) servicesTrigger.classList.remove('active');
         if (docsTrigger) docsTrigger.classList.remove('active');
 
-        const servicesTabs = ['PDF2FHIR', 'PDF2NHCX', 'PrivacyFilter', 'ForgeryDetection'];
-        const docsTabs = ['ClinicalDocs', 'InsuranceDocs', 'PrivacyDocs', 'ForgeryDocs'];
+        const servicesTabs = ['PDF2FHIR', 'PDF2NHCX', 'PrivacyFilter', 'ForgeryDetection', 'AudioASR', 'HeadCTReportChecker'];
+        const docsTabs = ['ClinicalDocs', 'InsuranceDocs', 'PrivacyDocs', 'ForgeryDocs', 'AudioDocs'];
         
         if (servicesTabs.includes(tabName)) {
             const parent = document.getElementById(tabName);
@@ -157,19 +160,37 @@
         const isCloudAbdm = abdm.includes('dpi.tanuh.ai');
         const isCloudNhcx = nhcx.includes('dpi.tanuh.ai');
 
-        checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, isCloudAbdm ? 'AI CLOUD' : 'AI ON', 'AI OFF');
-        checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, isCloudNhcx ? 'AI CLOUD' : 'AI ON', 'AI OFF');
+        checkServiceHealth('clinicalAiBadge', 'clinicalAiText', `${abdm}/health`, isCloudAbdm ? 'AI ON' : 'AI ON', 'AI OFF');
+        checkServiceHealth('insuranceAiBadge', 'insuranceAiText', `${nhcx}/health`, isCloudNhcx ? 'AI ON' : 'AI ON', 'AI OFF');
     }
 
     // ── Tab Management ──────────────────────────────────────────────────────────
     const loadedTabs = new Set();
 
-    async function openTab(evt, tabName, skipScroll) {
+    async function openTab(evt, tabName, skipScroll, skipHistory = false) {
         if (evt) evt.preventDefault();
 
-        if (window.DPI_Auth && DPI_Auth.isGatedTab(tabName) && !DPI_Auth.isLoggedIn()) {
-            DPI_Auth.setPendingTab(tabName);
-            tabName = 'Login';
+        // ── Central auth gate ────────────────────────────────────────────────
+        // This is the ONE place every navigation path funnels through (nav
+        // dropdown links, popstate/back-button, initial page load via URL
+        // hash, doc links, direct-launch buttons) — so gating here is what
+        // actually closes the login bypass, instead of relying on individual
+        // callers (like directLaunchService) to each remember to check.
+        // Wait for Firebase's initial auth-state restore before deciding —
+        // on a hard refresh/direct link, auth.currentUser can briefly read as
+        // null even for an already-logged-in user until this resolves once.
+        if (window.DPI_Auth && DPI_Auth.isGatedTab(tabName)) {
+            await new Promise(resolve => DPI_Auth.onAuthReady(resolve));
+            if (!DPI_Auth.isLoggedIn()) {
+                DPI_Auth.setPendingTab(tabName);
+                tabName = 'Login';
+            }
+        }
+
+        if (!skipHistory) {
+            if (!history.state || history.state.tab !== tabName) {
+                history.pushState({ tab: tabName }, "", "/" + tabName);
+            }
         }
 
         document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
@@ -203,10 +224,13 @@
             if (tabName === 'ForgeryDetection' && window.FG_init) window.FG_init();
             if (tabName === 'PDF2NHCX' && window.INS_init) window.INS_init();
             if (tabName === 'PDF2FHIR' && window.CLN_init) window.CLN_init();
+            if (tabName === 'AudioASR' && window.AUDIO_init) window.AUDIO_init();
+            if (tabName === 'HeadCTReportChecker' && window.CT_init) window.CT_init();
             if ((tabName === 'PDF2FHIR' || tabName === 'PDF2NHCX' || tabName === 'ForgeryDetection' || tabName === 'PrivacyFilter' || tabName === 'APIAccess') && window.initApiAccess) {
                 window.initApiAccess();
             }
             checkAllServiceBadges();
+            if (window.DPI_Auth) DPI_Auth.updateNavAuthState();
 
             // Handle pending direct service launch
             const pendingLaunch = sessionStorage.getItem('pendingLaunchService');
@@ -217,6 +241,8 @@
                     else if (tabName === 'PDF2NHCX' && window.INS_launchService) INS_launchService();
                     else if (tabName === 'PrivacyFilter' && window.PF_launchService) PF_launchService();
                     else if (tabName === 'ForgeryDetection' && window.FG_launchService) FG_launchService();
+                    else if (tabName === 'AudioASR' && window.AUDIO_launchService) AUDIO_launchService();
+                    else if (tabName === 'HeadCTReportChecker' && window.CT_launchService) CT_launchService();
                 }, 300);
             }
         }
@@ -241,6 +267,8 @@
             else if (fileName === 'pdf2nhcx') fileName = 'insurance';
             else if (fileName === 'privacyfilter') fileName = 'privacyfilter';
             else if (fileName === 'forgerydetection') fileName = 'forgery';
+            else if (fileName === 'audioasr') fileName = 'audioasr';
+            else if (fileName === 'headctreportchecker') fileName = 'ctreportchecker';
             else if (fileName === 'aboutus') fileName = 'about';
             else if (fileName === 'apiaccess') fileName = 'apiaccess';
             else if (fileName === 'download') fileName = 'download';
@@ -249,6 +277,7 @@
             else if (fileName === 'insurancedocs') { isDoc = true; docUrl = 'docs/insurance.html'; }
             else if (fileName === 'privacydocs') { isDoc = true; docUrl = 'docs/privacyfilter.html'; }
             else if (fileName === 'forgerydocs') { isDoc = true; docUrl = 'docs/forgery.html'; }
+            else if (fileName === 'audiodocs') { isDoc = true; docUrl = 'docs/audio.html'; }
 
             if (isDoc) {
                 const response = await fetch(docUrl);
@@ -360,7 +389,7 @@
                     console.error(`Failed to load doc tab ${tabId}: ${response.status}`);
                 }
             } else {
-                const response = await fetch(`tabs/${fileName}.html?v=14`);
+                const response = await fetch(`tabs/${fileName}.html?v=17`);
                 if (response.ok) {
                     el.innerHTML = await response.text();
                 } else {
@@ -498,7 +527,9 @@
         else if (tabName === 'ForgeryDetection') navId = 'navForgery';
         else if (tabName === 'PDF2NHCX') navId = 'navInsurance';
         else if (tabName === 'PrivacyFilter') navId = 'navPrivacyFilter';
-        
+        else if (tabName === 'AudioASR') navId = 'navAudio';
+        else if (tabName === 'HeadCTReportChecker') navId = 'navHeadCTReportChecker';
+
         if (navId) {
             document.querySelectorAll('.navbar .nav-link, .navbar .dropdown-item').forEach(el => el.classList.remove('active'));
             const navEl = document.getElementById(navId);
@@ -708,7 +739,12 @@
         }
     }
 
-    // ── Init ────────────────────────────────────────────────────────────────────
+    // ── Init & History ──────────────────────────────────────────────────────────
+    window.addEventListener('popstate', (e) => {
+        const tab = e.state ? e.state.tab : (window.location.pathname.replace(/^\/+|\/+$/g, '') || 'Home');
+        openTab(null, tab, false, true);
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         initNavigation();
         checkLocalBackend(); // silent fallback router check
@@ -717,7 +753,14 @@
         handleNavbarScroll();
         window.addEventListener('scroll', handleNavbarScroll);
         
-        openTab(null, 'Home');
+        // Support old #Hash bookmarks: redirect to clean /Path URL
+        if (window.location.hash && window.location.hash.length > 1) {
+            const hashTab = window.location.hash.substring(1);
+            history.replaceState({ tab: hashTab }, "", "/" + hashTab);
+        }
+        const initialTab = window.location.pathname.replace(/^\/+|\/+$/g, '') || 'Home';
+        history.replaceState({ tab: initialTab }, "", "/" + initialTab);
+        openTab(null, initialTab, false, true);
         setInterval(checkAllServiceBadges, 30000);
         if (window.DPI_Auth) {
             DPI_Auth.updateNavAuthState();

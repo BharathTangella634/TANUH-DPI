@@ -309,13 +309,13 @@
     <div class="tab-hero-grid">
         <div>
             <span style="display: inline-block; background: rgba(20, 134, 140, 0.08); color: var(--primary); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;">
-                State-of-the-Art Interoperability
+                Secure Conversion
             </span>
             <h2 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.2;">
-                PDF to ABDM Clinical Document Conversion
+                Clinical Document
             </h2>
             <p style="font-size: 1.02rem; line-height: 1.6; color: #475569; margin: 0 0 28px;">
-                Extract, translate, and structures unstructured clinical documents (discharge summaries, diagnostic reports) into ABDM-compliant FHIR R4 DocumentBundles. Enable seamless medical data exchange across India's digital health infrastructure.
+                Extract, translate, and structures unstructured clinical documents (discharge summaries, diagnostic reports) into ABDM-compliant FHIR R4 DocumentBundles. Enable seamless medical data exchange across India digital health infrastructure.
             </p>
             <div style="display: flex; flex-wrap: wrap; gap: 14px;">
                 <button onclick="directLaunchService('PDF2FHIR')" class="process-btn" style="padding: 12px 24px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600;">
@@ -407,18 +407,18 @@
                 </div>
                 <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Structured FHIR Mapping</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    Translates medical summaries into standardized, ready-to-share FHIR R4 DischargeSummary and DiagnosticReport bundles.
+                    Translates medical summaries into standardised, ready-to-share FHIR R4 DischargeSummary and DiagnosticReport bundles.
                 </p>
             </div>
             
             <!-- Card 4 -->
             <div style="background: #ffffff; border: 1px solid rgba(20, 134, 140, 0.08); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.015); transition: transform 0.2s; position: relative; overflow: hidden; box-sizing: border-box;">
                 <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(14, 165, 233, 0.08); color: #0ea5e9; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
-                    <i class="fas fa-download"></i>
+                    <i class="fas fa-clipboard-check"></i>
                 </div>
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Confidential Offline Execution</h4>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Strict FHIR Validation</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    Execute on-premises using CPU-optimized binaries for Linux, Mac, or Windows, ensuring zero clinical patient bytes leave the facility.
+                    Validates generated bundles against strict FHIR R4 standards, reporting structural errors, schema warnings, and conformance details.
                 </p>
             </div>
         </div>
@@ -427,7 +427,7 @@
     <!-- ── How It Works (Pipeline Steps) ────────────────────────────────────── -->
     <div style="margin-bottom: 48px; background: #f8fafc; border-radius: 16px; padding: 32px; border: 1px solid rgba(20, 134, 140, 0.05); box-sizing: border-box;">
         <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.01em;">How It Works</h3>
-        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Three key steps running securely on the clinical platform</p>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0 0 28px;">Three conversion steps running securely on the clinical platform</p>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative;">
             <!-- Phase 1 -->
@@ -481,7 +481,7 @@
                 <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.2rem;">
                     <i class="fas fa-hdd"></i>
                 </div>
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">25MB File Limit</h4>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">75MB File Limit</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
                     Maximum single PDF file upload is capped at 25MB. Larger documents should be split into smaller sections before ingestion.
                 </p>
@@ -508,6 +508,23 @@
                     Text recognition accuracy is dependent on scan resolution and handwriting quality. Use the built-in FHIR R4 Validator to confirm schema compliance.
                 </p>
             </div>
+        </div>
+    </div>
+
+    <!-- ── Continuous Improvement & Feedback ──────────────────────────────── -->
+    <div class="service-feedback-card">
+        <div class="service-feedback-content">
+            <h4>
+                <i class="fas fa-comment-dots" style="color: var(--brand-primary, #14868C); font-size: 1.1rem;"></i> Help Us Improve
+            </h4>
+            <p>
+                Automated tools can make mistakes. We warmly welcome your feedback, inputs, and bug reports. Your contributions directly help us refine extraction rules and enhance the platform's accuracy.
+            </p>
+        </div>
+        <div class="service-feedback-action">
+            <a href="mailto:dpi@tanuh.ai?subject=Feedback / Bug Report - Clinical Document" class="service-feedback-btn">
+                <i class="fas fa-envelope-open-text"></i> Give Feedback & Report Bugs
+            </a>
         </div>
     </div>
 </div>
@@ -742,25 +759,24 @@
                 <span>Clinical Document API Token</span>
                 <span class="pf-demo-token-badge">1-DAY TOKEN</span>
             </div>
+            <p style="margin:0 0 14px; font-size:0.8rem; color:#64748b;">This token is specific to the Clinical Document (PDF to FHIR) service.</p>
             <form id="apiAbdmTokenForm" class="pf-demo-token-form" autocomplete="off" novalidate>
                 <button type="submit" class="pf-btn pf-btn-primary" id="apiAbdmTokenSubmit">
                     <i class="fas fa-bolt"></i> Generate Token
                 </button>
             </form>
             <div id="apiAbdmTokenResult" class="pf-demo-token-result hidden">
-                <div class="pf-demo-token-result-header">
-                    <span id="apiAbdmTokenGreeting"></span>
-                    <span id="apiAbdmTokenExpiry" class="pf-demo-token-expiry" style="font-weight:600; font-size:0.85rem; padding:4px 8px; border-radius:4px;"></span>
-                </div>
-                <div class="pf-demo-token-output-wrap" style="position:relative; margin-top:8px;">
-                    <pre class="pf-demo-token-output" id="apiAbdmTokenOutput" style="font-family:monospace; background:#f1f5f9; padding:12px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:pre; margin:0; max-height:48px; line-height:24px; font-size:0.82rem;"></pre>
-                    <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiAbdmTokenView" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-eye"></i> View</button>
-                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiAbdmTokenCopy" style="height:32px; font-size:0.8rem; padding:0 12px; flex:1;"><i class="fas fa-copy"></i> Copy</button>
+                <span id="apiAbdmTokenGreeting" style="display:none;"></span>
+                <div class="pf-demo-token-output-wrap">
+                    <pre class="pf-demo-token-output" id="apiAbdmTokenOutput"></pre>
+                    <div class="pf-demo-token-actions">
+                        <button class="pf-btn pf-btn-ghost btn-view-token" id="apiAbdmTokenView" style="height:34px; font-size:0.8rem; padding:0 14px;"><i class="fas fa-eye"></i> View</button>
+                        <button class="pf-btn pf-btn-ghost btn-copy-token" id="apiAbdmTokenCopy" style="height:34px; font-size:0.8rem; padding:0 14px;"><i class="fas fa-copy"></i> Copy</button>
+                        <span id="apiAbdmTokenExpiry" class="pf-demo-token-expiry-text"></span>
                     </div>
                 </div>
             </div>
-            <div id="apiAbdmTokenError" class="pf-demo-token-error hidden" style="color:#ef4444; background:#fef2f2; padding:10px; border-radius:6px; font-size:0.85rem; margin-top:10px; border:1px solid #fee2e2;"></div>
+            <div id="apiAbdmTokenError" class="pf-demo-token-error hidden"></div>
         </div>
 
         <!-- Endpoint Reference -->
@@ -822,7 +838,7 @@ print(r.json())</pre>
         </div>
 
         <div style="margin-top:12px; text-align:center;">
-            <a href="https://github.com/TANUH-AI/TANUH-DPI/blob/main/README_Terminal_Instructins.md" target="_blank" rel="noopener noreferrer" style="font-size:0.78rem; color:#64748b; text-decoration:none;">
+            <a href="https://github.com/TANUH-AI/TANUH-DPI/blob/main/README_Terminal_Instructions.md" target="_blank" rel="noopener noreferrer" style="font-size:0.78rem; color:#64748b; text-decoration:none;">
                 <i class="fas fa-terminal"></i> DPI Terminal Instructions (GitHub)
             </a>
         </div>

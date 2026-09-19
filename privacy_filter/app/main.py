@@ -56,7 +56,7 @@ from . import service
 
 load_dotenv()
 
-MAX_FILE_SIZE_MB = 25
+MAX_FILE_SIZE_MB = 75
 SESSION_LOGGER_URL = os.getenv("SESSION_LOGGER_URL", "http://session-logger:8002")
 
 logging.basicConfig(
@@ -504,6 +504,7 @@ async def download_file(
 
 _PAGE_RENDER_DIR = Path(tempfile.gettempdir()) / "pf_pages"
 _PAGE_RENDER_DPI = 150
+_DICOM_MAX_PREVIEW_PX = 2048
 
 
 def _find_stored_file(kind: str, key: str, storage=None) -> Path | None:
@@ -551,6 +552,17 @@ def _render_document_pages(file_path: Path, key: str, storage=None) -> List[Dict
     out_dir = _PAGE_RENDER_DIR / key
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Return cached pages if already rendered locally.
+    existing = sorted(out_dir.glob("page_*.png"))
+    if existing:
+        from PIL import Image as PILImage
+        pages_info = []
+        for png in existing:
+            idx = int(png.stem.split("_", 1)[1])
+            with PILImage.open(png) as img:
+                pages_info.append({"page": idx, "url": f"/api/page-image/{key}/{idx}", "width": img.width, "height": img.height})
+        return pages_info
+
     suffix = file_path.suffix.lower()
     pages_info: List[Dict[str, Any]] = []
 
@@ -574,9 +586,12 @@ def _render_document_pages(file_path: Path, key: str, storage=None) -> List[Dict
 
     elif suffix in {".dcm", ".dicom"}:
         import pydicom
+        from pydicom.uid import ImplicitVRLittleEndian
         from PIL import Image as PILImage
         import numpy as np
         ds = pydicom.dcmread(str(file_path), force=True)
+        if not hasattr(ds.file_meta, "TransferSyntaxUID") or ds.file_meta.TransferSyntaxUID is None:
+            ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         try:
             arr = ds.pixel_array
             if arr.ndim == 2:
@@ -584,11 +599,16 @@ def _render_document_pages(file_path: Path, key: str, storage=None) -> List[Dict
                 img = PILImage.fromarray(norm, "L").convert("RGB")
             else:
                 img = PILImage.fromarray(arr).convert("RGB")
+            # Resize very large medical images for browser preview.
+            max_dim = max(img.width, img.height)
+            if max_dim > _DICOM_MAX_PREVIEW_PX:
+                scale = _DICOM_MAX_PREVIEW_PX / max_dim
+                img = img.resize((int(img.width * scale), int(img.height * scale)), PILImage.LANCZOS)
             img_path = out_dir / "page_0.png"
             img.save(img_path, "PNG")
             pages_info.append({"page": 0, "url": f"/api/page-image/{key}/0", "width": img.width, "height": img.height})
         except Exception:
-            logger.warning("DICOM has no pixel data for preview")
+            logger.exception("DICOM pixel_array failed for preview of %s", key)
 
     elif suffix == ".nii" or str(file_path).lower().endswith(".nii.gz"):
         try:
@@ -624,7 +644,9 @@ async def render_pages(
     file_path = _find_stored_file(kind, key, storage)
     if file_path is None:
         raise HTTPException(status_code=404, detail="File not found")
-    pages = _render_document_pages(file_path, key, storage)
+    import asyncio
+    loop = asyncio.get_event_loop()
+    pages = await loop.run_in_executor(None, _render_document_pages, file_path, key, storage)
     return {"pages": pages, "text_only": False}
 
 
@@ -694,6 +716,12 @@ async def apply_redactions(
     with open(redacted_path, "rb") as fh:
         storage.save("redacted", redacted_key, fh.read())
 
+    # Invalidate cached preview PNGs so the new redacted file is rendered fresh.
+    import shutil
+    cache_dir = _PAGE_RENDER_DIR / redacted_key
+    if cache_dir.exists():
+        shutil.rmtree(cache_dir, ignore_errors=True)
+
     preview_pages = _render_document_pages(redacted_path, redacted_key)
     return {
         "redacted_key": redacted_key,
@@ -739,8 +767,11 @@ def _apply_boxes_image(src: Path, boxes: List[Dict], img_w: int, img_h: int, out
 
 def _apply_boxes_dicom(src: Path, boxes: List[Dict], img_w: int, img_h: int, out: Path):
     import pydicom
+    from pydicom.uid import ImplicitVRLittleEndian
     import numpy as np
     ds = pydicom.dcmread(str(src), force=True)
+    if not hasattr(ds.file_meta, "TransferSyntaxUID") or ds.file_meta.TransferSyntaxUID is None:
+        ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
     try:
         arr = ds.pixel_array.copy()
     except Exception:

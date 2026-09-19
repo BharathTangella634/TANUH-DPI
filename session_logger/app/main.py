@@ -24,12 +24,15 @@ Endpoints:
 import os
 import uuid
 import logging
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from prometheus_client import Gauge
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 
@@ -37,8 +40,25 @@ from common.secrets import load_secrets
 load_secrets()
 
 from .core.config import settings
-from .db.session import Base, engine, get_db, USE_SQLITE
+from .db.session import Base, engine, get_db, USE_SQLITE, SessionLocal
 from .models.models import SessionLog, AuthToken, Feedback, User
+
+# ── Indian states & UTs (for geo-filtering) ──────────────────────────────────
+INDIAN_STATES = {
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
+    "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand",
+    "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+    "Ladakh", "Lakshadweep", "Puducherry",
+}
+_INDIAN_STATES_LOWER = {s.lower() for s in INDIAN_STATES}
+
+
+def _is_indian_state(name: str) -> bool:
+    return name.strip().lower() in _INDIAN_STATES_LOWER
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -101,7 +121,6 @@ def _check_production_auth_safety():
 _check_production_auth_safety()
 
 import os
-from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal, List
 import jwt
 import time
@@ -153,6 +172,77 @@ app.add_middleware(
 from common.metrics import instrument_fastapi
 instrument_fastapi(app, service="session_logger")
 
+PERSISTED_DOCUMENT_COUNT = Gauge(
+    "dpi_persisted_document_count",
+    "Documents recorded in the session-log database, grouped by DPI service.",
+    ["service"],
+)
+PERSISTED_DOCUMENT_TODAY_COUNT = Gauge(
+    "dpi_persisted_document_today_count",
+    "Documents recorded in the session-log database since the start of the local day.",
+    ["service"],
+)
+# Mirrors dpi_queue_exporter_redis_up: the counts above are only meaningful while
+# the session-log DB is actually readable. Without this, a failing refresh leaves
+# the count gauges at their last value with nothing to say they went stale.
+PERSISTED_DOCUMENT_METRICS_UP = Gauge(
+    "dpi_persisted_document_metrics_up",
+    "Whether the last document-count refresh from the session-log DB succeeded "
+    "(1=ok, 0=failed).",
+)
+
+_DOCUMENT_METRIC_TYPES = {
+    "pdf2abdm": "clinical_document",
+    "pdf2nhcx": "insurance_document",
+    "privacy_filter": "privacy_document",
+    "forgensic": "forgery_document",
+}
+
+
+def refresh_persisted_document_metrics() -> None:
+    """Refresh durable document-count gauges from the shared session-log DB."""
+    db = SessionLocal()
+    try:
+        document_types = tuple(_DOCUMENT_METRIC_TYPES.values())
+        totals = dict(
+            db.query(SessionLog.document_type, func.count(SessionLog.session_id))
+            .filter(SessionLog.document_type.in_(document_types))
+            .group_by(SessionLog.document_type)
+            .all()
+        )
+        # SessionLog.created_at is stored as a naive IST timestamp in MySQL.
+        start_of_day = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            tzinfo=None, hour=0, minute=0, second=0, microsecond=0
+        )
+        today_totals = dict(
+            db.query(SessionLog.document_type, func.count(SessionLog.session_id))
+            .filter(
+                SessionLog.document_type.in_(document_types),
+                SessionLog.created_at >= start_of_day,
+            )
+            .group_by(SessionLog.document_type)
+            .all()
+        )
+        for service, document_type in _DOCUMENT_METRIC_TYPES.items():
+            PERSISTED_DOCUMENT_COUNT.labels(service=service).set(totals.get(document_type, 0))
+            PERSISTED_DOCUMENT_TODAY_COUNT.labels(service=service).set(
+                today_totals.get(document_type, 0)
+            )
+        PERSISTED_DOCUMENT_METRICS_UP.set(1)
+    except Exception as exc:
+        # A temporary DB issue must not make /metrics or the API unavailable.
+        PERSISTED_DOCUMENT_METRICS_UP.set(0)
+        logger.warning("[metrics] failed to refresh persisted document counts: %s", exc)
+    finally:
+        db.close()
+
+
+async def _persisted_document_metrics_worker() -> None:
+    """Keep Grafana's durable record counts fresh between document submissions."""
+    while True:
+        refresh_persisted_document_metrics()
+        await asyncio.sleep(15)
+
 
 # ── Daily Expired Token Cleanup Loop (Session 4.1) ───────────────────────────
 import asyncio
@@ -187,7 +277,9 @@ async def _token_cleanup_worker():
 
 @app.on_event("startup")
 async def startup_event():
+    refresh_persisted_document_metrics()
     asyncio.create_task(_token_cleanup_worker())
+    asyncio.create_task(_persisted_document_metrics_worker())
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -204,6 +296,8 @@ def _doc_type_enum(service: str) -> str:
         "pdf2nhcx": "insurance_document",
         "privacy_filter": "privacy_document",
         "forgensic": "forgery_document",
+        "audio_asr": "audio_document",
+        "ct_report_checker": "ct_report",
     }
     return mapping.get(service, service)
 
@@ -211,7 +305,7 @@ def _doc_type_enum(service: str) -> str:
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
 class SessionLogCreate(BaseModel):
-    service:      Literal["pdf2abdm", "pdf2nhcx", "privacy_filter", "forgensic"]
+    service:      Literal["pdf2abdm", "pdf2nhcx", "privacy_filter", "forgensic", "audio_asr", "ct_report_checker"]
     ip_address:   Optional[str]  = "unknown"
     state:        Optional[str]  = None
     city:         Optional[str]  = None
@@ -486,19 +580,23 @@ def log_stats(db: Session = Depends(get_db)):
         .scalar() or 0
     )
 
-    states = [
+    all_states = [
         r[0] for r in db.query(SessionLog.state)
         .filter(SessionLog.state.isnot(None), SessionLog.state != "")
         .distinct()
         .all()
     ]
-    
-    districts = [
-        r[0] for r in db.query(SessionLog.city)
-        .filter(SessionLog.city.isnot(None), SessionLog.city != "")
+    states = [s for s in all_states if _is_indian_state(s)]
+    indian_state_rows = (
+        db.query(SessionLog.city)
+        .filter(
+            SessionLog.city.isnot(None), SessionLog.city != "",
+            SessionLog.state.in_(states),
+        )
         .distinct()
         .all()
-    ]
+    )
+    districts = [r[0] for r in indian_state_rows]
 
     # Token holders from auth_tokens table (Page Users — registered)
     token_holders = 0
@@ -551,6 +649,30 @@ def forgensic_stats(db: Session = Depends(get_db)):
         "docs_analyzed": docs_analyzed,
         "active_jobs":   0,
     }
+
+
+@app.get("/logs/audio-stats", tags=["Analytics"],
+         summary="Audio ASR usage stats")
+def audio_stats(db: Session = Depends(get_db)):
+    """Return audio processing count from the database."""
+    audio_processings = (
+        db.query(func.count(SessionLog.session_id))
+        .filter(SessionLog.document_type == "audio_document")
+        .scalar() or 0
+    )
+    return {"audio_processings": audio_processings}
+
+
+@app.get("/logs/ct-stats", tags=["Analytics"],
+         summary="CT Report Checker usage stats")
+def ct_stats(db: Session = Depends(get_db)):
+    """Return CT report check count from the database."""
+    ct_processings = (
+        db.query(func.count(SessionLog.session_id))
+        .filter(SessionLog.document_type == "ct_report")
+        .scalar() or 0
+    )
+    return {"ct_processings": ct_processings}
 
 
 # ── NHCX Page Visit tracking ──────────────────────────────────────────────────
@@ -620,16 +742,23 @@ def visit_stats(db: Session = Depends(get_db)):
     """Returns total NHCX website page views and unique locations."""
     try:
         total = db.execute(text("SELECT COUNT(*) FROM page_visits")).scalar() or 0
-        states = [
+        all_states = [
             r[0] for r in db.execute(
                 text("SELECT DISTINCT state FROM page_visits WHERE state IS NOT NULL AND state != ''")
             ).fetchall()
         ]
-        cities = [
-            r[0] for r in db.execute(
-                text("SELECT DISTINCT city FROM page_visits WHERE city IS NOT NULL AND city != ''")
-            ).fetchall()
-        ]
+        states = [s for s in all_states if _is_indian_state(s)]
+        if states:
+            placeholders = ", ".join(f":s{i}" for i in range(len(states)))
+            params = {f"s{i}": s for i, s in enumerate(states)}
+            cities = [
+                r[0] for r in db.execute(
+                    text(f"SELECT DISTINCT city FROM page_visits WHERE state IN ({placeholders}) AND city IS NOT NULL AND city != ''"),
+                    params,
+                ).fetchall()
+            ]
+        else:
+            cities = []
         return {"nhcx_page_visits": total, "states": states, "cities": cities}
     except Exception as exc:
         logger.warning("[visit-stats] query failed: %s", exc)
@@ -726,6 +855,9 @@ def _upsert_user(claims: dict, db: Session) -> User:
             changed = True
         if claims.get("name") and user.full_name != claims.get("name"):
             user.full_name = claims.get("name")
+            changed = True
+        if user.role == "user":
+            user.role = "authorized"
             changed = True
         if changed:
             db.commit()
@@ -996,4 +1128,3 @@ def generate_service_token(payload: ServiceTokenRequest, request: Request, db: S
         db.rollback()
         logger.error(f"[auth] Centralized token generation error [request_id={request_id}]: {exc}")
         raise HTTPException(500, f"Token generation failed [request_id={request_id}]: {exc}")
-

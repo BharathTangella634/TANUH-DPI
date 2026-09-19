@@ -1,7 +1,7 @@
 # API Documentation
 
 > **Version 3.0** — OpenAPI 3.0 compliant. All services upgraded to bearer-token authentication.
-> Last updated: May 2026
+> Last updated: June 2026
 
 ---
 
@@ -9,61 +9,29 @@
 
 The NHCX platform exposes **four independent API services**. Each service requires its own bearer token; tokens are **not interchangeable** across services.
 
-| Service | Base URL | Port | Token Endpoint |
+| Service | Base URL | Port | Token Generation |
 |---------|----------|------|----------------|
-| ABDM FHIR Extraction | `/pdf2abdm` | 8000 | `POST /api/token` |
-| NHCX Insurance Extraction | `/pdf2nhcx` | 8001 | `POST /api/token` |
-| Privacy Filter | `/privacy-filter` | 8003 (→ 8080) | `POST /api/token` |
-| Forgery Detection | `/forgensic` | 8004 | `POST /api/token` |
+| ABDM FHIR Extraction | `/pdf2abdm` | 8000 | Web UI (API Access tab) |
+| NHCX Insurance Extraction | `/pdf2nhcx` | 8001 | Web UI (API Access tab) |
+| Privacy Filter | `/privacy-filter` | 8003 (→ 8080) | Web UI (API Access tab) |
+| Forgery Detection | `/forgensic` | 8004 | Web UI (API Access tab) |
 
 ---
 
 ## Authentication
 
-All services use **HS256 JWT bearer tokens**. The tokens are **independent** — each service issues and validates its own tokens using its own `SECRET_KEY`.
+All services use **HS256 JWT bearer tokens**. The tokens are **independent** — each service issues and validates its own tokens.
 
 ### Getting a Token
 
-```bash
-# ABDM token
-curl -X POST https://nhcxhackathon.tanuh.ai/pdf2abdm/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Your Name", "email": "you@example.com"}'
-
-# NHCX token
-curl -X POST https://nhcxhackathon.tanuh.ai/pdf2nhcx/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Your Name", "email": "you@example.com"}'
-
-# Privacy Filter token
-curl -X POST https://nhcxhackathon.tanuh.ai/privacy-filter/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Your Name", "email": "you@example.com"}'
-
-# Forgery token
-curl -X POST https://dpi.tanuh.ai/forgensic/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Your Name", "email": "you@example.com"}'
-```
-
-**Response**:
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in_days": 1,
-  "name": "Your Name",
-  "email": "you@example.com",
-  "service": "pdf2abdm"
-}
-```
+To obtain an API token, visit the web portal, log in, navigate to the **API Access** tab of the respective service, and click **Generate Token**. The token endpoint requests are disabled.
 
 ### Using the Token
 
 ```bash
 # Pass token as Authorization header on all protected endpoints
 curl -X POST .../pdf2abdm \
-  -H "Authorization: Bearer <your-token>" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@document.pdf"
 ```
 
@@ -84,7 +52,6 @@ curl -X POST .../pdf2abdm \
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/pdf2abdm/health` | None | Service liveness check |
-| `POST` | `/api/token` | None | Issue a 1-day demo JWT |
 | `POST` | `/pdf2abdm` | ✅ Bearer | Sync: Upload PDF → FHIR bundle (returns immediately) |
 | `POST` | `/pdf2abdm/submit` | ✅ Bearer | Async: Submit PDF → returns `task_id` (202) |
 | `GET` | `/pdf2abdm/task-status/{task_id}` | None | Poll async task status |
@@ -93,12 +60,8 @@ curl -X POST .../pdf2abdm \
 ### `POST /pdf2abdm` — Sync Extraction
 
 ```bash
-TOKEN=$(curl -s -X POST https://nhcxhackathon.tanuh.ai/pdf2abdm/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
 curl -X POST https://nhcxhackathon.tanuh.ai/pdf2abdm \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@clinical_record.pdf" \
   -F "model=gemma4" \
   -F "ocr_engine=auto"
@@ -127,7 +90,7 @@ curl -X POST https://nhcxhackathon.tanuh.ai/pdf2abdm \
 
 ```bash
 curl -X POST https://nhcxhackathon.tanuh.ai/pdf2abdm/submit \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@document.pdf" \
   -F "model=gemma4"
 # Returns: {"task_id": "abc123..."}
@@ -146,7 +109,6 @@ Poll with `GET /pdf2abdm/task-status/{task_id}` → when `status == "completed"`
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/pdf2nhcx/health` | None | Service liveness check |
-| `POST` | `/api/token` | None | Issue a 1-day demo JWT |
 | `POST` | `/pdf2nhcx` | ✅ Bearer | Sync extraction |
 | `POST` | `/pdf2nhcx/submit` | ✅ Bearer | Async submission (202) |
 | `GET` | `/pdf2nhcx/task-status/{task_id}` | None | Poll async task |
@@ -155,24 +117,20 @@ Poll with `GET /pdf2abdm/task-status/{task_id}` → when `status == "completed"`
 ### `POST /pdf2nhcx/submit` — Async (Recommended)
 
 ```bash
-TOKEN=$(curl -s -X POST https://nhcxhackathon.tanuh.ai/pdf2nhcx/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
 # Submit
 TASK=$(curl -s -X POST https://nhcxhackathon.tanuh.ai/pdf2nhcx/submit \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@policy.pdf" | python3 -c "import sys,json; print(json.load(sys.stdin)['task_id'])")
 
 # Poll
-curl https://nhcxhackathon.tanuh.ai/pdf2nhcx/task-status/$TASK
+curl https://nhcxhackathon.tanuh.ai/pdf2nhcx/task-status/$TASK -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ---
 
 ## 3. Privacy Filter API (`/privacy-filter`)
 
-> Upload any document → detect & redact PII using `openai/privacy-filter`
+> Upload any document → detect & redact PII using Privacy Filter tool
 
 ### Endpoints
 
@@ -180,21 +138,15 @@ curl https://nhcxhackathon.tanuh.ai/pdf2nhcx/task-status/$TASK
 |--------|------|------|-------------|
 | `GET` | `/privacy-filter/api/health` | None | Model + service liveness |
 | `GET` | `/privacy-filter/api/supported-types` | None | Accepted file extensions |
-| `POST` | `/privacy-filter/api/token` | None | Issue a 1-day demo JWT (also: `/api/demo-token`) |
 | `POST` | `/privacy-filter/api/redact` | ✅ Bearer | Upload → redacted file + entity list |
 | `GET` | `/privacy-filter/api/files/{kind}/{key}` | ✅ Bearer | Download `uploads` or `redacted` files |
 | `GET` | `/privacy-filter/api/stats` | None | Live usage counters |
-| `GET` | `/privacy-filter/api/postman-collection` | None | Download Postman collection |
 
 ### `POST /privacy-filter/api/redact`
 
 ```bash
-TOKEN=$(curl -s -X POST https://nhcxhackathon.tanuh.ai/privacy-filter/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
 curl -X POST https://nhcxhackathon.tanuh.ai/privacy-filter/api/redact \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@document.pdf"
 ```
 
@@ -214,15 +166,6 @@ curl -X POST https://nhcxhackathon.tanuh.ai/privacy-filter/api/redact \
 
 **Supported file types**: `.txt`, `.md`, `.log`, `.csv`, `.pdf`, `.docx`, `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.dcm`, `.dicom`
 
-### Detection Layers
-
-Three detection layers run on every request:
-1. **`openai/privacy-filter`** — personal PII (names, emails, phone numbers)
-2. **`dslim/bert-base-NER`** — organisations, locations, people (optional; `ENABLE_NER_MODEL=true`)
-3. **Deterministic regex** — tax IDs, IFSC, IBAN, SSN, EIN, Aadhaar, emails, URLs, labeled fields
-
----
-
 ---
 
 ## 4. Forgery Detection API (`/forgensic`)
@@ -235,7 +178,6 @@ Three detection layers run on every request:
 |--------|------|------|-------------|
 | `GET` | `/forgensic/health` | None | Service liveness check |
 | `GET` | `/forgensic/stats` | None | Usage counters for the dashboard |
-| `POST` | `/forgensic/api/token` | None | Issue a 1-day demo JWT |
 | `POST` | `/forgensic/jobs` | ✅ Bearer | Upload document and create processing job |
 | `GET` | `/forgensic/jobs/{job_id}` | ✅ Bearer | Poll job status and progress |
 | `GET` | `/forgensic/jobs/{job_id}/results` | ✅ Bearer | Fetch forgery analysis results |
@@ -244,12 +186,8 @@ Three detection layers run on every request:
 ### `POST /forgensic/jobs` — Create Job
 
 ```bash
-TOKEN=$(curl -s -X POST https://dpi.tanuh.ai/forgensic/api/token \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
 curl -X POST https://dpi.tanuh.ai/forgensic/jobs \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@document.pdf" \
   -F "ocr_enabled=true"
 ```
@@ -259,23 +197,17 @@ curl -X POST https://dpi.tanuh.ai/forgensic/jobs \
 ## Python SDK Example (All 4 Services)
 
 ```python
+import time
 import requests
 
 BASE = "https://nhcxhackathon.tanuh.ai"
 
-# 1. Get tokens for each service independently
-def get_token(service_prefix):
-    r = requests.post(
-        f"{BASE}/{service_prefix}/api/token",
-        json={"name": "Your Name", "email": "you@example.com"},
-    )
-    return r.json()["access_token"]
+# Set your API tokens generated from the web portal
+abdm_token = "YOUR_ABDM_TOKEN"
+nhcx_token = "YOUR_NHCX_TOKEN"
+pf_token   = "YOUR_PRIVACY_FILTER_TOKEN"
 
-abdm_token = get_token("pdf2abdm")
-nhcx_token = get_token("pdf2nhcx")
-pf_token   = get_token("privacy-filter")
-
-# 2. Submit a clinical PDF (ABDM)
+# 1. Submit a clinical PDF (ABDM)
 with open("clinical.pdf", "rb") as f:
     r = requests.post(
         f"{BASE}/pdf2abdm",
@@ -286,7 +218,7 @@ with open("clinical.pdf", "rb") as f:
     )
     abdm_result = r.json()
 
-# 3. Redact a document (Privacy Filter)
+# 2. Redact a document (Privacy Filter)
 with open("document.pdf", "rb") as f:
     r = requests.post(
         f"{BASE}/privacy-filter/api/redact",
@@ -306,7 +238,7 @@ All services return RFC 7807-style error details:
 
 | Status | Meaning |
 |--------|---------|
-| `401 Unauthorized` | Missing or invalid bearer token. Call `/api/token` to get a new one. |
+| `401 Unauthorized` | Missing or invalid bearer token. Generate token from Web UI. |
 | `422 Unprocessable Entity` | Missing or malformed request body / form fields. |
 | `503 Service Unavailable` | Model is loading or upstream dependency unreachable — retry with backoff. |
 | `504 Gateway Timeout` | Apache proxy timeout — large documents can take up to 15 min. |
