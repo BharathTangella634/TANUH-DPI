@@ -7,7 +7,7 @@ httpx==0.27.0
 python-jose[cryptography]==3.3.0
 numpy
 opencv-python-headless
-pillow
+pillow>=12.0  # >=12 ships native AVIF support (see supported_image_exts)
 pymupdf
 pytesseract
 pyyaml

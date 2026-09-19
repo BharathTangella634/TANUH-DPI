@@ -14,12 +14,14 @@ Files are served from the shared volume (DATA_DIR) — no binary blobs in Redis.
 """
 import json
 import mimetypes
+import re
 import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 import redis as redis_lib
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Request
@@ -39,6 +41,7 @@ from .config import (
     PIPELINE_PRESET,
     PIPELINE_VERSION,
     REDIS_URL,
+    STORAGE_BACKEND,
 )
 from .auth import require_bearer, issue_demo_token
 from .models import JobCreateResponse, JobResultResponse, JobStatusResponse
@@ -101,9 +104,47 @@ def _parse_iso(value: Optional[str]) -> Optional[datetime]:
         return None
 
 
+def _safe_upload_name(name: str) -> Optional[str]:
+    """Reduce a client-supplied filename to a bare, safe basename.
+
+    The uploaded name reaches both a filesystem path (local backend) and a GCS
+    blob name, so it must not be able to carry directory components: a name
+    like "../../etc/cron.d/x" would otherwise escape the job directory, since
+    Path() joins such a value without complaint.
+    """
+    candidate = Path(name.replace("\\", "/")).name.strip()
+    if not candidate or candidate in {".", ".."}:
+        return None
+    if any(ch in candidate for ch in ("/", "\\")):
+        return None
+    # Control characters (CR/LF especially) and quotes must not survive: the
+    # name is echoed back in a Content-Disposition header, where a bare CRLF
+    # or quote lets a caller terminate the value and inject further headers.
+    if any(ch < " " or ch == "\x7f" for ch in candidate):
+        return None
+    if '"' in candidate:
+        return None
+    return candidate
+
+
+def _content_disposition_inline(name: str) -> str:
+    """Build a Content-Disposition value that cannot inject response headers.
+
+    The served name reaches the client verbatim, so it is emitted twice: an
+    ASCII-only fallback with every unusual character replaced, plus an RFC 5987
+    filename* carrying the percent-encoded original. Neither form can contain a
+    quote, CR or LF, so the header cannot be terminated early.
+    """
+    ascii_fallback = re.sub(r"[^A-Za-z0-9._-]", "_", name) or "download"
+    return (
+        f'inline; filename="{ascii_fallback}"; '
+        f"filename*=UTF-8''{quote(name, safe='')}"
+    )
+
+
 def _allowed_suffix(name: str) -> bool:
     suffix = Path(name).suffix.lower()
-    return suffix in {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+    return suffix in {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
 
 def _save_upload(upload: UploadFile, dest: Path) -> int:
@@ -229,7 +270,8 @@ async def create_job(
     """
     _cleanup_jobs()
 
-    if not file.filename or not _allowed_suffix(file.filename):
+    safe_name = _safe_upload_name(file.filename or "")
+    if not safe_name or not _allowed_suffix(safe_name):
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
     job_id = uuid.uuid4().hex
@@ -241,14 +283,21 @@ async def create_job(
     if size > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File exceeds 25 MB limit")
 
-    from forgensic.app.gcs_storage import upload_bytes  # noqa: PLC0415
-    import mimetypes  # noqa: PLC0415
-    content_type, _ = mimetypes.guess_type(file.filename)
-    input_blob = f"forgensic/{job_id}/input/{file.filename}"
-    try:
-        input_gcs_uri = upload_bytes(file_bytes, input_blob, content_type)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to upload input to GCS: {exc}")
+    if STORAGE_BACKEND == "local":
+        # Single-machine dev/test path — no GCP credentials required.
+        input_path = DATA_DIR / job_id / "input" / safe_name
+        input_path.parent.mkdir(parents=True, exist_ok=True)
+        input_path.write_bytes(file_bytes)
+        input_gcs_uri = str(input_path)
+    else:
+        from forgensic.app.gcs_storage import upload_bytes  # noqa: PLC0415
+        import mimetypes  # noqa: PLC0415
+        content_type, _ = mimetypes.guess_type(safe_name)
+        input_blob = f"forgensic/{job_id}/input/{safe_name}"
+        try:
+            input_gcs_uri = upload_bytes(file_bytes, input_blob, content_type)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to upload input to GCS: {exc}")
 
     resolved_ocr = OCR_ENABLED if ocr_enabled is None else bool(ocr_enabled)
 
@@ -260,7 +309,7 @@ async def create_job(
             "job_id": job_id,
             "status": "queued",
             "progress": 0.0,
-            "file_name": file.filename,
+            "file_name": safe_name,
             "file_size": size,
             "ocr_enabled": resolved_ocr,
             "created_at": _now_iso(),
@@ -347,7 +396,7 @@ async def get_job_file(
         return Response(
             content=data,
             media_type=content_type or "application/octet-stream",
-            headers={"Content-Disposition": f'inline; filename="{file_name}"'},
+            headers={"Content-Disposition": _content_disposition_inline(file_name)},
         )
 
     disk_path = Path(location)

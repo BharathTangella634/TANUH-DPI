@@ -468,7 +468,7 @@
                 </div>
                 <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 8px;">75MB File Limit</h4>
                 <p style="font-size: 0.85rem; line-height: 1.5; color: #64748b; margin: 0;">
-                    Maximum single file upload size is capped at 25MB. Supported formats: PDF, JPG, PNG, BMP, TIFF, WebP.
+                    Maximum single file upload size is capped at 25MB. Supported formats: PDF, JPG, PNG, BMP, TIFF, WebP, AVIF.
                 </p>
             </div>
             
@@ -551,7 +551,7 @@
                 <strong><i class="fas fa-user-shield"></i> Privacy:</strong> Non-persistent service. Data is processed in real-time and purged automatically. No data is stored.
             </p>
             <p style="margin: 0; color: #0f766e; font-size: 0.78rem; line-height: 1.4;">
-                <strong><i class="fas fa-file"></i> Limit:</strong> Maximum file size <strong>25 MB</strong>. Supported: PDF, JPG, PNG, BMP, TIFF, WebP.
+                <strong><i class="fas fa-file"></i> Limit:</strong> Maximum file size <strong>25 MB</strong>. Supported: PDF, JPG, PNG, BMP, TIFF, WebP, AVIF.
             </p>
         </div>
 
@@ -566,11 +566,11 @@
                 </div>
                 <div>
                     <p class="fg-dropzone-title">Drag &amp; drop document here, or <span style="color:var(--primary); text-decoration:underline; font-weight:700;">browse files</span></p>
-                    <p class="fg-dropzone-subtitle" style="margin-top: 4px;">Supports PDF, PNG, JPG, BMP, TIFF, WebP (Max 25 MB)</p>
+                    <p class="fg-dropzone-subtitle" style="margin-top: 4px;">Supports PDF, PNG, JPG, BMP, TIFF, WebP, AVIF (Max 25 MB)</p>
                 </div>
             </div>
             
-            <input type="file" id="fileForgery" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp" style="display:none;" onchange="window.FG_handleFileChange()">
+            <input type="file" id="fileForgery" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp,.avif" style="display:none;" onchange="window.FG_handleFileChange()">
             
             <!-- Selected File Card (hidden by default) -->
             <div class="fg-selected-card" id="fgFileCard" style="display:none;">
@@ -608,7 +608,7 @@
 
         <!-- Tampered Flag -->
         <div id="fgTamperedFlag" class="fg-tampered-flag fg-tampered-neutral">
-            <i class="fas fa-hourglass-half"></i> Tampered: <strong>-</strong> Awaiting analysis.
+            <i class="fas fa-hourglass-half"></i> <strong>—</strong> Awaiting analysis.
         </div>
 
         <!-- Results Grid -->

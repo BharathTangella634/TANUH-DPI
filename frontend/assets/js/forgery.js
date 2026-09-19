@@ -74,6 +74,19 @@
                 }
             } catch (_) {}
         }
+
+        // Local development only. The forgensic API runs with
+        // FORGENSIC_AUTH_ENABLED=false here, and session_logger/Firebase (the
+        // only real token source -- POST /api/token is disabled on purpose)
+        // are not running, so no genuine token can be minted. Send a
+        // placeholder so the upload actually reaches the API. The server is
+        // still the one that decides: against a deployment with auth enabled
+        // this just comes back 401, exactly as an absent token would.
+        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+            fgStoreToken("local-dev");
+            return "local-dev";
+        }
+
         return "";
     }
 
@@ -130,25 +143,34 @@
         if (!el) return;
         el.classList.remove("fg-tampered-yes", "fg-tampered-no");
         el.classList.add("fg-tampered-neutral");
-        el.innerHTML = '<i class="fas fa-hourglass-half"></i> Tampered: <strong>—</strong> ' + message;
+        el.innerHTML = '<i class="fas fa-hourglass-half"></i> <strong>&mdash;</strong> ' + message;
     }
 
-    function setTampered(summary) {
+    function setVerdict(payload) {
         var el = $("fgTamperedFlag");
         if (!el) return;
-        if (!summary) {
+        if (!payload) {
             setTamperedNeutral("Awaiting analysis.");
             return;
         }
-        var keys = Object.keys(summary || {}).filter(function (k) { return summary[k]; });
-        var clean = keys.length === 0 || (keys.length === 1 && keys[0] === "C10");
+
+        // The server decides; fall back to the same rule client-side only for
+        // results produced before the verdict field existed.
+        var verdict = payload.verdict;
+        if (!verdict) {
+            var total = (payload.pages || []).reduce(function (n, p) {
+                return n + ((p.regions || []).length);
+            }, 0);
+            verdict = total >= (payload.review_min_regions || 3) ? "REVIEW" : "PASS";
+        }
+
         el.classList.remove("fg-tampered-neutral", "fg-tampered-yes", "fg-tampered-no");
-        if (clean) {
+        if (verdict === "PASS") {
             el.classList.add("fg-tampered-no");
-            el.innerHTML = '<i class="fas fa-check-circle"></i> Tampered: <strong>No</strong> — Document appears clean.';
+            el.innerHTML = '<i class="fas fa-check-circle"></i> <strong>PASS</strong> — This document requires no manual review.';
         } else {
             el.classList.add("fg-tampered-yes");
-            el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tampered: <strong>Yes</strong> — Suspicious regions detected.';
+            el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <strong>REVIEW</strong> — This document requires further review.';
         }
     }
 
@@ -300,7 +322,13 @@
             return;
         }
 
-        (pageData.regions || []).forEach(function (r) {
+        // Draw the merged clusters, not the raw regions: the findings list and
+        // its "View area" crop both refer to merged boxes, so drawing raw
+        // regions here left findings with no matching box on the document.
+        var boxes = (pageData.merged_regions && pageData.merged_regions.length)
+            ? pageData.merged_regions
+            : (pageData.regions || []);
+        boxes.forEach(function (r) {
             addBox(r, r.category_id, false);
         });
     }
@@ -414,8 +442,7 @@
         if (avg == null && fgResults.result) avg = fgResults.result.avg_inference_seconds;
         setInference(total, avg);
 
-        var summary = fgResults.category_summary || {};
-        setTampered(summary);
+        setVerdict(fgResults);
         renderFindings(fgResults);
         showGrid(true);
 
@@ -682,7 +709,7 @@
         const tamperedFlag = document.getElementById('fgTamperedFlag');
         if (tamperedFlag) {
             tamperedFlag.className = 'fg-tampered-flag fg-tampered-neutral';
-            tamperedFlag.innerHTML = '<i class="fas fa-hourglass-half"></i> Tampered: <strong>-</strong> Awaiting analysis.';
+            tamperedFlag.innerHTML = '<i class="fas fa-hourglass-half"></i> <strong>&mdash;</strong> Awaiting analysis.';
         }
         const progressSection = document.getElementById('fgProgressSection');
         if (progressSection) progressSection.style.display = 'none';

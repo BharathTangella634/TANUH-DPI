@@ -329,7 +329,7 @@ services:
       - FORGENSIC_SECRET_KEY_SECRET=forgensic-secret-key
       - REDIS_PASSWORD_SECRET=redis-password
       - OCR_ENABLED=true
-      - PIPELINE_PRESET=super_loose
+      - PIPELINE_PRESET=npv_focus
       - FORGENSIC_SECRET_KEY=${FORGENSIC_SECRET_KEY}
       - FORGENSIC_AUTH_ENABLED=${FORGENSIC_AUTH_ENABLED:-true}
       - FORGENSIC_TOKEN_EXPIRY_DAYS=${FORGENSIC_TOKEN_EXPIRY_DAYS:-1}
@@ -362,7 +362,7 @@ services:
       - PYTHONPATH=/app
       - DATA_DIR=/app/forgensic_data
       - OCR_ENABLED=true
-      - PIPELINE_PRESET=super_loose
+      - PIPELINE_PRESET=npv_focus
       - REDIS_URL=redis://10.250.123.43:6379/0
       - JOB_TTL_SECONDS=3600
       - PROJECT_ID=proj-dpi-shared

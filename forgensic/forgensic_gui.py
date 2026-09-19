@@ -1045,7 +1045,7 @@ class ForgensicApp(ctk.CTk):
             work_dir = self.file_path.parent / f"forgensic_work_{self.file_path.stem}"
             run_output = run_pipeline(
                 input_path=self.file_path, work_dir=work_dir,
-                preset="super_loose", enable_ocr=True
+                preset="npv_focus", enable_ocr=True
             )
             pages       = run_output["pages"]
             results     = run_output["results"]
@@ -1367,7 +1367,7 @@ if __name__ == "__main__":
         print(f"[*] Starting Forgensic Analysis: {in_path.name}")
         work_dir = in_path.parent / f"forgensic_work_{in_path.stem}"
         try:
-            run_output = run_pipeline(input_path=in_path, work_dir=work_dir, preset="super_loose", enable_ocr=True)
+            run_output = run_pipeline(input_path=in_path, work_dir=work_dir, preset="npv_focus", enable_ocr=True)
             pages = run_output["pages"]
             results = run_output["results"]
             findings_summary = build_findings_summary(pages, results, max_per_page=10, min_area_ratio=0.0)
