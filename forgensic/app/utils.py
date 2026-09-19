@@ -7,7 +7,71 @@ Extracted from main.py so neither main.py nor tasks.py imports each other
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .pipeline import DetectedRegion, DocumentPage, PageAnalysisResult
+from .config import REVIEW_MIN_REGIONS
+from .pipeline import (
+    DetectedRegion,
+    DocumentPage,
+    PageAnalysisResult,
+    _merge_boxes,
+    _scaled_merge_gap,
+)
+
+
+def merged_regions_for(
+    result: PageAnalysisResult,
+    page: Optional[DocumentPage],
+) -> List[Dict[str, Any]]:
+    """Per-category merged boxes for a page, using the same gap as the findings.
+
+    The findings list and the "View area" crop are built from merged clusters
+    (build_findings_summary), while the page overlay used to be drawn from the
+    raw, unmerged regions -- so a finding's box frequently had no matching box
+    on the document. Serving the merged boxes here lets the overlay draw the
+    same rectangles the findings refer to.
+    """
+    if page is None or not page.image_width or not page.image_height:
+        return []
+    gap = _scaled_merge_gap(page.image_width, page.image_height)
+    boxes_by_category: Dict[str, List[tuple]] = {}
+    for region in result.detected_regions:
+        boxes_by_category.setdefault(region.category_id, []).append(
+            (region.x, region.y, region.x + region.w, region.y + region.h)
+        )
+    merged: List[Dict[str, Any]] = []
+    for category_id, boxes in boxes_by_category.items():
+        for cluster in _merge_boxes(boxes, gap):
+            x1, y1, x2, y2 = cluster["box"]
+            merged.append({
+                "x": int(x1),
+                "y": int(y1),
+                "w": int(x2 - x1),
+                "h": int(y2 - y1),
+                "category_id": category_id,
+                "count": int(cluster.get("count", 1)),
+            })
+    return merged
+
+
+def build_verdict(results: List[PageAnalysisResult]) -> Dict[str, Any]:
+    """Collapse a whole document down to one call: PASS or REVIEW.
+
+    Counts the detected regions that survived the npv_focus filter across every
+    page. At or above REVIEW_MIN_REGIONS the document goes to a human; below it
+    the document is cleared without manual verification.
+
+    This is the document-level rule behind the NHA pilot report: with a
+    threshold of 4 it reproduced that report's 51 PASS / 93 FAIL split over the
+    144-document batch exactly. The threshold now sits at 3, which sends
+    slightly more documents to review than the report did.
+    """
+    total_regions = sum(len(r.detected_regions) for r in results)
+    review = total_regions >= REVIEW_MIN_REGIONS
+    return {
+        "verdict": "REVIEW" if review else "PASS",
+        "requires_manual_review": review,
+        "total_regions": total_regions,
+        "review_min_regions": REVIEW_MIN_REGIONS,
+    }
 
 
 def region_to_dict(region: DetectedRegion) -> Dict[str, Any]:
@@ -40,6 +104,7 @@ def result_to_dict(
         "image_height": page.image_height if page else None,
         "categories": result.predicted_categories,
         "regions": [region_to_dict(r) for r in result.detected_regions],
+        "merged_regions": merged_regions_for(result, page),
         "notes": result.notes,
     }
 
@@ -84,6 +149,8 @@ def build_results_payload(
     if not any([export_urls.get("json"), export_urls.get("excel"), export_urls.get("yaml")]):
         export_urls = {}
 
+    verdict = build_verdict(results)
+
     return {
         "job_id": job_id,
         "status": "complete",
@@ -91,6 +158,7 @@ def build_results_payload(
         "pipeline_version": pipeline_version,
         "pages": payload_pages,
         "category_summary": summary,
+        **verdict,
         "export_urls": export_urls,
         "findings_summary": findings_summary,
         "inference_seconds": inference_seconds,

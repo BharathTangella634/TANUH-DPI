@@ -292,6 +292,8 @@ def process_forgensic_job(
                 "avg_inference_seconds": avg_inference_seconds,
                 "summary_text": (findings_summary or {}).get("summary_text"),
                 "category_summary": payload.get("category_summary", {}),
+                "verdict": payload.get("verdict"),
+                "total_regions": payload.get("total_regions"),
                 "result": payload,
                 "file_map": file_map,
             },

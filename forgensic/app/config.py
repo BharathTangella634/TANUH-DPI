@@ -15,6 +15,14 @@ OCR_ENABLED = os.getenv("OCR_ENABLED", "true").lower() == "true"
 PIPELINE_PRESET = "npv_focus"
 PIPELINE_VERSION = os.getenv("PIPELINE_VERSION", "ps3-cv-1.0.0")
 
+# ── Document verdict ──────────────────────────────────────────────────────────
+# A document is sent for manual review once this many detected regions survive
+# the npv_focus filter, across all of its pages; below it the document is
+# cleared automatically. Hardcoded on purpose (like PIPELINE_PRESET) so every
+# deployment renders the same verdict for the same document -- this number is
+# the auto-clear policy, not a per-environment knob.
+REVIEW_MIN_REGIONS = 3
+
 # ── Redis / Celery ─────────────────────────────────────────────────────────────
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
