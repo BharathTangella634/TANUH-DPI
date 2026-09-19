@@ -14,12 +14,14 @@ Files are served from the shared volume (DATA_DIR) — no binary blobs in Redis.
 """
 import json
 import mimetypes
+import re
 import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 import redis as redis_lib
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Request
@@ -113,9 +115,31 @@ def _safe_upload_name(name: str) -> Optional[str]:
     candidate = Path(name.replace("\\", "/")).name.strip()
     if not candidate or candidate in {".", ".."}:
         return None
-    if any(ch in candidate for ch in ("/", "\\", "\x00")):
+    if any(ch in candidate for ch in ("/", "\\")):
+        return None
+    # Control characters (CR/LF especially) and quotes must not survive: the
+    # name is echoed back in a Content-Disposition header, where a bare CRLF
+    # or quote lets a caller terminate the value and inject further headers.
+    if any(ch < " " or ch == "\x7f" for ch in candidate):
+        return None
+    if '"' in candidate:
         return None
     return candidate
+
+
+def _content_disposition_inline(name: str) -> str:
+    """Build a Content-Disposition value that cannot inject response headers.
+
+    The served name reaches the client verbatim, so it is emitted twice: an
+    ASCII-only fallback with every unusual character replaced, plus an RFC 5987
+    filename* carrying the percent-encoded original. Neither form can contain a
+    quote, CR or LF, so the header cannot be terminated early.
+    """
+    ascii_fallback = re.sub(r"[^A-Za-z0-9._-]", "_", name) or "download"
+    return (
+        f'inline; filename="{ascii_fallback}"; '
+        f"filename*=UTF-8''{quote(name, safe='')}"
+    )
 
 
 def _allowed_suffix(name: str) -> bool:
@@ -372,7 +396,7 @@ async def get_job_file(
         return Response(
             content=data,
             media_type=content_type or "application/octet-stream",
-            headers={"Content-Disposition": f'inline; filename="{file_name}"'},
+            headers={"Content-Disposition": _content_disposition_inline(file_name)},
         )
 
     disk_path = Path(location)
