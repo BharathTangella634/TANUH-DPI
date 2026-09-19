@@ -62,6 +62,7 @@ class JobResultResponse(BaseModel):
     # Categories that flagged a page without producing a box (e.g. C8); their
     # presence forces REVIEW regardless of the region count.
     unlocalized_categories: List[str] = []
+    verdict_reason: Optional[str] = None
     export_urls: Dict[str, Any]
     findings_summary: Optional[Dict[str, Any]] = None
     inference_seconds: Optional[float] = None

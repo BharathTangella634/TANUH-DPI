@@ -64,6 +64,22 @@ def build_verdict(results: List[PageAnalysisResult]) -> Dict[str, Any]:
     144-document batch exactly. The threshold now sits at 3, which sends
     slightly more documents to review than the report did.
     """
+    # A document that produced no analysable page was never actually examined
+    # -- an unsupported or corrupt file, a render failure, a PDF with no
+    # extractable pages. Counting regions would score that zero and clear it as
+    # "requires no manual review", which is the one thing this verdict must
+    # never do: PASS has to mean "looked at and found nothing", not "could not
+    # look". Anything unexamined goes to a human.
+    if not results:
+        return {
+            "verdict": "REVIEW",
+            "requires_manual_review": True,
+            "total_regions": 0,
+            "review_min_regions": REVIEW_MIN_REGIONS,
+            "unlocalized_categories": [],
+            "verdict_reason": "no_pages_analysed",
+        }
+
     total_regions = sum(len(r.detected_regions) for r in results)
 
     # Safety net for page-level categories. Counting regions alone silently
@@ -80,6 +96,13 @@ def build_verdict(results: List[PageAnalysisResult]) -> Dict[str, Any]:
             unlocalized.extend(flagged)
     unlocalized = sorted(set(unlocalized))
 
+    if unlocalized:
+        reason = "unlocalized_detection"
+    elif total_regions >= REVIEW_MIN_REGIONS:
+        reason = "region_threshold"
+    else:
+        reason = "below_threshold"
+
     review = total_regions >= REVIEW_MIN_REGIONS or bool(unlocalized)
     return {
         "verdict": "REVIEW" if review else "PASS",
@@ -87,6 +110,7 @@ def build_verdict(results: List[PageAnalysisResult]) -> Dict[str, Any]:
         "total_regions": total_regions,
         "review_min_regions": REVIEW_MIN_REGIONS,
         "unlocalized_categories": unlocalized,
+        "verdict_reason": reason,
     }
 
 
