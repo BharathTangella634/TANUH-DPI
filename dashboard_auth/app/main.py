@@ -31,6 +31,9 @@ from fastapi.responses import JSONResponse
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dashboard_auth")
 
+from common.secrets import load_secrets
+load_secrets()
+
 ADMIN_USERNAME = os.getenv("ADMIN_DASHBOARD_USERNAME", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_DASHBOARD_PASSWORD", "")
 SECRET_KEY = os.getenv("ADMIN_DASHBOARD_SECRET_KEY", "").encode()
