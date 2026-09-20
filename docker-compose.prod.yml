@@ -130,9 +130,9 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
-      - ADMIN_DASHBOARD_USERNAME=${ADMIN_DASHBOARD_USERNAME:-Admin}
-      - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD:-Admin@TANUH_12345!}
-      - ADMIN_DASHBOARD_SECRET_KEY=${ADMIN_DASHBOARD_SECRET_KEY:-dev-change-me-in-production}
+      - ADMIN_DASHBOARD_USERNAME=${ADMIN_DASHBOARD_USERNAME}
+      - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
+      - ADMIN_DASHBOARD_SECRET_KEY=${ADMIN_DASHBOARD_SECRET_KEY}
 
   # ── Per-VM monitoring agents ──────────────────────────────────────────────
   # One copy of each runs on every VM in dpi-mig (this file already runs
