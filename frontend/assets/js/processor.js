@@ -10,12 +10,47 @@
     // ── Silent token fetch ─────────────────────────────────────────────────────
     // Fetches a token in the background using a generic guest identity.
     // Stores it in sessionStorage so subsequent uploads reuse it.
+    function _clearCachedToken(isClinical) {
+        const storageKey = isClinical ? 'abdm_token' : 'nhcx_token';
+        const serviceId  = isClinical ? 'pdf2abdm' : 'pdf2nhcx';
+        sessionStorage.removeItem(storageKey);
+        localStorage.removeItem('dpi_token_' + serviceId);
+        localStorage.removeItem('dpi_token_expires_' + serviceId);
+        localStorage.removeItem('dpi_token_status_' + serviceId);
+    }
+
+    async function _fetchFreshToken(isClinical) {
+        if (!window.DPI_Auth || !window.DPI_Auth.isLoggedIn()) return null;
+        const storageKey = isClinical ? 'abdm_token' : 'nhcx_token';
+        const serviceId  = isClinical ? 'pdf2abdm' : 'pdf2nhcx';
+        const centralKey = 'dpi_token_' + serviceId;
+        const loggerBase = window.DPI_API_CONFIG ? window.DPI_API_CONFIG.logger : 'http://localhost:8002';
+        try {
+            const firebaseToken = await window.DPI_Auth.getToken();
+            const r = await fetch(`${loggerBase}/auth/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${firebaseToken}` },
+                body: JSON.stringify({ service: serviceId })
+            });
+            if (r.ok) {
+                const data = await r.json();
+                sessionStorage.setItem(storageKey, data.access_token);
+                localStorage.setItem(centralKey, data.access_token);
+                localStorage.setItem('dpi_token_expires_' + serviceId, data.expires_at);
+                localStorage.setItem('dpi_token_status_' + serviceId, data.status);
+                return data.access_token;
+            }
+        } catch (err) {
+            console.error("Silent token retrieval failed:", err);
+        }
+        return null;
+    }
+
     async function ensureToken(isClinical, base) {
         const storageKey = isClinical ? 'abdm_token' : 'nhcx_token';
         const existing   = sessionStorage.getItem(storageKey);
         if (existing) return existing;
 
-        // Try to reuse the developer token generated in the API Access tab
         const centralKey = isClinical ? 'dpi_token_pdf2abdm' : 'dpi_token_pdf2nhcx';
         const central = localStorage.getItem(centralKey);
         if (central) {
@@ -23,33 +58,7 @@
             return central;
         }
 
-        // Silent centralized token fetch using logged-in Firebase session
-        if (window.DPI_Auth && window.DPI_Auth.isLoggedIn()) {
-            const firebaseToken = await window.DPI_Auth.getToken();
-            const serviceId = isClinical ? 'pdf2abdm' : 'pdf2nhcx';
-            const loggerBase = window.DPI_API_CONFIG ? window.DPI_API_CONFIG.logger : 'http://localhost:8002';
-            try {
-                const r = await fetch(`${loggerBase}/auth/token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${firebaseToken}`
-                    },
-                    body: JSON.stringify({ service: serviceId })
-                });
-                if (r.ok) {
-                    const data = await r.json();
-                    sessionStorage.setItem(storageKey, data.access_token);
-                    localStorage.setItem(centralKey, data.access_token);
-                    localStorage.setItem(`dpi_token_expires_${serviceId}`, data.expires_at);
-                    localStorage.setItem(`dpi_token_status_${serviceId}`, data.status);
-                    return data.access_token;
-                }
-            } catch (err) {
-                console.error("Silent token retrieval failed:", err);
-            }
-        }
-        return null;
+        return _fetchFreshToken(isClinical);
     }
 
     // ── Main upload entry point ────────────────────────────────────────────────
@@ -97,46 +106,42 @@
         const isLocal = base.includes('localhost') || base.includes('127.0.0.1');
 
         try {
+            async function _doRequest(url, fd, hdrs) {
+                let r = await fetch(url, { method: 'POST', body: fd, headers: hdrs });
+                if (r.status === 401) {
+                    _clearCachedToken(isClinical);
+                    const freshToken = await _fetchFreshToken(isClinical);
+                    if (freshToken) {
+                        hdrs = { 'Authorization': `Bearer ${freshToken}` };
+                        r = await fetch(url, { method: 'POST', body: fd, headers: hdrs });
+                    }
+                }
+                return { response: r, headers: hdrs };
+            }
+
             if (isLocal) {
-                // Sync path for local dev — no GCS / Redis / Celery needed
                 const syncUrl = isClinical ? `${base}/pdf2abdm` : `${base}/pdf2nhcx`;
-                const r = await fetch(syncUrl, {
-                    method: 'POST',
-                    body:   formData,
-                    headers
-                });
+                const { response: r } = await _doRequest(syncUrl, formData, headers);
                 if (r.status === 401) throw new Error("Token rejected by server. Please refresh and try again.");
                 if (!r.ok) throw new Error(await _extractErrorMessage(r, `${isClinical ? 'Clinical' : 'Insurance'} processing failed`));
                 const data = await r.json();
                 renderResult(data, taskType, outputEl, fileInput);
             } else if (!isClinical) {
-                // Async path for NHCX (production — uses GCS + Celery)
-                // base already includes /pdf2nhcx from DPI_API_CONFIG
-                const r = await fetch(`${base}/submit`, {
-                    method: 'POST',
-                    body:   formData,
-                    headers
-                });
+                const { response: r, headers: h } = await _doRequest(`${base}/submit`, formData, headers);
                 if (r.status === 401) throw new Error("Token rejected by server. Please refresh and try again.");
                 if (!r.ok) throw new Error(await _extractErrorMessage(r, 'Insurance Policy upload failed'));
                 const { task_id } = await r.json();
-                const data = await pollTask(task_id, base, headers);
+                const data = await pollTask(task_id, base, h);
                 if (data && (data.status === 'rejected' || data.status === 'failed')) {
                     throw new Error(data.error || 'Processing failed');
                 }
                 renderResult(data, taskType, outputEl, fileInput);
             } else {
-                // Async path for ABDM (production — uses GCS + Celery)
-                // base already includes /pdf2abdm from DPI_API_CONFIG
-                const r = await fetch(`${base}/submit`, {
-                    method: 'POST',
-                    body:   formData,
-                    headers
-                });
+                const { response: r, headers: h } = await _doRequest(`${base}/submit`, formData, headers);
                 if (r.status === 401) throw new Error("Token rejected by server. Please refresh and try again.");
                 if (!r.ok) throw new Error(await _extractErrorMessage(r, 'Clinical Document processing failed'));
                 const { task_id } = await r.json();
-                const data = await pollAbdmTask(task_id, base, headers);
+                const data = await pollAbdmTask(task_id, base, h);
                 if (data && (data.status === 'rejected' || data.status === 'failed')) {
                     throw new Error(data.error || 'Processing failed');
                 }
