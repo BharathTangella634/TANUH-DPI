@@ -38,6 +38,38 @@
         sessionStorage.setItem(FG_TOKEN_KEY, token);
     }
 
+    function fgClearToken() {
+        sessionStorage.removeItem(FG_TOKEN_KEY);
+        localStorage.removeItem('dpi_token_forgensic');
+        localStorage.removeItem('dpi_token_expires_forgensic');
+        localStorage.removeItem('dpi_token_status_forgensic');
+    }
+
+    async function fgFetchFreshToken() {
+        if (!window.DPI_Auth || !window.DPI_Auth.isLoggedIn()) return "";
+        const loggerBase = window.DPI_API_CONFIG ? window.DPI_API_CONFIG.logger : 'http://localhost:8002';
+        try {
+            const firebaseToken = await window.DPI_Auth.getToken();
+            const r = await fetch(`${loggerBase}/auth/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${firebaseToken}` },
+                body: JSON.stringify({ service: 'forgensic' }),
+                signal: AbortSignal.timeout(10000),
+            });
+            if (r.ok) {
+                const data = await r.json();
+                if (data.access_token) {
+                    fgStoreToken(data.access_token);
+                    localStorage.setItem('dpi_token_forgensic', data.access_token);
+                    localStorage.setItem('dpi_token_expires_forgensic', data.expires_at);
+                    localStorage.setItem('dpi_token_status_forgensic', data.status);
+                }
+                return data.access_token || "";
+            }
+        } catch (_) {}
+        return "";
+    }
+
     async function fgEnsureToken() {
         const existing = fgGetToken();
         if (existing) return existing;
@@ -49,31 +81,8 @@
             return central;
         }
 
-        if (window.DPI_Auth && window.DPI_Auth.isLoggedIn()) {
-            const loggerBase = window.DPI_API_CONFIG ? window.DPI_API_CONFIG.logger : 'http://localhost:8002';
-            try {
-                const firebaseToken = await window.DPI_Auth.getToken();
-                const r = await fetch(`${loggerBase}/auth/token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${firebaseToken}`
-                    },
-                    body: JSON.stringify({ service: 'forgensic' }),
-                    signal: AbortSignal.timeout(10000),
-                });
-                if (r.ok) {
-                    const data = await r.json();
-                    if (data.access_token) {
-                        fgStoreToken(data.access_token);
-                        localStorage.setItem(centralKey, data.access_token);
-                        localStorage.setItem('dpi_token_expires_forgensic', data.expires_at);
-                        localStorage.setItem('dpi_token_status_forgensic', data.status);
-                    }
-                    return data.access_token || "";
-                }
-            } catch (_) {}
-        }
+        return fgFetchFreshToken();
+    }
 
         // Local development only. The forgensic API runs with
         // FORGENSIC_AUTH_ENABLED=false here, and session_logger/Firebase (the
@@ -382,7 +391,7 @@
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try { resolve(JSON.parse(xhr.responseText)); } catch (_) { reject(new Error("Invalid response")); }
                 } else {
-                    reject(new Error(xhr.responseText || "Upload failed"));
+                    reject(new Error(xhr.status + " " + (xhr.responseText || "Upload failed")));
                 }
             });
             xhr.addEventListener("error", function () { reject(new Error("Upload failed")); });
@@ -396,9 +405,13 @@
             try {
                 var res = await fgAuthFetch(FG_BASE + "/jobs/" + jobId);
                 if (res.status === 401) {
-                    clearInterval(poll);
-                    setProgress("Token expired. Refresh and request a new token.", 0);
-                    setBusy(false);
+                    fgClearToken();
+                    var fresh = await fgFetchFreshToken();
+                    if (!fresh) {
+                        clearInterval(poll);
+                        setProgress("Authentication failed. Please sign in again.", 0);
+                        setBusy(false);
+                    }
                     return;
                 }
                 if (!res.ok) return;
@@ -529,9 +542,26 @@
         }
 
         try {
-            var data = await uploadXHR(form, function (p) {
-                setProgress("Uploading " + Math.round(p * 100) + "%", Math.min(85, p * 85));
-            }, token);
+            var data;
+            try {
+                data = await uploadXHR(form, function (p) {
+                    setProgress("Uploading " + Math.round(p * 100) + "%", Math.min(85, p * 85));
+                }, token);
+            } catch (uploadErr) {
+                if (uploadErr.message && uploadErr.message.indexOf("401") !== -1) {
+                    fgClearToken();
+                    token = await fgFetchFreshToken();
+                    if (token) {
+                        data = await uploadXHR(form, function (p) {
+                            setProgress("Uploading " + Math.round(p * 100) + "%", Math.min(85, p * 85));
+                        }, token);
+                    } else {
+                        throw uploadErr;
+                    }
+                } else {
+                    throw uploadErr;
+                }
+            }
             fgJobId = data.job_id;
             setProgress("Queued", 90);
             pollJob(fgJobId);
