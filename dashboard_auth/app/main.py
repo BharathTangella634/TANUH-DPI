@@ -31,9 +31,18 @@ from fastapi.responses import JSONResponse
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dashboard_auth")
 
-ADMIN_USERNAME = os.getenv("ADMIN_DASHBOARD_USERNAME", "Admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_DASHBOARD_PASSWORD", "Admin@TANUH_12345!")
-SECRET_KEY = os.getenv("ADMIN_DASHBOARD_SECRET_KEY", "dev-change-me-in-production").encode()
+from common.secrets import load_secrets
+load_secrets()
+
+ADMIN_USERNAME = os.getenv("ADMIN_DASHBOARD_USERNAME", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_DASHBOARD_PASSWORD", "")
+SECRET_KEY = os.getenv("ADMIN_DASHBOARD_SECRET_KEY", "").encode()
+
+if not ADMIN_PASSWORD or not SECRET_KEY:
+    logger.warning(
+        "ADMIN_DASHBOARD_PASSWORD or ADMIN_DASHBOARD_SECRET_KEY is not set. "
+        "Set them in .env — the service will reject all logins until they are configured."
+    )
 
 COOKIE_NAME = "dpi_admin_session"
 SESSION_TTL_SECONDS = 12 * 60 * 60  # 12 hours

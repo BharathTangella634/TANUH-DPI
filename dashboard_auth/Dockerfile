@@ -5,6 +5,7 @@ WORKDIR /app
 COPY dashboard_auth/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY common/                    ./common/
 COPY dashboard_auth/__init__.py ./dashboard_auth/__init__.py
 COPY dashboard_auth/app/        ./dashboard_auth/app/
 
