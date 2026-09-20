@@ -914,14 +914,12 @@ class ServiceTokenRequest(BaseModel):
 def _get_fernet_cipher() -> Fernet:
     key = os.getenv("TOKEN_ENCRYPTION_KEY", "")
     if not key:
-        salt = os.getenv("MYSQL_PASSWORD", "tanuh-dpi-fallback-secret-salt-12345!")
+        salt = os.getenv("MYSQL_PASSWORD", "")
+        if not salt:
+            raise RuntimeError("TOKEN_ENCRYPTION_KEY and MYSQL_PASSWORD are both unset")
         key_bytes = hashlib.sha256(salt.encode()).digest()
         key = base64.urlsafe_b64encode(key_bytes).decode()
-    try:
-        return Fernet(key.encode())
-    except Exception:
-        fallback_key = base64.urlsafe_b64encode(b"tanuh_fallback_fernet_key_32_bytes_!")
-        return Fernet(fallback_key)
+    return Fernet(key.encode())
 
 
 def _encrypt_token(raw_jwt: str) -> str:
@@ -936,15 +934,17 @@ def _decrypt_token(encrypted_jwt: str) -> str:
 
 def _issue_jwt_for_service(service: str, name: str, email: str, expiry_days: int = 1) -> str:
     if service == "pdf2abdm":
-        secret = os.getenv("ABDM_SECRET_KEY", "dev")
+        secret = os.getenv("ABDM_SECRET_KEY", "")
     elif service == "pdf2nhcx":
-        secret = os.getenv("NHCX_SECRET_KEY", "dev")
+        secret = os.getenv("NHCX_SECRET_KEY", "")
     elif service in ("privacy_filter", "privacy-filter"):
-        secret = os.getenv("SECRET_KEY", "dev")
+        secret = os.getenv("SECRET_KEY", "")
     elif service == "forgensic":
-        secret = os.getenv("FORGENSIC_SECRET_KEY", "dev")
+        secret = os.getenv("FORGENSIC_SECRET_KEY", "")
     else:
         raise ValueError(f"Unknown service: {service}")
+    if not secret:
+        raise RuntimeError(f"Secret key for {service} is not configured")
 
     now = int(time.time())
     payload = {

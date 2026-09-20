@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     # ── Auth ─────────────────────────────────────────────────────────────────
-    api_key: str = "dev-secret-change-me"
+    api_key: str = ""
 
     # ── App ──────────────────────────────────────────────────────────────────
     app_env: str = "development"
